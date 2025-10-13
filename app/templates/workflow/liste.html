@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Validations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-list me-2"></i>Liste des Validations
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('workflow.index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </a>
+                    <a href="{{ url_for('workflow.en_attente') }}" class="btn btn-primary">
+                        <i class="fas fa-clock me-2"></i>En Attente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="card-title mb-0">
+                <i class="fas fa-filter me-2"></i>Filtres de Recherche
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    {{ form.type_rapport.label(class="form-label") }}
+                    {{ form.type_rapport(class="form-select") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.statut.label(class="form-label") }}
+                    {{ form.statut(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.validateur.label(class="form-label") }}
+                    {{ form.validateur(class="form-select") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.priorite.label(class="form-label") }}
+                    {{ form.priorite(class="form-select") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.expiration.label(class="form-label") }}
+                    {{ form.expiration(class="form-select") }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Filtrer
+                    </button>
+                    <a href="{{ url_for('workflow.liste_validations') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Réinitialiser
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Résultats -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+                Validations ({{ validations.total }} résultat{% if validations.total > 1 %}s{% endif %})
+            </h6>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" onclick="exportToCSV()">
+                    <i class="fas fa-download me-1"></i>Exporter
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if validations.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rapport</th>
+                            <th>Type</th>
+                            <th>Statut</th>
+                            <th>Priorité</th>
+                            <th>Validateur</th>
+                            <th>Soumis</th>
+                            <th>Expire</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for validation in validations.items %}
+                        <tr class="{% if validation.est_expire() and validation.statut.value in ['soumis', 'en_validation'] %}table-danger{% elif validation.priorite >= 2 %}table-warning{% endif %}">
+                            <td>
+                                <strong>#{{ validation.rapport_id }}</strong>
+                                {% if validation.rappels_envoyes > 0 %}
+                                <span class="badge bg-info ms-1" title="Rappels envoyés">
+                                    {{ validation.rappels_envoyes }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ validation.type_rapport.value.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% set statut_class = 'secondary' %}
+                                {% if validation.statut.value == 'valide' %}
+                                    {% set statut_class = 'success' %}
+                                {% elif validation.statut.value == 'rejete' %}
+                                    {% set statut_class = 'danger' %}
+                                {% elif validation.statut.value in ['soumis', 'en_validation'] %}
+                                    {% set statut_class = 'warning' %}
+                                {% endif %}
+                                <span class="badge bg-{{ statut_class }}">
+                                    {{ validation.statut.value.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if validation.priorite == 3 %}
+                                <span class="badge bg-danger">Critique</span>
+                                {% elif validation.priorite == 2 %}
+                                <span class="badge bg-warning">Urgente</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Normale</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ validation.validateur.nom_complet if validation.validateur else 'Non assigné' }}</small>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if validation.date_soumission %}
+                                    {{ validation.date_soumission.strftime('%d/%m/%Y') }}<br>
+                                    <small>{{ validation.date_soumission.strftime('%H:%M') }}</small>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if validation.est_expire() and validation.statut.value in ['soumis', 'en_validation'] %}
+                                <span class="text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <small>Expiré</small>
+                                </span>
+                                {% elif validation.date_expiration %}
+                                <small class="{% if validation.temps_restant() and 'h' in validation.temps_restant() and validation.temps_restant().split('h')[0]|int < 24 %}text-warning{% else %}text-muted{% endif %}">
+                                    {{ validation.temps_restant() }}
+                                </small>
+                                {% else %}
+                                <small class="text-muted">-</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('workflow.detail_validation', id=validation.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="Voir les détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if validation.statut.value in ['soumis', 'en_validation'] %}
+                                        {% if validation.validateur_id == current_user.id or current_user.is_admin() %}
+                                        <a href="{{ url_for('workflow.valider_rapport', validation_id=validation.id) }}" 
+                                           class="btn btn-success btn-sm" title="Valider">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if current_user.is_admin() %}
+                                        <button class="btn btn-warning btn-sm" title="Relancer" 
+                                                onclick="relancerValidation({{ validation.id }})">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune validation trouvée</h5>
+                <p class="text-muted">Essayez de modifier vos critères de recherche.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if validations.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if validations.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('workflow.liste_validations', page=validations.prev_num, **request.args) }}">
+                            Précédent
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in validations.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != validations.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('workflow.liste_validations', page=page_num, **request.args) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if validations.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('workflow.liste_validations', page=validations.next_num, **request.args) }}">
+                            Suivant
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function relancerValidation(validationId) {
+    if (confirm('Êtes-vous sûr de vouloir envoyer une relance pour cette validation ?')) {
+        fetch(`{{ url_for('workflow.relancer_validation', validation_id=0) }}`.replace('0', validationId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de l\'envoi de la relance');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'envoi de la relance');
+        });
+    }
+}
+
+function exportToCSV() {
+    // Créer le CSV à partir du tableau
+    const table = document.querySelector('table');
+    const rows = Array.from(table.querySelectorAll('tr'));
+    
+    const csvContent = rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        return cells.slice(0, -1) // Exclure la colonne Actions
+                   .map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`)
+                   .join(',');
+    }).join('\n');
+    
+    // Télécharger le fichier
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `validations_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Auto-refresh toutes les 60 secondes
+setInterval(function() {
+    const url = new URL(window.location);
+    url.searchParams.set('auto_refresh', '1');
+    
+    fetch(url)
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        const newTable = newDoc.querySelector('table tbody');
+        const currentTable = document.querySelector('table tbody');
+        
+        if (newTable && currentTable) {
+            currentTable.innerHTML = newTable.innerHTML;
+        }
+    })
+    .catch(error => console.error('Erreur lors du rafraîchissement:', error));
+}, 60000);
+</script>
+{% endblock %}

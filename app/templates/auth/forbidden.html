@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Accès Interdit - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center py-5">
+                <i class="fas fa-ban fa-5x text-danger mb-4"></i>
+                <h1 class="display-4 text-danger">403</h1>
+                <h2 class="mb-4">Accès Interdit</h2>
+                <p class="lead mb-4">
+                    Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>
+                        Tableau de bord
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

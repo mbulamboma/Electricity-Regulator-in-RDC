@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau feeder - Régulation Électricité RDC{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-network-wired me-2"></i>
+            Nouveau feeder
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <!-- Actions spécifiques au module -->
+            {% if current_user.role in ['super_admin', 'admin_operateur'] %}
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-download me-1"></i>Exporter
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Messages flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{'success' if category == 'success' else 'danger' if category == 'error' else 'warning' if category == 'warning' else 'info'}} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{'check-circle' if category == 'success' else 'exclamation-triangle' if category in ['error', 'warning'] else 'info-circle'}} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Zone de contenu -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Nouveau feeder
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Formulaire de création d'un feeder -->
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.nom.id }}" class="form-label">{{ form.nom.label.text }} <span class="text-danger">*</span></label>
+                                    {{ form.nom(class="form-control") }}
+                                    {% for error in form.nom.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.code.id }}" class="form-label">{{ form.code.label.text }} <span class="text-danger">*</span></label>
+                                    {{ form.code(class="form-control") }}
+                                    {% for error in form.code.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.reseau_id.id }}" class="form-label">{{ form.reseau_id.label.text }} <span class="text-danger">*</span></label>
+                                    {{ form.reseau_id(class="form-select") }}
+                                    {% for error in form.reseau_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.poste_source_id.id }}" class="form-label">{{ form.poste_source_id.label.text }}</label>
+                                    {{ form.poste_source_id(class="form-select") }}
+                                    {% for error in form.poste_source_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.tension_nominale.id }}" class="form-label">{{ form.tension_nominale.label.text }} <span class="text-danger">*</span></label>
+                                    {{ form.tension_nominale(class="form-control") }}
+                                    {% for error in form.tension_nominale.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.type_feeder.id }}" class="form-label">{{ form.type_feeder.label.text }}</label>
+                                    {{ form.type_feeder(class="form-select") }}
+                                    {% for error in form.type_feeder.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.observations.id }}" class="form-label">{{ form.observations.label.text }}</label>
+                            {{ form.observations(class="form-control", rows="3") }}
+                            {% for error in form.observations.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('distribution.liste_feeders') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Créer le feeder
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des formulaires Bootstrap
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %}

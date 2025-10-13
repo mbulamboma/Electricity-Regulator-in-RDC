@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-industry me-2"></i>{{ title }}
+    </h1>
+    <a href="{% if operateur %}{{ url_for('operateurs.details', id=operateur.id) }}{% else %}{{ url_for('operateurs.index') }}{% endif %}" 
+       class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+            
+            <!-- Informations de base -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informations de base
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                {{ form.nom.label(class="form-label") }}
+                                {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.sigle.label(class="form-label") }}
+                                {{ form.sigle(class="form-control" + (" is-invalid" if form.sigle.errors else "")) }}
+                                {% if form.sigle.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.sigle.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.type_operateur.label(class="form-label") }}
+                        {{ form.type_operateur(class="form-select" + (" is-invalid" if form.type_operateur.errors else "")) }}
+                        {% if form.type_operateur.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.type_operateur.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adresse et contact -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Adresse et contact
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form.adresse.label(class="form-label") }}
+                        {{ form.adresse(class="form-control" + (" is-invalid" if form.adresse.errors else ""), rows="3") }}
+                        {% if form.adresse.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.adresse.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.ville.label(class="form-label") }}
+                                {{ form.ville(class="form-control" + (" is-invalid" if form.ville.errors else "")) }}
+                                {% if form.ville.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.ville.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.province.label(class="form-label") }}
+                                {{ form.province(class="form-select" + (" is-invalid" if form.province.errors else "")) }}
+                                {% if form.province.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.province.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.telephone.label(class="form-label") }}
+                                {{ form.telephone(class="form-control" + (" is-invalid" if form.telephone.errors else "")) }}
+                                {% if form.telephone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.telephone.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), type="email") }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.site_web.label(class="form-label") }}
+                                {{ form.site_web(class="form-control" + (" is-invalid" if form.site_web.errors else ""), type="url") }}
+                                {% if form.site_web.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.site_web.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations légales -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-certificate me-2"></i>Informations légales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.numero_licence.label(class="form-label") }}
+                                {{ form.numero_licence(class="form-control" + (" is-invalid" if form.numero_licence.errors else "")) }}
+                                {% if form.numero_licence.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.numero_licence.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.date_licence.label(class="form-label") }}
+                                {{ form.date_licence(class="form-control" + (" is-invalid" if form.date_licence.errors else ""), type="date") }}
+                                {% if form.date_licence.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.date_licence.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.statut_licence.label(class="form-label") }}
+                                {{ form.statut_licence(class="form-select" + (" is-invalid" if form.statut_licence.errors else "")) }}
+                                {% if form.statut_licence.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.statut_licence.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations techniques -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Informations techniques
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.capacite_installee.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.capacite_installee(class="form-control" + (" is-invalid" if form.capacite_installee.errors else ""), step="0.01") }}
+                                    <span class="input-group-text">MW</span>
+                                </div>
+                                {% if form.capacite_installee.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.capacite_installee.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.nombre_clients.label(class="form-label") }}
+                                {{ form.nombre_clients(class="form-control" + (" is-invalid" if form.nombre_clients.errors else "")) }}
+                                {% if form.nombre_clients.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nombre_clients.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.zone_couverture.label(class="form-label") }}
+                        {{ form.zone_couverture(class="form-control" + (" is-invalid" if form.zone_couverture.errors else ""), rows="3") }}
+                        {% if form.zone_couverture.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.zone_couverture.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Décrivez les zones géographiques couvertes par cet opérateur.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sticky-note me-2"></i>Observations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form.observations.label(class="form-label") }}
+                        {{ form.observations(class="form-control" + (" is-invalid" if form.observations.errors else ""), rows="4") }}
+                        {% if form.observations.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.observations.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Notes internes, remarques particulières, etc.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="d-flex justify-content-between">
+                <a href="{% if operateur %}{{ url_for('operateurs.details', id=operateur.id) }}{% else %}{{ url_for('operateurs.index') }}{% endif %}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Aide -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Aide
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Informations obligatoires</h6>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success me-1"></i>Nom de l'opérateur</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Type d'opérateur</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Statut de licence</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Types d'opérateurs</h6>
+                <ul class="list-unstyled small">
+                    <li><strong>Production:</strong> Génération d'électricité</li>
+                    <li><strong>Transport:</strong> Réseau haute tension</li>
+                    <li><strong>Distribution:</strong> Fourniture aux clients</li>
+                    <li><strong>Mixte:</strong> Plusieurs activités</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Statuts de licence</h6>
+                <ul class="list-unstyled small">
+                    <li><span class="badge bg-success">Active</span> Licence valide</li>
+                    <li><span class="badge bg-warning">Suspendue</span> Licence temporairement suspendue</li>
+                    <li><span class="badge bg-danger">Expirée</span> Licence expirée</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

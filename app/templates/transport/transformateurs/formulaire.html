@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titre }} - Transport{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ titre }}</h4>
+                    <a href="{{ url_for('transport.liste_transformateurs') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour à la liste
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Informations de base -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Informations de base</h5>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.poste_id.label(class="form-label") }}
+                                    {{ form.poste_id(class="form-select") }}
+                                    {% for error in form.poste_id.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.nom.label(class="form-label") }}
+                                    {{ form.nom(class="form-control") }}
+                                    {% for error in form.nom.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.numero_serie.label(class="form-label") }}
+                                    {{ form.numero_serie(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.constructeur.label(class="form-label") }}
+                                    {{ form.constructeur(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.annee_fabrication.label(class="form-label") }}
+                                    {{ form.annee_fabrication(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.statut.label(class="form-label") }}
+                                    {{ form.statut(class="form-select") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Caractéristiques électriques</h5>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.puissance_nominale.label(class="form-label") }}
+                                    {{ form.puissance_nominale(class="form-control", step="0.1") }}
+                                    {% for error in form.puissance_nominale.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.tension_primaire.label(class="form-label") }}
+                                    {{ form.tension_primaire(class="form-control", step="0.1") }}
+                                    {% for error in form.tension_primaire.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.tension_secondaire.label(class="form-label") }}
+                                    {{ form.tension_secondaire(class="form-control", step="0.1") }}
+                                    {% for error in form.tension_secondaire.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.tension_tertiaire.label(class="form-label") }}
+                                    {{ form.tension_tertiaire(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.couplage.label(class="form-label") }}
+                                    {{ form.couplage(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.type_refroidissement.label(class="form-label") }}
+                                    {{ form.type_refroidissement(class="form-select") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <!-- Caractéristiques techniques -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Caractéristiques techniques</h5>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.poids_total.label(class="form-label") }}
+                                    {{ form.poids_total(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.volume_huile.label(class="form-label") }}
+                                    {{ form.volume_huile(class="form-control", step="1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.type_huile.label(class="form-label") }}
+                                    {{ form.type_huile(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.impedance_cc.label(class="form-label") }}
+                                    {{ form.impedance_cc(class="form-control", step="0.01") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.pertes_vide.label(class="form-label") }}
+                                    {{ form.pertes_vide(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.pertes_charge.label(class="form-label") }}
+                                    {{ form.pertes_charge(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.courant_vide.label(class="form-label") }}
+                                    {{ form.courant_vide(class="form-control", step="0.01") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Réglage et contrôle</h5>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.changeur_prises(class="form-check-input") }}
+                                    {{ form.changeur_prises.label(class="form-check-label") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.nombre_prises.label(class="form-label") }}
+                                    {{ form.nombre_prises(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.plage_reglage.label(class="form-label") }}
+                                    {{ form.plage_reglage(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.pas_reglage.label(class="form-label") }}
+                                    {{ form.pas_reglage(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <h6 class="text-secondary">Surveillance</h6>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.temperature_huile.label(class="form-label") }}
+                                    {{ form.temperature_huile(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.temperature_enroulements.label(class="form-label") }}
+                                    {{ form.temperature_enroulements(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.niveau_huile.label(class="form-label") }}
+                                    {{ form.niveau_huile(class="form-select") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.pression_huile.label(class="form-label") }}
+                                    {{ form.pression_huile(class="form-control", step="0.01") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <!-- Maintenance et dates -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Maintenance</h5>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.date_mise_service.label(class="form-label") }}
+                                    {{ form.date_mise_service(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.date_derniere_maintenance.label(class="form-label") }}
+                                    {{ form.date_derniere_maintenance(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.type_derniere_maintenance.label(class="form-label") }}
+                                    {{ form.type_derniere_maintenance(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.prochaine_maintenance.label(class="form-label") }}
+                                    {{ form.prochaine_maintenance(class="form-control") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Tests et analyses</h5>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.date_derniere_analyse_huile.label(class="form-label") }}
+                                    {{ form.date_derniere_analyse_huile(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.resultat_analyse_huile.label(class="form-label") }}
+                                    {{ form.resultat_analyse_huile(class="form-control", rows="3") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.date_dernier_test_isolement.label(class="form-label") }}
+                                    {{ form.date_dernier_test_isolement(class="form-control") }}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.resistance_isolement.label(class="form-label") }}
+                                    {{ form.resistance_isolement(class="form-control", step="0.1") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.observations.label(class="form-label") }}
+                            {{ form.observations(class="form-control", rows="4", placeholder="Observations générales, notes de maintenance, etc.") }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('transport.liste_transformateurs') }}" class="btn btn-secondary">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script pour gérer l'affichage conditionnel des champs de réglage
+document.addEventListener('DOMContentLoaded', function() {
+    const changeurPrises = document.getElementById('changeur_prises');
+    const champsReglage = ['nombre_prises', 'plage_reglage', 'pas_reglage'];
+    
+    function toggleChampsReglage() {
+        champsReglage.forEach(champ => {
+            const element = document.getElementById(champ);
+            if (element) {
+                const container = element.closest('.form-group');
+                if (container) {
+                    container.style.display = changeurPrises.checked ? 'block' : 'none';
+                }
+            }
+        });
+    }
+    
+    if (changeurPrises) {
+        changeurPrises.addEventListener('change', toggleChampsReglage);
+        toggleChampsReglage(); // Initialiser l'état
+    }
+});
+</script>
+{% endblock %}

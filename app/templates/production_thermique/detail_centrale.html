@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">{{ centrale.nom }}</h1>
+        <p class="text-muted">Centrale Thermique - {{ centrale.code }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('production_thermique.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        {% if current_user.is_super_admin() %}
+        <a href="#" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Informations générales -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Informations générales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Code :</strong> {{ centrale.code }}</p>
+                        <p><strong>Localisation :</strong> {{ centrale.localisation or 'Non spécifiée' }}</p>
+                        <p><strong>Province :</strong> {{ centrale.province or 'Non spécifiée' }}</p>
+                        <p><strong>Type de centrale :</strong> {{ centrale.type_centrale or 'Non spécifié' }}</p>
+                        <p><strong>Type de combustible :</strong> {{ centrale.type_combustible or 'Non spécifié' }}</p>
+                        <p><strong>Statut :</strong> 
+                            <span class="badge {% if centrale.statut == 'operationnelle' %}bg-success{% elif centrale.statut == 'maintenance' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ centrale.statut|title }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Opérateur :</strong> {{ centrale.operateur.nom if centrale.operateur else 'Non assigné' }}</p>
+                        <p><strong>Puissance installée :</strong> {{ centrale.puissance_installee or 'N/A' }} MW</p>
+                        <p><strong>Puissance disponible :</strong> {{ centrale.puissance_disponible or 'N/A' }} MW</p>
+                        <p><strong>Nombre de groupes :</strong> {{ centrale.nombre_groupes or 'N/A' }}</p>
+                        <p><strong>Type de moteur :</strong> {{ centrale.type_moteur or 'Non spécifié' }}</p>
+                        <p><strong>Date de mise en service :</strong> {{ centrale.date_mise_service.strftime('%d/%m/%Y') if centrale.date_mise_service else 'Non spécifiée' }}</p>
+                    </div>
+                </div>
+                
+                {% if centrale.description %}
+                <hr>
+                <p><strong>Description :</strong></p>
+                <p class="text-muted">{{ centrale.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Statistiques -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Statistiques
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <div class="border-bottom pb-2">
+                            <div class="h4 mb-0 text-primary">{{ '%0.1f'|format(stats.energie_totale) }}</div>
+                            <small class="text-muted">MWh produits (total)</small>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="border-bottom pb-2">
+                            <div class="h5 mb-0 text-success">{{ '%0.1f'|format(stats.facteur_charge_moyen) }}%</div>
+                            <small class="text-muted">Facteur de charge moyen</small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="h6 mb-0 text-info">{{ derniers_rapports|length }}</div>
+                        <small class="text-muted">Rapports disponibles</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Maintenance -->
+        {% if centrale.date_derniere_revision or centrale.prochaine_maintenance %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-tools"></i> Maintenance
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if centrale.date_derniere_revision %}
+                <p><strong>Dernière révision :</strong><br>
+                   <small class="text-muted">{{ centrale.date_derniere_revision.strftime('%d/%m/%Y') }}</small></p>
+                {% endif %}
+                {% if centrale.prochaine_maintenance %}
+                <p><strong>Prochaine maintenance :</strong><br>
+                   <small class="text-muted">{{ centrale.prochaine_maintenance.strftime('%d/%m/%Y') }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Caractéristiques techniques -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-cogs"></i> Caractéristiques techniques
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Caractéristiques moteur</h6>
+                <p><strong>Type de moteur :</strong> {{ centrale.type_moteur or 'Non spécifié' }}</p>
+                <p><strong>Refroidissement :</strong> {{ centrale.refroidissement or 'Non spécifié' }}</p>
+                <p><strong>Consommation spécifique :</strong> {{ centrale.consommation_specifique or 'N/A' }} g/kWh</p>
+                <p><strong>Système de démarrage :</strong> {{ centrale.systeme_demarrage or 'Non spécifié' }}</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Combustible et émissions</h6>
+                <p><strong>Capacité stockage :</strong> {{ centrale.capacite_stockage_combustible or 'N/A' }} L</p>
+                <p><strong>Autonomie :</strong> {{ centrale.autonomie_combustible or 'N/A' }} heures</p>
+                <p><strong>Niveau NOx :</strong> {{ centrale.niveau_emission_nox or 'N/A' }} mg/m³</p>
+                <p><strong>Niveau CO :</strong> {{ centrale.niveau_emission_co or 'N/A' }} mg/m³</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Électrique</h6>
+                <p><strong>Niveau de tension :</strong> {{ centrale.niveau_tension or 'N/A' }} V</p>
+                <p><strong>Tension d'évacuation :</strong> {{ centrale.tension_evacuation or 'N/A' }} kV</p>
+                <p><strong>Mode de fonctionnement :</strong> {{ centrale.mode_fonctionnement or 'Non spécifié' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Localisation -->
+{% if centrale.latitude and centrale.longitude %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-map-marker-alt"></i> Localisation
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="map" style="height: 300px;"></div>
+        <p class="mt-2 text-muted">
+            <strong>Coordonnées :</strong> {{ centrale.latitude }}, {{ centrale.longitude }}
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Derniers rapports -->
+{% if derniers_rapports %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-file-alt"></i> Derniers rapports
+        </h5>
+        <a href="{{ url_for('production_thermique.nouveau_rapport', centrale_id=centrale.id) }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Nouveau rapport
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Période</th>
+                        <th>Énergie produite</th>
+                        <th>Facteur de charge</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rapport in derniers_rapports %}
+                    <tr>
+                        <td>{{ rapport.mois|month_name }} {{ rapport.annee }}</td>
+                        <td>{{ '%0.1f'|format(rapport.energie_produite) }} MWh</td>
+                        <td>{{ '%0.1f'|format(rapport.facteur_charge) }}%</td>
+                        <td>
+                            <span class="badge {% if rapport.statut == 'valide' %}bg-success{% elif rapport.statut == 'en_attente' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ rapport.statut|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('production_thermique.detail_rapport', id=rapport.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center">
+        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+        <h5>Aucun rapport disponible</h5>
+        <p class="text-muted">Aucun rapport de production n'a encore été créé pour cette centrale.</p>
+        <a href="{{ url_for('production_thermique.nouveau_rapport', centrale_id=centrale.id) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Créer le premier rapport
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if centrale.latitude and centrale.longitude %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser la carte
+    const map = L.map('map').setView([{{ centrale.latitude }}, {{ centrale.longitude }}], 12);
+    
+    // Ajouter les tuiles de la carte
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Ajouter un marqueur pour la centrale
+    L.marker([{{ centrale.latitude }}, {{ centrale.longitude }}])
+        .addTo(map)
+        .bindPopup('<strong>{{ centrale.nom }}</strong><br>{{ centrale.localisation }}')
+        .openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}

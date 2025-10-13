@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Postes de Transport{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">⚡ Postes de Transport</h1>
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('transport.nouveau_poste') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nouveau Poste
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if postes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Opérateur</th>
+                                    <th>Province</th>
+                                    <th>Puissance (MVA)</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for poste in postes %}
+                                <tr>
+                                    <td>{{ poste.nom }}</td>
+                                    <td>{{ poste.code }}</td>
+                                    <td>{{ poste.type_poste|title if poste.type_poste else '-' }}</td>
+                                    <td>{{ poste.operateur.nom if poste.operateur else '-' }}</td>
+                                    <td>{{ poste.province|replace('_', ' ')|title if poste.province else '-' }}</td>
+                                    <td>{{ poste.puissance_installee or '-' }}</td>
+                                    <td>
+                                        {% if poste.statut == 'en_service' %}
+                                            <span class="badge bg-success">En service</span>
+                                        {% elif poste.statut == 'hors_service' %}
+                                            <span class="badge bg-danger">Hors service</span>
+                                        {% elif poste.statut == 'maintenance' %}
+                                            <span class="badge bg-warning">Maintenance</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ poste.statut }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('transport.detail_poste', id=poste.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if current_user.is_admin() %}
+                                        <a href="{{ url_for('transport.modifier_poste', id=poste.id) }}" 
+                                           class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bolt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun poste de transport</h5>
+                        <p class="text-muted">Aucun poste de transport n'a été enregistré.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('transport.nouveau_poste') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Créer le premier poste
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

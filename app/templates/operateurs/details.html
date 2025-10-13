@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}{{ operateur.nom }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            <i class="fas fa-industry me-2"></i>{{ operateur.nom }}
+            {% if operateur.sigle %}
+                <small class="text-muted">({{ operateur.sigle }})</small>
+            {% endif %}
+        </h1>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{{ 'success' if operateur.statut_licence == 'active' else 'warning' if operateur.statut_licence == 'suspendue' else 'danger' }} fs-6">
+                Licence {{ operateur.statut_licence|title }}
+            </span>
+            {% if operateur.type_operateur %}
+            <span class="badge bg-info fs-6">{{ operateur.type_operateur }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="btn-group">
+        <a href="{{ url_for('operateurs.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+        {% if current_user.is_super_admin() or (current_user.operateur and current_user.operateur.id == operateur.id) %}
+        <a href="{{ url_for('operateurs.edit', id=operateur.id) }}" class="btn btn-warning">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        {% endif %}
+        {% if current_user.is_super_admin() %}
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fas fa-trash me-1"></i>Supprimer
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations principales -->
+    <div class="col-lg-8">
+        <!-- Informations de base -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informations générales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if operateur.adresse %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-map-marker-alt text-muted me-2"></i>Adresse:</strong>
+                            <div class="ms-4">{{ operateur.adresse|nl2br }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.ville or operateur.province %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-location-dot text-muted me-2"></i>Localisation:</strong>
+                            <div class="ms-4">
+                                {% if operateur.ville %}{{ operateur.ville }}{% endif %}
+                                {% if operateur.ville and operateur.province %}, {% endif %}
+                                {% if operateur.province %}{{ operateur.province }}{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.telephone %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-phone text-muted me-2"></i>Téléphone:</strong>
+                            <div class="ms-4">
+                                <a href="tel:{{ operateur.telephone }}">{{ operateur.telephone }}</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.email %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-envelope text-muted me-2"></i>Email:</strong>
+                            <div class="ms-4">
+                                <a href="mailto:{{ operateur.email }}">{{ operateur.email }}</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.site_web %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-globe text-muted me-2"></i>Site web:</strong>
+                            <div class="ms-4">
+                                <a href="{{ operateur.site_web }}" target="_blank" rel="noopener">
+                                    {{ operateur.site_web }}
+                                    <i class="fas fa-external-link-alt ms-1 small"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if operateur.numero_licence %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-certificate text-muted me-2"></i>Numéro de licence:</strong>
+                            <div class="ms-4">{{ operateur.numero_licence }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.date_licence %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-calendar text-muted me-2"></i>Date de licence:</strong>
+                            <div class="ms-4">{{ operateur.date_licence.strftime('%d/%m/%Y') }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.capacite_installee %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-bolt text-muted me-2"></i>Capacité installée:</strong>
+                            <div class="ms-4">{{ operateur.capacite_installee }} MW</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if operateur.nombre_clients %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-users text-muted me-2"></i>Nombre de clients:</strong>
+                            <div class="ms-4">{{ "{:,}".format(operateur.nombre_clients) }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if operateur.zone_couverture %}
+                <div class="mt-3">
+                    <strong><i class="fas fa-map text-muted me-2"></i>Zone de couverture:</strong>
+                    <div class="ms-4 mt-2">{{ operateur.zone_couverture|nl2br }}</div>
+                </div>
+                {% endif %}
+                
+                {% if operateur.observations %}
+                <div class="mt-3">
+                    <strong><i class="fas fa-sticky-note text-muted me-2"></i>Observations:</strong>
+                    <div class="ms-4 mt-2">{{ operateur.observations|nl2br }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contacts -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-address-book me-2"></i>Contacts
+                    {% if operateur.contacts %}
+                        <span class="badge bg-primary ms-2">{{ operateur.contacts|length }}</span>
+                    {% endif %}
+                </h5>
+                {% if current_user.is_super_admin() or (current_user.operateur and current_user.operateur.id == operateur.id) %}
+                <a href="{{ url_for('operateurs.nouveau_contact', id=operateur.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if operateur.contacts %}
+                <div class="row">
+                    {% for contact in operateur.contacts %}
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ contact.prenom }} {{ contact.nom }}</h6>
+                                {% if current_user.is_super_admin() or (current_user.operateur and current_user.operateur.id == operateur.id) %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('operateurs.edit_contact', contact_id=contact.id) }}">
+                                                <i class="fas fa-edit me-2"></i>Modifier
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <form method="POST" action="{{ url_for('operateurs.delete_contact', contact_id=contact.id) }}" 
+                                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce contact ?')">
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="fas fa-trash me-2"></i>Supprimer
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if contact.fonction %}
+                            <p class="text-muted small mb-2">{{ contact.fonction }}</p>
+                            {% endif %}
+                            
+                            <div class="small">
+                                <div class="mb-1">
+                                    <i class="fas fa-envelope text-muted me-2"></i>
+                                    <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
+                                </div>
+                                {% if contact.telephone %}
+                                <div>
+                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <a href="tel:{{ contact.telephone }}">{{ contact.telephone }}</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-address-book fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun contact enregistré</p>
+                    {% if current_user.is_super_admin() or (current_user.operateur and current_user.operateur.id == operateur.id) %}
+                    <a href="{{ url_for('operateurs.nouveau_contact', id=operateur.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Ajouter le premier contact
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informations secondaires -->
+    <div class="col-lg-4">
+        <!-- Statistiques rapides -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Statistiques
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% if operateur.capacite_installee %}
+                    <div class="col-6 mb-3">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0">{{ operateur.capacite_installee }}</h4>
+                            <small class="text-muted">MW installés</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if operateur.nombre_clients %}
+                    <div class="col-6 mb-3">
+                        <h4 class="text-info mb-0">{{ "{:,}".format(operateur.nombre_clients) }}</h4>
+                        <small class="text-muted">Clients</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-6">
+                        <h4 class="text-success mb-0">{{ operateur.contacts|length }}</h4>
+                        <small class="text-muted">Contact{{ 's' if operateur.contacts|length != 1 else '' }}</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="border-start">
+                            <h4 class="text-warning mb-0">
+                                {{ operateur.date_creation.strftime('%d/%m/%Y') }}
+                            </h4>
+                            <small class="text-muted">Date de création</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations système -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info me-2"></i>Informations système
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>Créé le:</strong>
+                        <div>{{ operateur.date_creation.strftime('%d/%m/%Y à %H:%M') }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Dernière modification:</strong>
+                        <div>{{ operateur.date_modification.strftime('%d/%m/%Y à %H:%M') }}</div>
+                    </div>
+                    <div>
+                        <strong>ID système:</strong>
+                        <div class="font-monospace">#{{ operateur.id }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de suppression -->
+{% if current_user.is_super_admin() %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer l'opérateur <strong>{{ operateur.nom }}</strong> ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Attention:</strong> Cette action supprimera également tous les contacts associés et ne peut pas être annulée.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="{{ url_for('operateurs.delete', id=operateur.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fonction pour formater les numéros avec séparateurs de milliers
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Auto-refresh des informations toutes les 5 minutes
+setInterval(function() {
+    // Optionnel: actualiser certaines données via AJAX
+}, 300000);
+</script>
+{% endblock %}

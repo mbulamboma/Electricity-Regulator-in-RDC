@@ -1,0 +1,891 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.centrale-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid #007bff;
+}
+
+.centrale-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.centrale-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.centrale-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.tech-specs {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.spec-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.spec-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.form-section h5 {
+    color: #007bff;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.75rem;
+}
+
+.equipment-formset {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.equipment-header {
+    background: #e9ecef;
+    padding: 1rem;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.equipment-item {
+    padding: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    position: relative;
+}
+
+.equipment-item:last-child {
+    border-bottom: none;
+}
+
+.equipment-item.to-delete {
+    opacity: 0.5;
+    background-color: #f8d7da;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.add-btn {
+    background: #28a745;
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.add-btn:hover {
+    background: #218838;
+}
+
+.required-field label::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.map-container {
+    height: 300px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.coordinates-display {
+    background: #e9ecef;
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .centrale-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .centrale-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-{{ 'plus' if request.endpoint.endswith('create') else 'edit' if centrale else 'industry' }} me-2 text-primary"></i>
+        {{ title }}
+    </h1>
+    {% if not request.endpoint.endswith('create') %}
+    <a href="{{ url_for('production_hydro.centrales') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+    </a>
+    {% endif %}
+</div>
+
+{% if centrale and not request.endpoint.endswith('edit') %}
+<!-- Vue détaillée de la centrale -->
+<div class="centrale-card">
+    <div class="centrale-header">
+        <div>
+            <h4 class="mb-1">{{ centrale.nom }}</h4>
+            <div class="text-muted">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                {{ centrale.localisation }}
+                {% if centrale.operateur %}
+                <span class="ms-3">
+                    <i class="fas fa-building me-1"></i>
+                    {{ centrale.operateur.nom }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-{{ 'success' if centrale.statut == 'operationnelle' else 'warning' if centrale.statut == 'maintenance' else 'danger' }} mb-2">
+                {{ centrale.statut|title }}
+            </span>
+            <div class="small text-muted">
+                Mise en service: {{ centrale.date_mise_service.strftime('%d/%m/%Y') if centrale.date_mise_service else 'N/A' }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="centrale-stats">
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.puissance_installee or 0 }}</div>
+            <div class="stat-label">MW Installés</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.nombre_groupes or 0 }}</div>
+            <div class="stat-label">Groupes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.nombre_transformateurs or 0 }}</div>
+            <div class="stat-label">Transformateurs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.hauteur_chute or 0 }}</div>
+            <div class="stat-label">m de Chute</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.debit_equipement or 0 }}</div>
+            <div class="stat-label">m³/s Équipement</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.volume_retenue or 0 }}</div>
+            <div class="stat-label">Mm³ Retenue</div>
+        </div>
+    </div>
+    
+    {% if centrale.description %}
+    <div class="alert alert-info">
+        <h6><i class="fas fa-info-circle me-2"></i>Description</h6>
+        <p class="mb-0">{{ centrale.description }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="tech-specs">
+        <h6 class="mb-3">Spécifications Techniques</h6>
+        <div class="spec-row">
+            <span>Type de turbine:</span>
+            <strong>{{ centrale.type_turbine or 'Non spécifié' }}</strong>
+        </div>
+        <div class="spec-row">
+            <span>Type de barrage:</span>
+            <strong>{{ centrale.type_barrage or 'Non spécifié' }}</strong>
+        </div>
+        <div class="spec-row">
+            <span>Niveau de tension:</span>
+            <strong>{{ centrale.niveau_tension or 'Non spécifié' }} kV</strong>
+        </div>
+        <div class="spec-row">
+            <span>Coordonnées:</span>
+            <strong>
+                {% if centrale.latitude and centrale.longitude %}
+                {{ "%.6f"|format(centrale.latitude) }}, {{ "%.6f"|format(centrale.longitude) }}
+                {% else %}
+                Non spécifiées
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+    
+    {% if centrale.latitude and centrale.longitude %}
+    <div class="map-container" id="map"></div>
+    {% endif %}
+    
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ url_for('production_hydro.centrale_edit', id=centrale.id) }}" class="btn btn-primary">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        <a href="{{ url_for('production_hydro.create', centrale_id=centrale.id) }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>Nouveau rapport
+        </a>
+    </div>
+</div>
+{% else %}
+<!-- Formulaire de création/édition -->
+<form method="POST" id="centraleForm" novalidate>
+    {{ form.hidden_tag() }}
+    
+    <!-- Informations générales -->
+    <div class="form-section">
+        <h5><i class="fas fa-info-circle me-2"></i>Informations Générales</h5>
+        <div class="row">
+            <div class="col-md-6 required-field">
+                {{ form.nom.label(class="form-label") }}
+                {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                {% if form.nom.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <div class="help-text">Nom complet de la centrale hydroélectrique</div>
+            </div>
+            <div class="col-md-6 required-field">
+                {{ form.operateur_id.label(class="form-label") }}
+                {{ form.operateur_id(class="form-select" + (" is-invalid" if form.operateur_id.errors else "")) }}
+                {% if form.operateur_id.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.operateur_id.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-8 required-field">
+                {{ form.localisation.label(class="form-label") }}
+                {{ form.localisation(class="form-control" + (" is-invalid" if form.localisation.errors else "")) }}
+                {% if form.localisation.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.localisation.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <div class="help-text">Localisation complète (province, territoire, secteur)</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.statut.label(class="form-label") }}
+                {{ form.statut(class="form-select") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                {{ form.date_mise_service.label(class="form-label") }}
+                {{ form.date_mise_service(class="form-control", placeholder="dd/mm/yyyy") }}
+            </div>
+            <div class="col-md-6">
+                {{ form.date_derniere_revision.label(class="form-label") }}
+                {{ form.date_derniere_revision(class="form-control", placeholder="dd/mm/yyyy") }}
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows="3") }}
+            <div class="help-text">Description générale de la centrale et de ses caractéristiques</div>
+        </div>
+    </div>
+    
+    <!-- Caractéristiques techniques -->
+    <div class="form-section">
+        <h5><i class="fas fa-cogs me-2"></i>Caractéristiques Techniques</h5>
+        <div class="row">
+            <div class="col-md-4 required-field">
+                {{ form.puissance_installee.label(class="form-label") }}
+                {{ form.puissance_installee(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Puissance totale installée en MW</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.nombre_groupes.label(class="form-label") }}
+                {{ form.nombre_groupes(class="form-control", placeholder="0") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.nombre_transformateurs.label(class="form-label") }}
+                {{ form.nombre_transformateurs(class="form-control", placeholder="0") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-3">
+                {{ form.type_turbine.label(class="form-label") }}
+                {{ form.type_turbine(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                {{ form.type_barrage.label(class="form-label") }}
+                {{ form.type_barrage(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                {{ form.hauteur_chute.label(class="form-label") }}
+                {{ form.hauteur_chute(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Hauteur de chute en mètres</div>
+            </div>
+            <div class="col-md-3">
+                {{ form.niveau_tension.label(class="form-label") }}
+                {{ form.niveau_tension(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Tension de raccordement en kV</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                {{ form.debit_equipement.label(class="form-label") }}
+                {{ form.debit_equipement(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Débit d'équipement en m³/s</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.volume_retenue.label(class="form-label") }}
+                {{ form.volume_retenue(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Volume de la retenue en millions de m³</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.superficie_bassin.label(class="form-label") }}
+                {{ form.superficie_bassin(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Superficie du bassin versant en km²</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Localisation géographique -->
+    <div class="form-section">
+        <h5><i class="fas fa-map-marker-alt me-2"></i>Localisation Géographique</h5>
+        <div class="row">
+            <div class="col-md-6">
+                {{ form.latitude.label(class="form-label") }}
+                {{ form.latitude(class="form-control", placeholder="0.000000", id="latitude") }}
+                <div class="help-text">Latitude en degrés décimaux</div>
+            </div>
+            <div class="col-md-6">
+                {{ form.longitude.label(class="form-label") }}
+                {{ form.longitude(class="form-control", placeholder="0.000000", id="longitude") }}
+                <div class="help-text">Longitude en degrés décimaux</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <button type="button" class="btn btn-outline-primary me-2" onclick="obtenirPosition()">
+                    <i class="fas fa-location-arrow me-1"></i>Obtenir position actuelle
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="afficherCarte()">
+                    <i class="fas fa-map me-1"></i>Sélectionner sur carte
+                </button>
+            </div>
+        </div>
+        
+        <div id="coordinates-display" class="coordinates-display" style="display: none;">
+            <strong>Coordonnées sélectionnées:</strong>
+            <span id="coord-text">Aucune</span>
+        </div>
+        
+        <div id="map-selector" class="map-container" style="display: none;"></div>
+    </div>
+    
+    <!-- Groupes de production -->
+    <div class="form-section">
+        <h5><i class="fas fa-cogs me-2"></i>Groupes de Production</h5>
+        
+        <div class="equipment-formset" id="groupes-formset">
+            <div class="equipment-header">
+                <h6 class="mb-0">Configuration des groupes de production</h6>
+                <button type="button" class="add-btn" onclick="ajouterGroupe()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un groupe
+                </button>
+            </div>
+            
+            <div id="groupes-container">
+                {% for groupe in form.groupes_production %}
+                <div class="equipment-item" id="groupe-{{ loop.index0 }}">
+                    {{ groupe.id }}
+                    {{ groupe.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                            onclick="supprimerGroupe({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ groupe.numero_groupe.label(class="form-label") }}
+                            {{ groupe.numero_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.nom_groupe.label(class="form-label") }}
+                            {{ groupe.nom_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.puissance_nominale.label(class="form-label") }}
+                            {{ groupe.puissance_nominale(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.type_turbine.label(class="form-label") }}
+                            {{ groupe.type_turbine(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            {{ groupe.date_mise_service.label(class="form-label") }}
+                            {{ groupe.date_mise_service(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ groupe.constructeur.label(class="form-label") }}
+                            {{ groupe.constructeur(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ groupe.annee_fabrication.label(class="form-label") }}
+                            {{ groupe.annee_fabrication(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transformateurs -->
+    <div class="form-section">
+        <h5><i class="fas fa-plug me-2"></i>Transformateurs</h5>
+        
+        <div class="equipment-formset" id="transformateurs-formset">
+            <div class="equipment-header">
+                <h6 class="mb-0">Configuration des transformateurs</h6>
+                <button type="button" class="add-btn" onclick="ajouterTransformateur()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un transformateur
+                </button>
+            </div>
+            
+            <div id="transformateurs-container">
+                {% for transfo in form.transformateurs %}
+                <div class="equipment-item" id="transformateur-{{ loop.index0 }}">
+                    {{ transfo.id }}
+                    {{ transfo.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                            onclick="supprimerTransformateur({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ transfo.numero_transformateur.label(class="form-label") }}
+                            {{ transfo.numero_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.nom_transformateur.label(class="form-label") }}
+                            {{ transfo.nom_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.puissance_nominale.label(class="form-label") }}
+                            {{ transfo.puissance_nominale(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.type_refroidissement.label(class="form-label") }}
+                            {{ transfo.type_refroidissement(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            {{ transfo.tension_primaire.label(class="form-label") }}
+                            {{ transfo.tension_primaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.tension_secondaire.label(class="form-label") }}
+                            {{ transfo.tension_secondaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.constructeur.label(class="form-label") }}
+                            {{ transfo.constructeur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.annee_fabrication.label(class="form-label") }}
+                            {{ transfo.annee_fabrication(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Boutons de soumission -->
+    <div class="form-section">
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('production_hydro.centrales') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Annuler
+            </a>
+            <div>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </div>
+    </div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if centrale and centrale.latitude and centrale.longitude and not request.endpoint.endswith('edit') %}
+<!-- Leaflet pour la carte de visualisation -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map').setView([{{ centrale.latitude }}, {{ centrale.longitude }}], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    L.marker([{{ centrale.latitude }}, {{ centrale.longitude }}])
+        .addTo(map)
+        .bindPopup('<strong>{{ centrale.nom }}</strong><br>{{ centrale.localisation }}')
+        .openPopup();
+});
+</script>
+{% else %}
+<!-- Leaflet pour la sélection de coordonnées -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map = null;
+let marker = null;
+let groupeIndex = {{ form.groupes_production|length if form.groupes_production else 0 }};
+let transformateurIndex = {{ form.transformateurs|length if form.transformateurs else 0 }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les dates
+    flatpickr('.form-control[type="date"]', {
+        locale: 'fr',
+        dateFormat: 'Y-m-d',
+        allowInput: true
+    });
+    
+    // Mettre à jour l'affichage des coordonnées
+    updateCoordinatesDisplay();
+    
+    // Événements pour les champs de coordonnées
+    document.getElementById('latitude').addEventListener('input', updateCoordinatesDisplay);
+    document.getElementById('longitude').addEventListener('input', updateCoordinatesDisplay);
+});
+
+function obtenirPosition() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
+            
+            updateCoordinatesDisplay();
+            
+            if (map) {
+                map.setView([lat, lng], 13);
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                } else {
+                    marker = L.marker([lat, lng]).addTo(map);
+                }
+            }
+        }, function(error) {
+            alert('Erreur lors de l\'obtention de la position: ' + error.message);
+        });
+    } else {
+        alert('La géolocalisation n\'est pas supportée par ce navigateur.');
+    }
+}
+
+function afficherCarte() {
+    const mapContainer = document.getElementById('map-selector');
+    mapContainer.style.display = 'block';
+    
+    if (!map) {
+        // RDC coordinates center
+        const rdcCenter = [-4.038333, 21.758664];
+        map = L.map('map-selector').setView(rdcCenter, 6);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Ajouter un marqueur existant si les coordonnées sont remplies
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lng = parseFloat(document.getElementById('longitude').value);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 13);
+        }
+        
+        // Événement clic sur la carte
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
+            
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng]).addTo(map);
+            }
+            
+            updateCoordinatesDisplay();
+        });
+    }
+    
+    // Redimensionner la carte
+    setTimeout(() => map.invalidateSize(), 100);
+}
+
+function updateCoordinatesDisplay() {
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    const display = document.getElementById('coordinates-display');
+    const coordText = document.getElementById('coord-text');
+    
+    if (lat && lng) {
+        display.style.display = 'block';
+        coordText.textContent = `${lat}, ${lng}`;
+    } else {
+        display.style.display = 'none';
+    }
+}
+
+// Fonctions pour les groupes
+function ajouterGroupe() {
+    const container = document.getElementById('groupes-container');
+    const template = `
+        <div class="equipment-item" id="groupe-${groupeIndex}">
+            <input type="hidden" name="groupes_production-${groupeIndex}-id" value="">
+            <input type="hidden" name="groupes_production-${groupeIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                    onclick="supprimerGroupe(${groupeIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-numero_groupe" class="form-control" placeholder="G01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom du groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-nom_groupe" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance nominale (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_nominale" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type de turbine</label>
+                    <select name="groupes_production-${groupeIndex}-type_turbine" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="Pelton">Pelton</option>
+                        <option value="Francis">Francis</option>
+                        <option value="Kaplan">Kaplan</option>
+                        <option value="Turgo">Turgo</option>
+                        <option value="Banki">Banki</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Date mise en service</label>
+                    <input type="date" name="groupes_production-${groupeIndex}-date_mise_service" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Constructeur</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-constructeur" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Année fabrication</label>
+                    <input type="number" name="groupes_production-${groupeIndex}-annee_fabrication" class="form-control" min="1900" max="2100">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    groupeIndex++;
+}
+
+function supprimerGroupe(index) {
+    const element = document.getElementById(`groupe-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        element.remove();
+    } else {
+        deleteInput.value = 'true';
+        element.classList.add('to-delete');
+    }
+}
+
+// Fonctions pour les transformateurs
+function ajouterTransformateur() {
+    const container = document.getElementById('transformateurs-container');
+    const template = `
+        <div class="equipment-item" id="transformateur-${transformateurIndex}">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-id" value="">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                    onclick="supprimerTransformateur(${transformateurIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Transformateur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-numero_transformateur" class="form-control" placeholder="T01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-nom_transformateur" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance (MVA)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-puissance_nominale" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Refroidissement</label>
+                    <select name="transformateurs-${transformateurIndex}-type_refroidissement" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="ONAN">ONAN - Huile naturelle</option>
+                        <option value="ONAF">ONAF - Huile forcée</option>
+                        <option value="OFAF">OFAF - Huile/Air forcé</option>
+                        <option value="ODAF">ODAF - Huile dirigée</option>
+                        <option value="Sec">Transformateur sec</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tension primaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_primaire" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tension secondaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_secondaire" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Constructeur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-constructeur" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Année fabrication</label>
+                    <input type="number" name="transformateurs-${transformateurIndex}-annee_fabrication" class="form-control" min="1900" max="2100">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    transformateurIndex++;
+}
+
+function supprimerTransformateur(index) {
+    const element = document.getElementById(`transformateur-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        element.remove();
+    } else {
+        deleteInput.value = 'true';
+        element.classList.add('to-delete');
+    }
+}
+
+// Validation du formulaire
+document.getElementById('centraleForm').addEventListener('submit', function(e) {
+    const requiredFields = this.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Veuillez remplir tous les champs obligatoires.');
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Distribution d'Énergie{% endblock %}
+
+{% block extra_head %}
+<style>
+.stats-card {
+    transition: transform 0.2s;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.infrastructure-item {
+    border-left: 3px solid var(--bs-success);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+.status-badge {
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🏠 Distribution d'Énergie</h1>
+                    <p class="text-muted">Gestion des réseaux et feeders de distribution électrique</p>
+                </div>
+                {% if current_user.is_admin() %}
+                <div>
+                    <a href="{{ url_for('distribution.nouveau_reseau') }}" class="btn btn-success me-2">
+                        <i class="fas fa-plus"></i> Nouveau Réseau
+                    </a>
+                    <a href="{{ url_for('distribution.nouveau_feeder') }}" class="btn btn-outline-success">
+                        <i class="fas fa-plus"></i> Nouveau Feeder
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Réseaux</h5>
+                            <div class="h3 text-success">{{ stats.nb_reseaux or 0 }}</div>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-network-wired fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Feeders</h5>
+                            <div class="h3 text-primary">{{ stats.nb_feeders or 0 }}</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-sitemap fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Clients Connectés</h5>
+                            <div class="h3 text-info">{{ "{:,}".format(stats.nb_clients or 0) }}</div>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Énergie Distribuée</h5>
+                            <div class="h3 text-warning">{{ "%.1f"|format(stats.energie_distribuee or 0) }}</div>
+                            <small class="text-muted">GWh</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-chart-area fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i> Filtres
+                        <button class="btn btn-link btn-sm float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filtres">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div class="collapse" id="filtres">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            {% if current_user.is_admin() %}
+                            <div class="col-md-3">
+                                {{ filtre_form.operateur.label(class="form-label") }}
+                                {{ filtre_form.operateur(class="form-select") }}
+                            </div>
+                            {% endif %}
+                            <div class="col-md-3">
+                                {{ filtre_form.type_reseau.label(class="form-label") }}
+                                {{ filtre_form.type_reseau(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ filtre_form.statut.label(class="form-label") }}
+                                {{ filtre_form.statut(class="form-select") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets -->
+    <ul class="nav nav-tabs" id="distributionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="reseaux-tab" data-bs-toggle="tab" data-bs-target="#reseaux" type="button" role="tab">
+                <i class="fas fa-network-wired"></i> Réseaux ({{ reseaux|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="feeders-tab" data-bs-toggle="tab" data-bs-target="#feeders" type="button" role="tab">
+                <i class="fas fa-sitemap"></i> Feeders ({{ feeders|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="postes-dist-tab" data-bs-toggle="tab" data-bs-target="#postes-dist" type="button" role="tab">
+                <i class="fas fa-building"></i> Postes Distribution ({{ postes|length }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="distributionTabsContent">
+        <!-- Onglet Réseaux -->
+        <div class="tab-pane fade show active" id="reseaux" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    {% if reseaux %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Zone</th>
+                                    <th>Clients</th>
+                                    <th>Opérateur</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reseau in reseaux %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ reseau.nom }}</strong>
+                                        {% if reseau.description %}
+                                        <br><small class="text-muted">{{ reseau.description[:50] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ reseau.code }}</code></td>
+                                    <td>
+                                        {% set type_class = 'primary' if reseau.type_reseau == 'urbain' else 'success' if reseau.type_reseau == 'rural' else 'warning' %}
+                                        <span class="badge bg-{{ type_class }}">{{ reseau.type_reseau or '-' }}</span>
+                                    </td>
+                                    <td>{{ reseau.zone_desserte or '-' }}</td>
+                                    <td>{{ "{:,}".format(reseau.nombre_clients) if reseau.nombre_clients else '-' }}</td>
+                                    <td>
+                                        {% if reseau.operateur %}
+                                        <small>{{ reseau.operateur.nom }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Non assigné</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'success' if reseau.statut == 'operationnel' else 'warning' if reseau.statut == 'maintenance' else 'danger' %}
+                                        <span class="badge bg-{{ status_class }} status-badge">
+                                            {{ reseau.statut or 'Non défini' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('distribution.detail_reseau', id=reseau.id) }}" class="btn btn-outline-success">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            <a href="{{ url_for('distribution.modifier_reseau', id=reseau.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-network-wired fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun réseau de distribution</h5>
+                        <p class="text-muted">Aucun réseau ne correspond aux critères de recherche.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('distribution.nouveau_reseau') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Ajouter un réseau
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Feeders -->
+        <div class="tab-pane fade" id="feeders" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    {% if feeders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Tension (kV)</th>
+                                    <th>Longueur (km)</th>
+                                    <th>Clients</th>
+                                    <th>Poste</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feeder in feeders %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ feeder.nom }}</strong>
+                                        {% if feeder.description %}
+                                        <br><small class="text-muted">{{ feeder.description[:40] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ feeder.code }}</code></td>
+                                    <td>{{ feeder.tension_nominale or '-' }}</td>
+                                    <td>{{ "%.1f"|format(feeder.longueur_totale) if feeder.longueur_totale else '-' }}</td>
+                                    <td>{{ "{:,}".format(feeder.nombre_clients) if feeder.nombre_clients else '-' }}</td>
+                                    <td>
+                                        {% if feeder.poste_distribution %}
+                                        <small>{{ feeder.poste_distribution.nom }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Non assigné</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'success' if feeder.statut == 'operationnel' else 'warning' if feeder.statut == 'maintenance' else 'danger' %}
+                                        <span class="badge bg-{{ status_class }} status-badge">
+                                            {{ feeder.statut or 'Non défini' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('distribution.detail_feeder', id=feeder.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            {# TODO: Implémenter la route distribution.modifier_feeder
+                                            <a href="{{ url_for('distribution.modifier_feeder', id=feeder.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            #}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun feeder</h5>
+                        <p class="text-muted">Aucun feeder ne correspond aux critères de recherche.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('distribution.nouveau_feeder') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Ajouter un feeder
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Postes Distribution -->
+        <div class="tab-pane fade" id="postes-dist" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    {% if postes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Tension (kV)</th>
+                                    <th>Opérateur</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for poste in postes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ poste.nom }}</strong>
+                                        {% if poste.description %}
+                                        <br><small class="text-muted">{{ poste.description[:40] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ poste.code }}</code></td>
+                                    <td>{{ poste.type_poste or '-' }}</td>
+                                    <td>{{ poste.tension_nominale or '-' }}</td>
+                                    <td>
+                                        {% if poste.operateur %}
+                                        <small>{{ poste.operateur.nom }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Non assigné</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'success' if poste.statut == 'operationnel' else 'warning' if poste.statut == 'maintenance' else 'danger' %}
+                                        <span class="badge bg-{{ status_class }} status-badge">
+                                            {{ poste.statut or 'Non défini' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('distribution.detail_poste', id=poste.id) }}" class="btn btn-outline-success">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            {# TODO: Implémenter la route distribution.modifier_poste
+                                            <a href="{{ url_for('distribution.modifier_poste', id=poste.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            #}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun poste de distribution</h5>
+                        <p class="text-muted">Aucun poste ne correspond aux critères de recherche.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('distribution.nouveau_poste') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Ajouter un poste
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

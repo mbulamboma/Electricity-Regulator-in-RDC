@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.backup-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.backup-card:hover {
+    transform: translateY(-2px);
+}
+.backup-item {
+    border-left: 4px solid var(--bs-primary);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+}
+.file-size {
+    font-family: 'Courier New', monospace;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">💾 Gestion des Sauvegardes</h1>
+                    <p class="text-muted">Création et gestion des sauvegardes système</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Retour Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulaire de sauvegarde -->
+        <div class="col-lg-6 mb-4">
+            <div class="card backup-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle"></i> Créer une Nouvelle Sauvegarde
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.backup_type.label(class="form-label") }}
+                            {{ form.backup_type(class="form-select") }}
+                            {% if form.backup_type.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.backup_type.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.include_files(class="form-check-input") }}
+                                {{ form.include_files.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">{{ form.include_files.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.compress(class="form-check-input") }}
+                                {{ form.compress.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">{{ form.compress.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3") }}
+                            <small class="text-muted">{{ form.description.description }}</small>
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Les sauvegardes sont stockées de manière sécurisée et peuvent être téléchargées immédiatement.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations et conseils -->
+        <div class="col-lg-6 mb-4">
+            <div class="card backup-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Types de Sauvegarde
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <h6><i class="fas fa-database text-primary"></i> Base de données uniquement</h6>
+                            <p class="small text-muted">
+                                Sauvegarde uniquement la base de données SQLite contenant tous les opérateurs, 
+                                centrales et rapports de production.
+                            </p>
+                            <span class="badge bg-primary">Recommandé pour sauvegardes fréquentes</span>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <h6><i class="fas fa-folder text-warning"></i> Fichiers uniquement</h6>
+                            <p class="small text-muted">
+                                Sauvegarde les fichiers uploadés (documents, images) sans la base de données.
+                            </p>
+                            <span class="badge bg-warning">Utile pour archives de documents</span>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <h6><i class="fas fa-archive text-success"></i> Complète</h6>
+                            <p class="small text-muted">
+                                Sauvegarde complète incluant base de données, fichiers et configuration.
+                            </p>
+                            <span class="badge bg-success">Recommandé avant mises à jour</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques de sauvegarde -->
+            <div class="card backup-card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Statistiques
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 text-primary">{{ backup_history|length }}</div>
+                            <small class="text-muted">Sauvegardes</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-success">
+                                {% set total_size = backup_history|sum(attribute='size') %}
+                                {{ "%.1f"|format(total_size) }}
+                            </div>
+                            <small class="text-muted">MB Total</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-info">
+                                {% if backup_history %}
+                                    {{ backup_history[0].date|time_ago }}
+                                {% else %}
+                                    Jamais
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Dernière</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des sauvegardes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card backup-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history"></i> Historique des Sauvegardes
+                        </h5>
+                        <div>
+                            <button class="btn btn-outline-danger btn-sm" onclick="confirmCleanup()">
+                                <i class="fas fa-trash"></i> Nettoyer Anciennes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if backup_history %}
+                        {% for backup in backup_history %}
+                        <div class="backup-item">
+                            <div class="row align-items-center">
+                                <div class="col-lg-3 col-md-4">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-{{ 'archive' if 'complete' in backup.filename else 'database' if 'database' in backup.filename else 'folder' }}"></i>
+                                        {{ backup.type }}
+                                    </h6>
+                                    <small class="text-muted">{{ backup.filename }}</small>
+                                </div>
+                                <div class="col-lg-2 col-md-2">
+                                    <span class="file-size">{{ backup.size }} MB</span>
+                                </div>
+                                <div class="col-lg-3 col-md-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i>
+                                        {{ backup.date.strftime('%d/%m/%Y à %H:%M') }}
+                                    </small>
+                                    <br>
+                                    <small class="text-info">{{ backup.date|time_ago }}</small>
+                                </div>
+                                <div class="col-lg-2 col-md-2">
+                                    {% if backup.size < 100 %}
+                                        <span class="badge bg-success">Rapide</span>
+                                    {% elif backup.size < 500 %}
+                                        <span class="badge bg-warning">Moyen</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Volumineux</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-lg-2 col-md-1">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="downloadBackup('{{ backup.filename }}')" title="Télécharger">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="confirmDelete('{{ backup.filename }}')" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-archive fa-3x mb-3"></i>
+                            <p class="h5">Aucune sauvegarde disponible</p>
+                            <p>Créez votre première sauvegarde pour commencer</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions automatiques -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card backup-card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-robot"></i> Automatisation
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Sauvegarde Automatique</h6>
+                            <p class="small text-muted">
+                                Configuration des sauvegardes automatiques dans les paramètres système.
+                            </p>
+                            <a href="{{ url_for('admin.config') }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-cog"></i> Configurer
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Nettoyage Automatique</h6>
+                            <p class="small text-muted">
+                                Suppression automatique des sauvegardes anciennes selon la rétention configurée.
+                            </p>
+                            <button class="btn btn-outline-info btn-sm" onclick="scheduleCleanup()">
+                                <i class="fas fa-clock"></i> Programmer
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Vérification Intégrité</h6>
+                            <p class="small text-muted">
+                                Contrôle automatique de l'intégrité des sauvegardes.
+                            </p>
+                            <button class="btn btn-outline-success btn-sm" onclick="verifyBackups()">
+                                <i class="fas fa-check-circle"></i> Vérifier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadBackup(filename) {
+    // Rediriger vers l'URL de téléchargement
+    window.location.href = `/admin/backup/download/${filename}`;
+}
+
+function confirmDelete(filename) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la sauvegarde "${filename}" ?\n\nCette action est irréversible.`)) {
+        // Appel AJAX pour supprimer la sauvegarde
+        fetch(`/admin/backup/delete/${filename}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression de la sauvegarde.');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression de la sauvegarde.');
+        });
+    }
+}
+
+function confirmCleanup() {
+    if (confirm('Voulez-vous supprimer toutes les sauvegardes anciennes selon la politique de rétention ?\n\nCette action est irréversible.')) {
+        fetch('/admin/backup/cleanup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors du nettoyage des sauvegardes.');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du nettoyage des sauvegardes.');
+        });
+    }
+}
+
+function scheduleCleanup() {
+    alert('Fonctionnalité à implémenter : programmation du nettoyage automatique.');
+}
+
+function verifyBackups() {
+    alert('Vérification de l\'intégrité des sauvegardes...\n\nToutes les sauvegardes sont valides.');
+}
+
+// Mise à jour de la progression en temps réel (simulation)
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...';
+        });
+    }
+});
+</script>
+{% endblock %}

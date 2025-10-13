@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.message-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.conversation-item {
+    border-left: 3px solid #e9ecef;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.conversation-item.expediteur {
+    border-left-color: #0d6efd;
+}
+
+.conversation-item.destinataire {
+    border-left-color: #6c757d;
+}
+
+.message-content {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.reply-form {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Navigation -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <a href="{{ url_for('notifications.messages') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour aux messages
+                    </a>
+                </div>
+                <div>
+                    {% if message.destinataire_id == current_user.id or message.expediteur_id == current_user.id %}
+                    <button class="btn btn-outline-warning" onclick="archiverMessage({{ message.id }})">
+                        <i class="fas fa-archive"></i> Archiver
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- En-tête du message -->
+            <div class="card mb-4">
+                <div class="message-header">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar">
+                            {{ message.expediteur.prenom[0] if message.expediteur.prenom else message.expediteur.username[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="h4 mb-1">{{ message.sujet }}</h2>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ message.expediteur.prenom }} {{ message.expediteur.nom or message.expediteur.username }}</strong>
+                                    <i class="fas fa-arrow-right mx-2"></i>
+                                    <span>{{ message.destinataire.prenom }} {{ message.destinataire.nom or message.destinataire.username }}</span>
+                                </div>
+                                <div class="text-end">
+                                    {% if message.priorite == 3 %}
+                                    <span class="badge bg-danger me-2">Urgent</span>
+                                    {% elif message.priorite == 2 %}
+                                    <span class="badge bg-warning me-2">Important</span>
+                                    {% endif %}
+                                    <small>{{ message.date_creation.strftime('%d/%m/%Y à %H:%M') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-comments me-2"></i>Conversation
+                        {% if conversation|length > 1 %}
+                        <span class="badge bg-secondary">{{ conversation|length }} messages</span>
+                        {% endif %}
+                    </h5>
+                    
+                    {% for msg in conversation %}
+                    <div class="conversation-item {{ 'expediteur' if msg.expediteur_id == current_user.id else 'destinataire' }}">
+                        <div class="d-flex align-items-start">
+                            <div class="avatar" style="width: 40px; height: 40px; font-size: 0.9rem;">
+                                {{ msg.expediteur.prenom[0] if msg.expediteur.prenom else msg.expediteur.username[0] }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>{{ msg.expediteur.prenom }} {{ msg.expediteur.nom or msg.expediteur.username }}</strong>
+                                        {% if msg.est_reponse and msg.id != message.id %}
+                                        <small class="text-muted">en réponse</small>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ msg.date_creation.strftime('%d/%m/%Y à %H:%M') }}</small>
+                                </div>
+                                <div class="message-content">
+                                    {{ msg.contenu|replace('\n', '<br>')|safe }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Formulaire de réponse -->
+            {% if message.destinataire_id == current_user.id or message.expediteur_id == current_user.id %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-reply me-2"></i>Répondre
+                    </h5>
+                </div>
+                <div class="card-body reply-form">
+                    <form method="POST" action="{{ url_for('notifications.repondre_message', id=message.id) }}">
+                        {{ form_reponse.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form_reponse.contenu.label(class="form-label") }}
+                            {{ form_reponse.contenu(class="form-control", rows="6", placeholder="Tapez votre réponse...") }}
+                            {% if form_reponse.contenu.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form_reponse.contenu.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Envoyer la réponse
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('notifications.nouveau_message', destinataire_id=message.expediteur.id if message.expediteur_id != current_user.id else message.destinataire.id) }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-plus"></i> Nouveau message
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function archiverMessage(messageId) {
+    if (confirm('Êtes-vous sûr de vouloir archiver cette conversation ?')) {
+        fetch(`{{ url_for('notifications.archiver_message', id=0) }}`.replace('0', messageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Rediriger vers la liste des messages
+                window.location.href = '{{ url_for("notifications.messages") }}';
+            } else {
+                alert('Erreur lors de l\'archivage du message');
+            }
+        }).catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'archivage du message');
+        });
+    }
+}
+
+function getCSRFToken() {
+    const token = document.querySelector('meta[name=csrf-token]');
+    return token ? token.getAttribute('content') : '';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Détails du Rapport - {{ rapport.centrale.nom }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-sun me-2 text-warning"></i>Rapport Production Solaire
+    </h1>
+    <div>
+        <a href="{{ url_for('production_solaire.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+        {% if rapport.statut != 'transmis' or current_user.is_super_admin() %}
+        <a href="{{ url_for('production_solaire.modifier_rapport', id=rapport.id) }}" class="btn btn-primary">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Informations générales -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>Informations générales
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Centrale :</strong> {{ rapport.centrale.nom }}<br>
+                <strong>Code :</strong> {{ rapport.centrale.code }}<br>
+                <strong>Période :</strong> {{ rapport.get_periode_str() }}<br>
+                <strong>Statut :</strong> 
+                <span class="badge bg-{% if rapport.statut == 'valide' %}success{% elif rapport.statut == 'transmis' %}primary{% else %}warning{% endif %}">
+                    {{ rapport.statut }}
+                </span>
+            </div>
+            <div class="col-md-6">
+                <strong>Date création :</strong> {{ rapport.date_creation.strftime('%d/%m/%Y %H:%M') }}<br>
+                {% if rapport.date_modification %}
+                <strong>Dernière modification :</strong> {{ rapport.date_modification.strftime('%d/%m/%Y %H:%M') }}<br>
+                {% endif %}
+                {% if rapport.date_validation %}
+                <strong>Date validation :</strong> {{ rapport.date_validation.strftime('%d/%m/%Y %H:%M') }}<br>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Production -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-bolt me-2"></i>Production d'énergie
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="text-center p-3 border rounded">
+                    <h4 class="text-warning">{{ "{:,.0f}".format(rapport.energie_produite) if rapport.energie_produite else 'N/A' }}</h4>
+                    <small class="text-muted">MWh Produits</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center p-3 border rounded">
+                    <h4 class="text-info">{{ "{:.1f}".format(rapport.performance_ratio) if rapport.performance_ratio else 'N/A' }}%</h4>
+                    <small class="text-muted">Performance Ratio</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center p-3 border rounded">
+                    <h4 class="text-success">{{ "{:.1f}".format(rapport.facteur_charge) if rapport.facteur_charge else 'N/A' }}%</h4>
+                    <small class="text-muted">Facteur de Charge</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Irradiation -->
+{% if rapport.irradiation_totale %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-sun me-2"></i>Conditions météorologiques
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Irradiation totale :</strong> {{ "{:,.1f}".format(rapport.irradiation_totale) }} kWh/m²<br>
+                {% if rapport.irradiation_moyenne_quotidienne %}
+                <strong>Moyenne quotidienne :</strong> {{ "{:.2f}".format(rapport.irradiation_moyenne_quotidienne) }} kWh/m²/j
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                {% if rapport.temperature_ambiante_moyenne %}
+                <strong>Température ambiante :</strong> {{ "{:.1f}".format(rapport.temperature_ambiante_moyenne) }}°C<br>
+                {% endif %}
+                {% if rapport.temperature_modules_moyenne %}
+                <strong>Température modules :</strong> {{ "{:.1f}".format(rapport.temperature_modules_moyenne) }}°C
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                {% if rapport.heures_ensoleillement %}
+                <strong>Heures d'ensoleillement :</strong> {{ "{:.1f}".format(rapport.heures_ensoleillement) }}h<br>
+                {% endif %}
+                {% if rapport.vitesse_vent_moyenne %}
+                <strong>Vitesse du vent :</strong> {{ "{:.1f}".format(rapport.vitesse_vent_moyenne) }} m/s
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Observations -->
+{% if rapport.observations %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-clipboard me-2"></i>Observations
+        </h5>
+    </div>
+    <div class="card-body">
+        <p>{{ rapport.observations }}</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

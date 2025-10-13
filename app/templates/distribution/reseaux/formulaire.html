@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Nouveau Réseau' if mode == 'creation' else 'Modifier Réseau' }} - Distribution{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #17a2b8;
+}
+
+.form-section h5 {
+    color: #17a2b8;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.required-field label::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.form-actions {
+    background: white;
+    padding: 1.5rem;
+    border-top: 1px solid #dee2e6;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-network-wired text-info"></i> {{ 'Nouveau Réseau de Distribution' if mode == 'creation' else 'Modifier Réseau de Distribution' }}</h2>
+                    <p class="text-muted mb-0">{{ 'Créer un nouveau réseau de distribution électrique' if mode == 'creation' else 'Modifier les informations du réseau de distribution' }}</p>
+                </div>
+                <a href="{{ url_for('distribution.liste_reseaux') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+
+            <!-- Formulaire -->
+            <form method="POST" class="needs-validation" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- Informations de base -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-info-circle"></i> Informations de base</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 required-field">
+                                    {{ form.operateur_id.label(class="form-label") }}
+                                    {{ form.operateur_id(class="form-select") }}
+                                    {% if form.operateur_id.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.operateur_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 required-field">
+                                    {{ form.nom.label(class="form-label") }}
+                                    {{ form.nom(class="form-control") }}
+                                    {% if form.nom.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6 required-field">
+                                    {{ form.code.label(class="form-label") }}
+                                    {{ form.code(class="form-control") }}
+                                    {% if form.code.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.code.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Code unique d'identification du réseau</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.type_reseau.label(class="form-label") }}
+                                    {{ form.type_reseau(class="form-select") }}
+                                    {% if form.type_reseau.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.type_reseau.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Zone de desserte -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-map-marker-alt"></i> Zone de desserte</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.zone_desserte.label(class="form-label") }}
+                                    {{ form.zone_desserte(class="form-control") }}
+                                    {% if form.zone_desserte.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.zone_desserte.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.province.label(class="form-label") }}
+                                    {{ form.province(class="form-select") }}
+                                    {% if form.province.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.province.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    {{ form.commune.label(class="form-label") }}
+                                    {{ form.commune(class="form-control") }}
+                                    {% if form.commune.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.commune.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.superficie.label(class="form-label") }}
+                                    {{ form.superficie(class="form-control") }}
+                                    {% if form.superficie.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.superficie.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Superficie en km²</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Caractéristiques techniques -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-cogs"></i> Caractéristiques techniques</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 required-field">
+                                    {{ form.tension_distribution.label(class="form-label") }}
+                                    {{ form.tension_distribution(class="form-control") }}
+                                    {% if form.tension_distribution.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.tension_distribution.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Tension de distribution en kV</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.tension_basse.label(class="form-label") }}
+                                    {{ form.tension_basse(class="form-control") }}
+                                    {% if form.tension_basse.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.tension_basse.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Tension basse en kV (défaut: 0.4)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    {{ form.schema_exploitation.label(class="form-label") }}
+                                    {{ form.schema_exploitation(class="form-select") }}
+                                    {% if form.schema_exploitation.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.schema_exploitation.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.type_construction.label(class="form-label") }}
+                                    {{ form.type_construction(class="form-select") }}
+                                    {% if form.type_construction.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.type_construction.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Infrastructure -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-industry"></i> Infrastructure</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.longueur_reseau_mt.label(class="form-label") }}
+                                    {{ form.longueur_reseau_mt(class="form-control") }}
+                                    {% if form.longueur_reseau_mt.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.longueur_reseau_mt.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Longueur réseau MT en km</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.longueur_reseau_bt.label(class="form-label") }}
+                                    {{ form.longueur_reseau_bt(class="form-control") }}
+                                    {% if form.longueur_reseau_bt.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.longueur_reseau_bt.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Longueur réseau BT en km</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    {{ form.nombre_postes_source.label(class="form-label") }}
+                                    {{ form.nombre_postes_source(class="form-control") }}
+                                    {% if form.nombre_postes_source.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nombre_postes_source.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    {{ form.nombre_postes_distribution.label(class="form-label") }}
+                                    {{ form.nombre_postes_distribution(class="form-control") }}
+                                    {% if form.nombre_postes_distribution.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nombre_postes_distribution.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    {{ form.nombre_transformateurs_mt_bt.label(class="form-label") }}
+                                    {{ form.nombre_transformateurs_mt_bt(class="form-control") }}
+                                    {% if form.nombre_transformateurs_mt_bt.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nombre_transformateurs_mt_bt.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observations -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-comment"></i> Observations</h5>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.observations.label(class="form-label") }}
+                                    {{ form.observations(class="form-control", rows="4") }}
+                                    {% if form.observations.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.observations.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar avec résumé -->
+                    <div class="col-lg-4">
+                        <div class="card sticky-top" style="top: 1rem;">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted">
+                                    {{ 'Créez un nouveau réseau de distribution électrique avec ses caractéristiques techniques et sa zone de desserte.' if mode == 'creation' else 'Modifiez les informations du réseau de distribution.' }}
+                                </p>
+                                
+                                <hr>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> {{ 'Créer le réseau' if mode == 'creation' else 'Sauvegarder' }}
+                                    </button>
+                                    <a href="{{ url_for('distribution.liste_reseaux') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+    
+    // Auto-calcul du pourcentage souterrain
+    const pourcentageAerienInput = document.getElementById('pourcentage_aerien');
+    const pourcentageSouterrainInput = document.getElementById('pourcentage_souterrain');
+    
+    if (pourcentageAerienInput && pourcentageSouterrainInput) {
+        pourcentageAerienInput.addEventListener('input', function() {
+            const aerien = parseFloat(this.value) || 0;
+            const souterrain = Math.max(0, 100 - aerien);
+            pourcentageSouterrainInput.value = souterrain;
+        });
+        
+        pourcentageSouterrainInput.addEventListener('input', function() {
+            const souterrain = parseFloat(this.value) || 0;
+            const aerien = Math.max(0, 100 - souterrain);
+            pourcentageAerienInput.value = aerien;
+        });
+    }
+});
+</script>
+{% endblock %}

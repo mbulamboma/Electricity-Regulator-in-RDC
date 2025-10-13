@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Transport d'Énergie{% endblock %}
+
+{% block extra_head %}
+<style>
+.stats-card {
+    transition: transform 0.2s;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.infrastructure-item {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+.status-badge {
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">⚡ Transport d'Énergie</h1>
+                    <p class="text-muted">Gestion des lignes et postes de transport électrique</p>
+                </div>
+                {% if current_user.is_admin() %}
+                <div>
+                    <a href="{{ url_for('transport.nouvelle_ligne') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus"></i> Nouvelle Ligne
+                    </a>
+                    <a href="{{ url_for('transport.nouveau_poste') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> Nouveau Poste
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Lignes de Transport</h5>
+                            <div class="h3 text-primary">{{ stats.nb_lignes or 0 }}</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-road fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Postes</h5>
+                            <div class="h3 text-success">{{ stats.nb_postes or 0 }}</div>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-bolt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Longueur Totale</h5>
+                            <div class="h3 text-info">{{ "%.1f"|format(stats.longueur_totale or 0) }}</div>
+                            <small class="text-muted">km</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-ruler fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Capacité Transport</h5>
+                            <div class="h3 text-warning">{{ "%.0f"|format(stats.capacite_totale or 0) }}</div>
+                            <small class="text-muted">MVA</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-tachometer-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i> Filtres
+                        <button class="btn btn-link btn-sm float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filtres">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div class="collapse" id="filtres">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            {% if current_user.is_admin() %}
+                            <div class="col-md-3">
+                                {{ filtre_form.operateur.label(class="form-label") }}
+                                {{ filtre_form.operateur(class="form-select") }}
+                            </div>
+                            {% endif %}
+                            <div class="col-md-3">
+                                {{ filtre_form.statut.label(class="form-label") }}
+                                {{ filtre_form.statut(class="form-select") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ filtre_form.tension_min.label(class="form-label") }}
+                                {{ filtre_form.tension_min(class="form-control") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ filtre_form.tension_max.label(class="form-label") }}
+                                {{ filtre_form.tension_max(class="form-control") }}
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets -->
+    <ul class="nav nav-tabs" id="transportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="lignes-tab" data-bs-toggle="tab" data-bs-target="#lignes" type="button" role="tab">
+                <i class="fas fa-road"></i> Lignes de Transport ({{ lignes|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="postes-tab" data-bs-toggle="tab" data-bs-target="#postes" type="button" role="tab">
+                <i class="fas fa-bolt"></i> Postes ({{ postes|length }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="transportTabsContent">
+        <!-- Onglet Lignes -->
+        <div class="tab-pane fade show active" id="lignes" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    {% if lignes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Tension (kV)</th>
+                                    <th>Longueur (km)</th>
+                                    <th>Opérateur</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ligne in lignes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ ligne.nom }}</strong>
+                                        {% if ligne.designation %}
+                                        <br><small class="text-muted">{{ ligne.designation }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ ligne.code }}</code></td>
+                                    <td>{{ ligne.tension_nominale or '-' }}</td>
+                                    <td>{{ "%.1f"|format(ligne.longueur_totale) if ligne.longueur_totale else '-' }}</td>
+                                    <td>
+                                        {% if ligne.operateur %}
+                                        <small>{{ ligne.operateur.nom }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Non assigné</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'success' if ligne.statut == 'operationnel' else 'warning' if ligne.statut == 'maintenance' else 'danger' %}
+                                        <span class="badge bg-{{ status_class }} status-badge">
+                                            {{ ligne.statut or 'Non défini' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('transport.detail_ligne', id=ligne.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            <a href="{{ url_for('transport.modifier_ligne', id=ligne.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-road fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune ligne de transport</h5>
+                        <p class="text-muted">Aucune ligne de transport ne correspond aux critères de recherche.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('transport.nouvelle_ligne') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Ajouter une ligne
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Postes -->
+        <div class="tab-pane fade" id="postes" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    {% if postes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Tension (kV)</th>
+                                    <th>Opérateur</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for poste in postes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ poste.nom }}</strong>
+                                        {% if poste.designation %}
+                                        <br><small class="text-muted">{{ poste.designation }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ poste.code }}</code></td>
+                                    <td>{{ poste.type_poste or '-' }}</td>
+                                    <td>{{ poste.tension_nominale or '-' }}</td>
+                                    <td>
+                                        {% if poste.operateur %}
+                                        <small>{{ poste.operateur.nom }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Non assigné</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'success' if poste.statut == 'operationnel' else 'warning' if poste.statut == 'maintenance' else 'danger' %}
+                                        <span class="badge bg-{{ status_class }} status-badge">
+                                            {{ poste.statut or 'Non défini' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('transport.detail_poste', id=poste.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            <a href="{{ url_for('transport.modifier_poste', id=poste.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bolt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun poste de transport</h5>
+                        <p class="text-muted">Aucun poste ne correspond aux critères de recherche.</p>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('transport.nouveau_poste') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Ajouter un poste
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

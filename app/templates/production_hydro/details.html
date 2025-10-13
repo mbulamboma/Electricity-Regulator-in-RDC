@@ -1,0 +1,858 @@
+{% extends "base.html" %}
+{% block title %}Détails du Rapport - {{ rapport.centrale.nom }} {{ rapport.mois }}/{{ rapport.annee }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+}
+
+.metric-card.production {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.metric-card.performance {
+    background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+}
+
+.metric-card.hydro {
+    background: linear-gradient(135deg, #0099f7 0%, #f11712 100%);
+}
+
+.metric-card.maintenance {
+    background: linear-gradient(135deg, #fce043 0%, #fb7ba2 100%);
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.metric-change {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-height: 350px;
+}
+
+.chart-container canvas {
+    max-height: 250px !important;
+}
+
+/* Section des graphiques - limitation de hauteur */
+.chart-container {
+    overflow: hidden;
+}
+
+#hydroChart {
+    max-height: 180px !important;
+}
+
+.info-section {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.info-section h5 {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.equipment-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.equipment-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.equipment-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.equipment-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-bon {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-moyen {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-mauvais {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.progress-bar-custom {
+    height: 10px;
+    border-radius: 10px;
+    background-color: #e9ecef;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.action-buttons {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #28a745);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid white;
+    box-shadow: 0 0 0 3px #007bff;
+}
+
+.export-section {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+@media print {
+    .action-buttons, .export-section, .btn {
+        display: none !important;
+    }
+    
+    .metric-card {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container {
+        break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Boutons d'actions sticky -->
+<div class="action-buttons">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">
+                <i class="fas fa-chart-line me-2 text-primary"></i>
+                Rapport {{ rapport.centrale.nom }} - {{ rapport.mois|month_name }}/{{ rapport.annee }}
+            </h1>
+            <div class="text-muted">
+                Période: {{ rapport.periode_debut.strftime('%d/%m/%Y') }} - {{ rapport.periode_fin.strftime('%d/%m/%Y') }}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('production_hydro.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-1"></i>Liste
+            </a>
+            {% if current_user.is_admin() or (rapport.operateur_id == current_user.operateur_id and rapport.statut == 'brouillon') %}
+            <a href="{{ url_for('production_hydro.edit', id=rapport.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit me-1"></i>Modifier
+            </a>
+            {% endif %}
+            <div class="dropdown">
+                <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i>Exporter
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exporterPDF()">
+                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exporterExcel()">
+                        <i class="fas fa-file-excel me-2"></i>Excel
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Imprimer
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statut et validation -->
+    <div class="mt-2 d-flex align-items-center">
+        <span class="badge bg-{{ 'success' if rapport.statut == 'validé' else 'warning' if rapport.statut == 'transmis' else 'secondary' }} me-2">
+            <i class="fas fa-{{ 'check-circle' if rapport.statut == 'validé' else 'clock' if rapport.statut == 'transmis' else 'edit' }} me-1"></i>
+            {{ rapport.statut|title }}
+        </span>
+        
+        {% if rapport.date_transmission %}
+        <small class="text-muted me-3">
+            <i class="fas fa-paper-plane me-1"></i>
+            Transmis le {{ rapport.date_transmission.strftime('%d/%m/%Y à %H:%M') }}
+        </small>
+        {% endif %}
+        
+        {% if rapport.date_validation %}
+        <small class="text-muted">
+            <i class="fas fa-stamp me-1"></i>
+            Validé le {{ rapport.date_validation.strftime('%d/%m/%Y à %H:%M') }}
+        </small>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Métriques principales -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="metric-card production">
+            <div class="metric-value">{{ "{:,.0f}".format(rapport.energie_produite or 0) }}</div>
+            <div class="metric-label">MWh produits</div>
+            {% if rapport.energie_disponible %}
+            <div class="metric-change">
+                <i class="fas fa-percentage me-1"></i>
+                {{ "{:.1f}%".format((rapport.energie_produite / rapport.energie_disponible) * 100) }} de la capacité
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card performance">
+            <div class="metric-value">{{ "{:.1f}%".format(rapport.facteur_charge or 0) }}</div>
+            <div class="metric-label">Facteur de charge</div>
+            <div class="metric-change">
+                <i class="fas fa-{{ 'arrow-up text-success' if (rapport.facteur_charge or 0) > 70 else 'arrow-down text-warning' if (rapport.facteur_charge or 0) > 50 else 'arrow-down text-danger' }} me-1"></i>
+                {{ "Excellent" if (rapport.facteur_charge or 0) > 70 else "Bon" if (rapport.facteur_charge or 0) > 50 else "Faible" }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card hydro">
+            <div class="metric-value">{{ "{:.1f}".format(rapport.debit_moyen or 0) }}</div>
+            <div class="metric-label">Débit moyen (m³/s)</div>
+            <div class="metric-change">
+                <i class="fas fa-water me-1"></i>
+                {{ "{:.1f}M m³".format((rapport.volume_turbiné or 0)) }} turbinés
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card maintenance">
+            <div class="metric-value">{{ (rapport.maintenances_preventives or 0) + (rapport.maintenances_correctives or 0) }}</div>
+            <div class="metric-label">Maintenances</div>
+            <div class="metric-change">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                {{ rapport.incidents_majeurs or 0 }} incident(s) majeur(s)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques de performance -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="chart-container">
+            <h5>
+                <i class="fas fa-chart-area me-2 text-primary"></i>
+                Performance de Production
+            </h5>
+            <canvas id="productionChart" height="200"></canvas>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="chart-container">
+            <h5>
+                <i class="fas fa-chart-pie me-2 text-primary"></i>
+                Répartition par Groupe
+            </h5>
+            <canvas id="groupesChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Données hydrologiques -->
+<div class="info-section">
+    <h5>
+        <i class="fas fa-tint me-2 text-info"></i>
+        Données Hydrologiques
+    </h5>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="text-center">
+                <div class="progress-bar-custom mb-2">
+                    <div class="progress-fill" style="width: {{ ((rapport.niveau_retenue_moyen or 0) / 100) * 100 }}%"></div>
+                </div>
+                <h6>Niveau de Retenue</h6>
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Min: {{ rapport.niveau_retenue_min or 0 }}m</span>
+                    <span><strong>{{ rapport.niveau_retenue_moyen or 0 }}m</strong></span>
+                    <span>Max: {{ rapport.niveau_retenue_max or 0 }}m</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <div class="progress-bar-custom mb-2">
+                    <div class="progress-fill" style="width: {{ ((rapport.debit_moyen or 0) / (rapport.debit_max or 1)) * 100 }}%"></div>
+                </div>
+                <h6>Débit</h6>
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Min: {{ rapport.debit_min or 0 }} m³/s</span>
+                    <span><strong>{{ rapport.debit_moyen or 0 }} m³/s</strong></span>
+                    <span>Max: {{ rapport.debit_max or 0 }} m³/s</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <canvas id="hydroChart" height="150"></canvas>
+                <h6 class="mt-2">Utilisation Hydraulique</h6>
+                <div class="small text-muted">
+                    Volume turbiné: {{ "{:.1f}M m³".format(rapport.volume_turbiné or 0) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Groupes de production -->
+{% if rapport.groupes_production %}
+<div class="info-section">
+    <h5>
+        <i class="fas fa-cogs me-2 text-success"></i>
+        Groupes de Production ({{ rapport.groupes_production|length }})
+    </h5>
+    <div class="row">
+        {% for groupe in rapport.groupes_production %}
+        <div class="col-md-6 col-lg-4">
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <h6 class="mb-0">{{ groupe.nom_groupe or groupe.numero_groupe }}</h6>
+                    <span class="badge bg-primary">{{ groupe.type_turbine or 'N/A' }}</span>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Puissance</small>
+                        <small>{{ groupe.puissance_nominale or 0 }} MW</small>
+                    </div>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: {{ ((groupe.puissance_moyenne or 0) / (groupe.puissance_nominale or 1)) * 100 }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="fw-bold text-primary">{{ "{:,.0f}".format(groupe.energie_produite or 0) }}</div>
+                        <div class="small text-muted">MWh</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold text-success">{{ "{:,.0f}".format(groupe.heures_fonctionnement or 0) }}</div>
+                        <div class="small text-muted">Heures</div>
+                    </div>
+                </div>
+                
+                {% if groupe.rendement_moyen %}
+                <div class="mt-2 text-center">
+                    <small class="text-muted">Rendement: </small>
+                    <span class="fw-bold">{{ "{:.1f}%".format(groupe.rendement_moyen) }}</span>
+                </div>
+                {% endif %}
+                
+                {% if groupe.incidents %}
+                <div class="mt-2">
+                    <small class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Incidents signalés
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Transformateurs -->
+{% if rapport.transformateurs %}
+<div class="info-section">
+    <h5>
+        <i class="fas fa-plug me-2 text-warning"></i>
+        Transformateurs ({{ rapport.transformateurs|length }})
+    </h5>
+    <div class="row">
+        {% for transfo in rapport.transformateurs %}
+        <div class="col-md-6 col-lg-4">
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <h6 class="mb-0">{{ transfo.nom_transformateur or transfo.numero_transformateur }}</h6>
+                    <span class="equipment-status status-{{ transfo.etat_general or 'bon' }}">
+                        {{ (transfo.etat_general or 'bon')|title }}
+                    </span>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fw-bold">{{ transfo.puissance_nominale or 0 }}</div>
+                        <div class="small text-muted">MVA</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold">{{ transfo.tension_primaire or 0 }}</div>
+                        <div class="small text-muted">kV Prim.</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold">{{ transfo.tension_secondaire or 0 }}</div>
+                        <div class="small text-muted">kV Sec.</div>
+                    </div>
+                </div>
+                
+                {% if transfo.type_refroidissement %}
+                <div class="mt-2 text-center">
+                    <span class="badge bg-info">{{ transfo.type_refroidissement }}</span>
+                </div>
+                {% endif %}
+                
+                {% if transfo.incidents %}
+                <div class="mt-2">
+                    <small class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Incidents signalés
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Maintenance et incidents -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="info-section">
+            <h5>
+                <i class="fas fa-tools me-2 text-info"></i>
+                Maintenance et Incidents
+            </h5>
+            
+            <div class="row mb-3">
+                <div class="col-md-4 text-center">
+                    <div class="display-6 text-success">{{ rapport.maintenances_preventives or 0 }}</div>
+                    <div class="text-muted">Maintenances préventives</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="display-6 text-warning">{{ rapport.maintenances_correctives or 0 }}</div>
+                    <div class="text-muted">Maintenances correctives</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="display-6 text-danger">{{ rapport.incidents_majeurs or 0 }}</div>
+                    <div class="text-muted">Incidents majeurs</div>
+                </div>
+            </div>
+            
+            {% if rapport.description_incidents %}
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Description des incidents</h6>
+                <p class="mb-0">{{ rapport.description_incidents }}</p>
+            </div>
+            {% endif %}
+            
+            {% if rapport.impact_environnemental %}
+            <div class="alert alert-info">
+                <h6><i class="fas fa-leaf me-2"></i>Impact environnemental</h6>
+                <p class="mb-0">{{ rapport.impact_environnemental }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="info-section">
+            <h5>
+                <i class="fas fa-clock me-2 text-secondary"></i>
+                Historique
+            </h5>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h6>Création</h6>
+                    <div class="text-muted small">
+                        {{ rapport.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                    </div>
+                </div>
+                
+                {% if rapport.date_modification != rapport.date_creation %}
+                <div class="timeline-item">
+                    <h6>Dernière modification</h6>
+                    <div class="text-muted small">
+                        {{ rapport.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if rapport.date_transmission %}
+                <div class="timeline-item">
+                    <h6>Transmission</h6>
+                    <div class="text-muted small">
+                        {{ rapport.date_transmission.strftime('%d/%m/%Y à %H:%M') }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if rapport.date_validation %}
+                <div class="timeline-item">
+                    <h6>Validation</h6>
+                    <div class="text-muted small">
+                        {{ rapport.date_validation.strftime('%d/%m/%Y à %H:%M') }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Observations générales -->
+{% if rapport.observations %}
+<div class="info-section">
+    <h5>
+        <i class="fas fa-sticky-note me-2 text-secondary"></i>
+        Observations
+    </h5>
+    <div class="alert alert-light">
+        {{ rapport.observations }}
+    </div>
+</div>
+{% endif %}
+
+<!-- Section d'export -->
+<div class="export-section">
+    <h5>
+        <i class="fas fa-download me-2"></i>
+        Options d'Export
+    </h5>
+    <p class="text-muted">Exportez ce rapport dans différents formats pour vos besoins de documentation et d'archivage.</p>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="d-grid">
+                <button class="btn btn-outline-danger" onclick="exporterPDF()">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Export PDF Complet
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="d-grid">
+                <button class="btn btn-outline-success" onclick="exporterExcel()">
+                    <i class="fas fa-file-excel me-2"></i>
+                    Export Excel Données
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="d-grid">
+                <button class="btn btn-outline-primary" onclick="exporterJSON()">
+                    <i class="fas fa-code me-2"></i>
+                    Export JSON API
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Données pour les graphiques
+const rapportData = {
+    energie_produite: {{ rapport.energie_produite or 0 }},
+    energie_disponible: {{ rapport.energie_disponible or 0 }},
+    facteur_charge: {{ rapport.facteur_charge or 0 }},
+    temps_fonctionnement: {{ rapport.temps_fonctionnement or 0 }},
+    groupes: [
+        {% for groupe in rapport.groupes_production %}
+        {
+            nom: "{{ groupe.nom_groupe or groupe.numero_groupe }}",
+            energie: {{ groupe.energie_produite or 0 }},
+            heures: {{ groupe.heures_fonctionnement or 0 }},
+            puissance: {{ groupe.puissance_nominale or 0 }},
+            rendement: {{ groupe.rendement_moyen or 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    hydro: {
+        niveau_moyen: {{ rapport.niveau_retenue_moyen or 0 }},
+        niveau_min: {{ rapport.niveau_retenue_min or 0 }},
+        niveau_max: {{ rapport.niveau_retenue_max or 0 }},
+        debit_moyen: {{ rapport.debit_moyen or 0 }},
+        volume_turbine: {{ rapport.volume_turbiné or 0 }},
+        debit_reserve: {{ rapport.debit_reserve or 0 }}
+    }
+};
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    initProductionChart();
+    initGroupesChart();
+    initHydroChart();
+});
+
+// Graphique de performance de production
+function initProductionChart() {
+    const ctx = document.getElementById('productionChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Énergie Disponible', 'Énergie Produite', 'Facteur de Charge', 'Temps Fonct.'],
+            datasets: [{
+                label: 'Performance',
+                data: [
+                    rapportData.energie_disponible,
+                    rapportData.energie_produite,
+                    rapportData.facteur_charge,
+                    rapportData.temps_fonctionnement / 10 // Normalized
+                ],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2.5,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// Graphique de répartition par groupe
+function initGroupesChart() {
+    if (rapportData.groupes.length === 0) return;
+    
+    const ctx = document.getElementById('groupesChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: rapportData.groupes.map(g => g.nom),
+            datasets: [{
+                data: rapportData.groupes.map(g => g.energie),
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1.2,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Graphique hydraulique (gauge)
+function initHydroChart() {
+    const ctx = document.getElementById('hydroChart').getContext('2d');
+    
+    const utilisation = rapportData.hydro.debit_moyen > 0 ? 
+        (rapportData.hydro.volume_turbine / (rapportData.hydro.debit_moyen * 2.6)) * 100 : 0;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [utilisation, 100 - utilisation],
+                backgroundColor: ['#36A2EB', '#E7E9ED'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        },
+        plugins: [{
+            beforeDraw: function(chart) {
+                const ctx = chart.ctx;
+                ctx.restore();
+                const fontSize = (chart.height / 114).toFixed(2);
+                ctx.font = fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#333";
+                
+                const text = Math.round(utilisation) + "%";
+                const textX = Math.round((chart.width - ctx.measureText(text).width) / 2);
+                const textY = chart.height / 2;
+                
+                ctx.fillText(text, textX, textY);
+                ctx.save();
+            }
+        }]
+    });
+}
+
+// Fonctions d'export
+function exporterPDF() {
+    window.open(`/production-hydro/api/rapport/{{ rapport.id }}/export/pdf`, '_blank');
+}
+
+function exporterExcel() {
+    window.open(`/production-hydro/api/rapport/{{ rapport.id }}/export/excel`, '_blank');
+}
+
+function exporterJSON() {
+    fetch(`/production-hydro/api/rapport/{{ rapport.id }}/export/json`)
+        .then(response => response.json())
+        .then(data => {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `rapport_hydro_{{ rapport.id }}.json`;
+            link.click();
+        });
+}
+
+// Animation au scroll
+function animateOnScroll() {
+    const cards = document.querySelectorAll('.metric-card, .equipment-card, .info-section');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.6s ease forwards';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    cards.forEach(card => observer.observe(card));
+}
+
+// Ajouter les styles d'animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialiser les animations
+animateOnScroll();
+</script>
+{% endblock %}

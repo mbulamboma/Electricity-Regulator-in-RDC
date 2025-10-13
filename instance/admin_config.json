@@ -1,0 +1,9 @@
+{
+  "maintenance_mode": false,
+  "backup_retention_days": 30,
+  "alert_email": "mbula.gilberto@gmail.com",
+  "max_file_size": 16,
+  "report_deadline_days": 5,
+  "auto_backup_enabled": false,
+  "auto_backup_frequency": "weekly"
+}

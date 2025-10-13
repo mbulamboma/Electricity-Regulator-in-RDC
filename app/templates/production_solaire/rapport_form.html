@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            <i class="fas fa-sun me-2 text-warning"></i>{{ title }}
+        </h1>
+        <a href="{{ url_for('production_solaire.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+
+    <form method="POST" id="rapportForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- Section Informations générales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informations générales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.centrale_id.label(class="form-label") }}
+                            {{ form.centrale_id(class="form-select") }}
+                            {% if form.centrale_id.errors %}
+                                <div class="text-danger small">{{ form.centrale_id.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            {{ form.annee.label(class="form-label") }}
+                            {{ form.annee(class="form-control") }}
+                            {% if form.annee.errors %}
+                                <div class="text-danger small">{{ form.annee.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            {{ form.mois.label(class="form-label") }}
+                            {{ form.mois(class="form-select") }}
+                            {% if form.mois.errors %}
+                                <div class="text-danger small">{{ form.mois.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.periode_debut.label(class="form-label") }}
+                            {{ form.periode_debut(class="form-control", type="date") }}
+                            {% if form.periode_debut.errors %}
+                                <div class="text-danger small">{{ form.periode_debut.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.periode_fin.label(class="form-label") }}
+                            {{ form.periode_fin(class="form-control", type="date") }}
+                            {% if form.periode_fin.errors %}
+                                <div class="text-danger small">{{ form.periode_fin.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Production -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Production d'énergie
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.energie_produite.label(class="form-label") }}
+                            {{ form.energie_produite(class="form-control") }}
+                            {% if form.energie_produite.errors %}
+                                <div class="text-danger small">{{ form.energie_produite.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.energie_disponible.label(class="form-label") }}
+                            {{ form.energie_disponible(class="form-control") }}
+                            {% if form.energie_disponible.errors %}
+                                <div class="text-danger small">{{ form.energie_disponible.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.performance_ratio.label(class="form-label") }}
+                            {{ form.performance_ratio(class="form-control") }}
+                            {% if form.performance_ratio.errors %}
+                                <div class="text-danger small">{{ form.performance_ratio.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.facteur_charge.label(class="form-label") }}
+                            {{ form.facteur_charge(class="form-control") }}
+                            {% if form.facteur_charge.errors %}
+                                <div class="text-danger small">{{ form.facteur_charge.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.rendement_global.label(class="form-label") }}
+                            {{ form.rendement_global(class="form-control") }}
+                            {% if form.rendement_global.errors %}
+                                <div class="text-danger small">{{ form.rendement_global.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.productible_theorique.label(class="form-label") }}
+                            {{ form.productible_theorique(class="form-control") }}
+                            {% if form.productible_theorique.errors %}
+                                <div class="text-danger small">{{ form.productible_theorique.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Irradiation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sun me-2"></i>Conditions météorologiques
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.irradiation_totale.label(class="form-label") }}
+                            {{ form.irradiation_totale(class="form-control") }}
+                            {% if form.irradiation_totale.errors %}
+                                <div class="text-danger small">{{ form.irradiation_totale.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.irradiation_moyenne_quotidienne.label(class="form-label") }}
+                            {{ form.irradiation_moyenne_quotidienne(class="form-control") }}
+                            {% if form.irradiation_moyenne_quotidienne.errors %}
+                                <div class="text-danger small">{{ form.irradiation_moyenne_quotidienne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.temperature_ambiante_moyenne.label(class="form-label") }}
+                            {{ form.temperature_ambiante_moyenne(class="form-control") }}
+                            {% if form.temperature_ambiante_moyenne.errors %}
+                                <div class="text-danger small">{{ form.temperature_ambiante_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.temperature_modules_moyenne.label(class="form-label") }}
+                            {{ form.temperature_modules_moyenne(class="form-control") }}
+                            {% if form.temperature_modules_moyenne.errors %}
+                                <div class="text-danger small">{{ form.temperature_modules_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.heures_ensoleillement.label(class="form-label") }}
+                            {{ form.heures_ensoleillement(class="form-control") }}
+                            {% if form.heures_ensoleillement.errors %}
+                                <div class="text-danger small">{{ form.heures_ensoleillement.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.vitesse_vent_moyenne.label(class="form-label") }}
+                            {{ form.vitesse_vent_moyenne(class="form-control") }}
+                            {% if form.vitesse_vent_moyenne.errors %}
+                                <div class="text-danger small">{{ form.vitesse_vent_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Statut et observations -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard me-2"></i>Statut et observations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.statut.label(class="form-label") }}
+                            {{ form.statut(class="form-select") }}
+                            {% if form.statut.errors %}
+                                <div class="text-danger small">{{ form.statut.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form.observations.label(class="form-label") }}
+                    {{ form.observations(class="form-control", rows="4") }}
+                    {% if form.observations.errors %}
+                        <div class="text-danger small">{{ form.observations.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('production_solaire.index') }}" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i>Annuler
+            </a>
+            <div>
+                <button type="submit" name="action" value="brouillon" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-save me-1"></i>Enregistrer en brouillon
+                </button>
+                <button type="submit" name="action" value="valider" class="btn btn-success">
+                    <i class="fas fa-check me-1"></i>Enregistrer et valider
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

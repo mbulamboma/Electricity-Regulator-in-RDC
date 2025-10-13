@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.notification-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.notification-card.non-lue {
+    background-color: #f8f9fe;
+    border-left-color: #2196f3;
+}
+
+.notification-card.urgent {
+    border-left-color: #f44336;
+}
+
+.notification-card.important {
+    border-left-color: #ff9800;
+}
+
+.notification-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.notification-icon.rappel { background-color: #fff3e0; color: #f57c00; }
+.notification-icon.validation { background-color: #e8f5e8; color: #4caf50; }
+.notification-icon.rejet { background-color: #ffebee; color: #f44336; }
+.notification-icon.alerte { background-color: #fff3e0; color: #ff9800; }
+.notification-icon.systeme { background-color: #e3f2fd; color: #2196f3; }
+.notification-icon.maintenance { background-color: #f3e5f5; color: #9c27b0; }
+.notification-icon.incident { background-color: #ffebee; color: #f44336; }
+.notification-icon.reglementation { background-color: #e0f2f1; color: #00796b; }
+
+.stats-card {
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🔔 {{ title }}</h1>
+                    <p class="text-muted">Gérez vos notifications et alertes</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="marquerToutesLues()">
+                        <i class="fas fa-check-double"></i> Marquer toutes comme lues
+                    </button>
+                    <a href="{{ url_for('notifications.messages') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-envelope"></i> Messagerie
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Total</h5>
+                            <div class="h3 text-primary">{{ stats.total }}</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-bell fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Non lues</h5>
+                            <div class="h3 text-warning">{{ stats.non_lues }}</div>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-bell-slash fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Importantes</h5>
+                            <div class="h3 text-info">{{ stats.importantes }}</div>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-exclamation fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Urgentes</h5>
+                            <div class="h3 text-danger">{{ stats.urgentes }}</div>
+                        </div>
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i> Filtres
+                        <button class="btn btn-link btn-sm float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filtres">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div class="collapse" id="filtres">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-3">
+                                {{ filtre_form.type_notification.label(class="form-label") }}
+                                {{ filtre_form.type_notification(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ filtre_form.priorite.label(class="form-label") }}
+                                {{ filtre_form.priorite(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ filtre_form.statut.label(class="form-label") }}
+                                {{ filtre_form.statut(class="form-select") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                                <a href="{{ url_for('notifications.index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Reset
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="row">
+        <div class="col-12">
+            {% if notifications.items %}
+            <div class="space-y-3">
+                {% for notification in notifications.items %}
+                <div class="card notification-card {{ 'non-lue' if not notification.lue else '' }} {{ notification.css_class }}" 
+                     data-notification-id="{{ notification.id }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="notification-icon {{ getIconClass(notification.type.value if notification.type else '') }}">
+                                <i class="{{ notification.icon_class }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 {{ 'fw-bold' if not notification.lue else '' }}">
+                                        {{ notification.titre }}
+                                    </h6>
+                                    <div class="d-flex align-items-center ms-3">
+                                        {% if notification.priorite == 3 %}
+                                        <span class="badge bg-danger me-2">Urgent</span>
+                                        {% elif notification.priorite == 2 %}
+                                        <span class="badge bg-warning me-2">Important</span>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            {{ notification.date_creation.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <p class="mb-2 text-muted">{{ notification.message }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-light text-dark">{{ getTypeLabel(notification.type.value if notification.type else '') }}</span>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if notification.url_action %}
+                                        <a href="{{ notification.url_action }}" class="btn btn-outline-primary" onclick="marquerCommeLue({{ notification.id }})">
+                                            <i class="fas fa-external-link-alt"></i> Voir
+                                        </a>
+                                        {% endif %}
+                                        {% if not notification.lue %}
+                                        <button class="btn btn-outline-success" onclick="marquerCommeLue({{ notification.id }})">
+                                            <i class="fas fa-check"></i> Marquer lue
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-outline-secondary" onclick="archiverNotification({{ notification.id }})">
+                                            <i class="fas fa-archive"></i> Archiver
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if notifications.pages > 1 %}
+            <nav aria-label="Navigation des notifications" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if notifications.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications.index', page=notifications.prev_num, **request.args) }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in notifications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != notifications.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('notifications.index', page=page_num, **request.args) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if notifications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications.index', page=notifications.next_num, **request.args) }}">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucune notification</h5>
+                    <p class="text-muted">Vous n'avez aucune notification correspondant aux critères sélectionnés.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function marquerCommeLue(notificationId) {
+    fetch(`{{ url_for('notifications.marquer_lu', id=0) }}`.replace('0', notificationId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Retirer le style "non-lue"
+            const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (card) {
+                card.classList.remove('non-lue');
+                // Mettre à jour le bouton
+                const btnMarquer = card.querySelector('button[onclick*="marquerCommeLue"]');
+                if (btnMarquer) {
+                    btnMarquer.remove();
+                }
+            }
+            // Recharger les notifications dans la navbar
+            if (typeof chargerNotifications === 'function') {
+                chargerNotifications();
+            }
+        }
+    });
+}
+
+function archiverNotification(notificationId) {
+    if (confirm('Êtes-vous sûr de vouloir archiver cette notification ?')) {
+        fetch(`{{ url_for('notifications.archiver', id=0) }}`.replace('0', notificationId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Retirer la notification de la liste
+                const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (card) {
+                    card.style.transition = 'opacity 0.3s';
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                }
+                // Recharger les notifications dans la navbar
+                if (typeof chargerNotifications === 'function') {
+                    chargerNotifications();
+                }
+            }
+        });
+    }
+}
+
+function marquerToutesLues() {
+    if (confirm('Marquer toutes les notifications comme lues ?')) {
+        fetch('{{ url_for("notifications.marquer_toutes_lues") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recharger la page
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function getIconClass(type) {
+    const mapping = {
+        'rappel_rapport': 'rappel',
+        'validation_rapport': 'validation',
+        'rejet_rapport': 'rejet',
+        'alerte_donnees': 'alerte',
+        'message_systeme': 'systeme',
+        'maintenance_planifiee': 'maintenance',
+        'incident_technique': 'incident',
+        'nouvelle_reglementation': 'reglementation'
+    };
+    return mapping[type] || 'systeme';
+}
+
+function getTypeLabel(type) {
+    const mapping = {
+        'rappel_rapport': 'Rappel de rapport',
+        'validation_rapport': 'Validation',
+        'rejet_rapport': 'Rejet',
+        'alerte_donnees': 'Alerte données',
+        'message_systeme': 'Message système',
+        'maintenance_planifiee': 'Maintenance',
+        'incident_technique': 'Incident',
+        'nouvelle_reglementation': 'Réglementation'
+    };
+    return mapping[type] || 'Notification';
+}
+
+function getCSRFToken() {
+    const token = document.querySelector('meta[name=csrf-token]');
+    return token ? token.getAttribute('content') : '';
+}
+</script>
+{% endblock %}

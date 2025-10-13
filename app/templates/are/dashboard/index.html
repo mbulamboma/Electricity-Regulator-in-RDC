@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% block title %}Dashboard ARE - Régulation Électricité{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+<style>
+.kpi-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.kpi-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.alerte-critique {
+    border-left: 4px solid #dc3545;
+    background-color: #f8d7da;
+}
+
+.alerte-elevee {
+    border-left: 4px solid #fd7e14;
+    background-color: #fff3cd;
+}
+
+.carte-rdc {
+    height: 400px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.province-info {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+    z-index: 1000;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Dashboard ARE</h1>
+                    <p class="text-muted">Tableau de bord stratégique - Année {{ annee }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('are_dashboard.export_donnees') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-download"></i> Exporter
+                    </a>
+                    <a href="{{ url_for('are_dashboard.nouveau_rapport') }}" class="btn btn-primary">
+                        <i class="fas fa-file-alt"></i> Nouveau rapport
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            {{ form.annee.label(class="form-label") }}
+                            {{ form.annee(class="form-select") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.operateur_id.label(class="form-label") }}
+                            {{ form.operateur_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.province.label(class="form-label") }}
+                            {{ form.province(class="form-select") }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filtrer
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="location.href='{{ url_for('are_dashboard.index') }}'">
+                                    Réinitialiser
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="stats-grid">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ stats.nb_operateurs_actifs }}</div>
+            <div class="kpi-label">Opérateurs actifs</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">{{ "{:,.0f}".format(stats.production_totale) }}</div>
+            <div class="kpi-label">Production totale (MWh)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">{{ stats.nb_kpis }}</div>
+            <div class="kpi-label">KPIs surveillés</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">{{ stats.nb_alertes_actives }}</div>
+            <div class="kpi-label">Alertes actives</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- KPIs principaux -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">KPIs Stratégiques</h5>
+                    <a href="{{ url_for('are_dashboard.kpis') }}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if kpis %}
+                        <div class="row">
+                            {% for kpi in kpis[:6] %}
+                            <div class="col-md-6 mb-3">
+                                <div class="border rounded p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ kpi.nom }}</h6>
+                                            <div class="h4 mb-1 text-primary">
+                                                {{ "{:,.1f}".format(kpi.valeur) }} {{ kpi.unite }}
+                                            </div>
+                                            {% if kpi.objectif %}
+                                            <small class="text-muted">
+                                                Objectif: {{ "{:,.1f}".format(kpi.objectif) }} {{ kpi.unite }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        {% if kpi.tendance %}
+                                        <div class="text-end">
+                                            {% if kpi.tendance.value == 'hausse' %}
+                                                <i class="fas fa-arrow-up text-success"></i>
+                                            {% elif kpi.tendance.value == 'baisse' %}
+                                                <i class="fas fa-arrow-down text-danger"></i>
+                                            {% else %}
+                                                <i class="fas fa-minus text-warning"></i>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">
+                            Aucun KPI disponible pour les critères sélectionnés.
+                            <br>
+                            <a href="{{ url_for('are_dashboard.nouveau_kpi') }}" class="btn btn-sm btn-primary mt-2">
+                                Créer un KPI
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ⚡ Actions Rapides -->
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">⚡ Actions Rapides</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production_hydro.index') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-water"></i> Production Hydro
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production_thermique.index') }}" class="btn btn-danger w-100">
+                                <i class="fas fa-fire"></i> Production Thermique
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production_solaire.index') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-sun"></i> Production Solaire
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('transport.index') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-road"></i> Transport
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('distribution.index') }}" class="btn btn-success w-100">
+                                <i class="fas fa-network-wired"></i> Distribution
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('operateurs.index') }}" class="btn btn-info w-100">
+                                <i class="fas fa-industry"></i> Opérateurs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('are_dashboard.nouveau_kpi') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus"></i> Nouveau KPI
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('are_dashboard.nouveau_rapport') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-file-alt"></i> Nouveau Rapport
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertes critiques -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Alertes critiques</h5>
+                    <a href="{{ url_for('are_dashboard.alertes') }}" class="btn btn-sm btn-outline-primary">
+                        Gérer
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if alertes_critiques %}
+                        {% for alerte in alertes_critiques %}
+                        <div class="mb-3 p-3 rounded {% if alerte.severite.value == 'critique' %}alerte-critique{% else %}alerte-elevee{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ alerte.titre }}</h6>
+                                    <p class="mb-1 small">{{ alerte.description[:100] }}{% if alerte.description|length > 100 %}...{% endif %}</p>
+                                    <small class="text-muted">
+                                        {{ alerte.entite_concernee }} - 
+                                        {{ alerte.date_creation|time_ago }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-{% if alerte.severite.value == 'critique' %}danger{% else %}warning{% endif %}">
+                                    {{ alerte.severite.value.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">
+                            Aucune alerte critique.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mix énergétique -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Mix énergétique {{ annee }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="mixEnergetiqueChart"></canvas>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h5 text-info">{{ "{:.1f}%".format(mix_energetique.hydro) }}</div>
+                            <small class="text-muted">Hydraulique</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 text-warning">{{ "{:.1f}%".format(mix_energetique.thermique) }}</div>
+                            <small class="text-muted">Thermique</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 text-success">{{ "{:.1f}%".format(mix_energetique.solaire) }}</div>
+                            <small class="text-muted">Solaire</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance opérateurs -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Top opérateurs par production</h5>
+                </div>
+                <div class="card-body">
+                    {% if performance_operateurs %}
+                        {% for perf in performance_operateurs[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ perf.operateur }}</h6>
+                                <small class="text-muted">
+                                    {{ "{:,.0f}".format(perf.puissance_installee) }} MW installés
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <div class="h6 mb-0">{{ "{:,.0f}".format(perf.production_annuelle) }} MWh</div>
+                                <small class="text-muted">{{ "{:.1f}%".format(perf.facteur_charge) }} facteur charge</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">
+                            Aucune donnée de performance disponible.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte RDC interactive -->
+    {% if not operateur_id and donnees_provinces %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Indicateurs par province</h5>
+                </div>
+                <div class="card-body">
+                    <div class="carte-rdc" id="carteRDC">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                                <h5>Carte interactive RDC</h5>
+                                <p class="text-muted">
+                                    Visualisation des indicateurs par province<br>
+                                    (Implémentation SVG/Canvas à prévoir)
+                                </p>
+                                {% for province_data in donnees_provinces[:3] %}
+                                <div class="badge bg-primary me-2 mb-2">
+                                    {{ province_data.province }}: {{ "{:.1f}%".format(province_data.taux_acces_electricite or 0) }} accès
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="province-info" id="provinceInfo"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ url_for('static', filename='js/are/dashboard.js') }}"></script>
+<script>
+// Initialisation du dashboard avec les données du template
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.dashboardARE) {
+        // Passer les données du template au JavaScript
+        window.dashboardData = {
+            mixEnergetique: {
+                hydro: {{ mix_energetique.hydro }},
+                thermique: {{ mix_energetique.thermique }},
+                solaire: {{ mix_energetique.solaire }}
+            },
+            annee: {{ annee }},
+            operateurId: {{ operateur_id or 'null' }},
+            donneesProvinces: {{ donnees_provinces|tojson if donnees_provinces else '[]' }}
+        };
+        
+        // Initialiser les graphiques avec les données
+        window.dashboardARE.initWithData(window.dashboardData);
+    }
+});
+</script>
+{% endblock %}

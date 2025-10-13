@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Opérateurs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-industry me-2"></i>Gestion des Opérateurs
+        <span class="badge bg-primary ms-2">{{ operateurs.total }}</span>
+    </h1>
+    {% if current_user.is_super_admin() %}
+    <a href="{{ url_for('operateurs.nouveau') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Nouvel Opérateur
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtres de recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Rechercher</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Nom, sigle, ville...">
+            </div>
+            <div class="col-md-2">
+                <label for="type" class="form-label">Type</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">Tous</option>
+                    {% for type in types %}
+                    <option value="{{ type }}" {% if type == type_filter %}selected{% endif %}>
+                        {{ type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="province" class="form-label">Province</label>
+                <select class="form-select" id="province" name="province">
+                    <option value="">Toutes</option>
+                    {% for province in provinces %}
+                    <option value="{{ province }}" {% if province == province_filter %}selected{% endif %}>
+                        {{ province }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="statut" class="form-label">Statut</label>
+                <select class="form-select" id="statut" name="statut">
+                    <option value="">Tous</option>
+                    <option value="active" {% if statut_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="suspendue" {% if statut_filter == 'suspendue' %}selected{% endif %}>Suspendue</option>
+                    <option value="expiree" {% if statut_filter == 'expiree' %}selected{% endif %}>Expirée</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i> Filtrer
+                </button>
+                <a href="{{ url_for('operateurs.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Effacer
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des opérateurs -->
+{% if operateurs.items %}
+<div class="row">
+    {% for operateur in operateurs.items %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <a href="{{ url_for('operateurs.details', id=operateur.id) }}" 
+                       class="text-decoration-none">
+                        {{ operateur.nom }}
+                    </a>
+                    {% if operateur.sigle %}
+                        <small class="text-muted">({{ operateur.sigle }})</small>
+                    {% endif %}
+                </h5>
+                <span class="badge bg-{{ 'success' if operateur.statut_licence == 'active' else 'warning' if operateur.statut_licence == 'suspendue' else 'danger' }}">
+                    {{ operateur.statut_licence|title }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row text-sm">
+                    <div class="col-sm-6">
+                        {% if operateur.type_operateur %}
+                        <p class="mb-1">
+                            <i class="fas fa-tag text-muted me-1"></i>
+                            {{ operateur.type_operateur }}
+                        </p>
+                        {% endif %}
+                        {% if operateur.ville %}
+                        <p class="mb-1">
+                            <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                            {{ operateur.ville }}{% if operateur.province %}, {{ operateur.province }}{% endif %}
+                        </p>
+                        {% endif %}
+                        {% if operateur.telephone %}
+                        <p class="mb-1">
+                            <i class="fas fa-phone text-muted me-1"></i>
+                            {{ operateur.telephone }}
+                        </p>
+                        {% endif %}
+                        {% if operateur.email %}
+                        <p class="mb-1">
+                            <i class="fas fa-envelope text-muted me-1"></i>
+                            <a href="mailto:{{ operateur.email }}">{{ operateur.email }}</a>
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        {% if operateur.numero_licence %}
+                        <p class="mb-1">
+                            <i class="fas fa-certificate text-muted me-1"></i>
+                            {{ operateur.numero_licence }}
+                        </p>
+                        {% endif %}
+                        {% if operateur.capacite_installee %}
+                        <p class="mb-1">
+                            <i class="fas fa-bolt text-muted me-1"></i>
+                            {{ operateur.capacite_installee }} MW
+                        </p>
+                        {% endif %}
+                        {% if operateur.nombre_clients %}
+                        <p class="mb-1">
+                            <i class="fas fa-users text-muted me-1"></i>
+                            {{ "{:,}".format(operateur.nombre_clients) }} clients
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Créé le {{ operateur.date_creation.strftime('%d/%m/%Y') }}
+                    </small>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('operateurs.details', id=operateur.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if current_user.is_super_admin() or (current_user.operateur and current_user.operateur.id == operateur.id) %}
+                        <a href="{{ url_for('operateurs.edit', id=operateur.id) }}" 
+                           class="btn btn-outline-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                        {% if current_user.is_super_admin() %}
+                        <button type="button" class="btn btn-outline-danger" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#deleteModal{{ operateur.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de suppression -->
+    {% if current_user.is_super_admin() %}
+    <div class="modal fade" id="deleteModal{{ operateur.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer l'opérateur <strong>{{ operateur.nom }}</strong> ?</p>
+                    <p class="text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Cette action est irréversible.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <form method="POST" action="{{ url_for('operateurs.delete', id=operateur.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if operateurs.pages > 1 %}
+<nav aria-label="Navigation des opérateurs">
+    <ul class="pagination justify-content-center">
+        {% if operateurs.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('operateurs.index', page=operateurs.prev_num, search=search, type=type_filter, province=province_filter, statut=statut_filter) }}">
+                Précédent
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in operateurs.iter_pages() %}
+            {% if page_num %}
+                {% if page_num != operateurs.page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('operateurs.index', page=page_num, search=search, type=type_filter, province=province_filter, statut=statut_filter) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if operateurs.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('operateurs.index', page=operateurs.next_num, search=search, type=type_filter, province=province_filter, statut=statut_filter) }}">
+                Suivant
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-industry fa-3x text-muted mb-3"></i>
+    <h4>Aucun opérateur trouvé</h4>
+    <p class="text-muted">
+        {% if search or type_filter or province_filter or statut_filter %}
+        Aucun opérateur ne correspond à vos critères de recherche.
+        {% else %}
+        Aucun opérateur n'est encore enregistré dans le système.
+        {% endif %}
+    </p>
+    {% if current_user.is_super_admin() %}
+    <a href="{{ url_for('operateurs.nouveau') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Créer le premier opérateur
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

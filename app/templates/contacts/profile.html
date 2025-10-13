@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Profil{{ endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Mon Profil</h2>
+                <a href="{{ url_for('contacts.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour au Tableau de Bord
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informations Personnelles</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nom d'utilisateur:</strong> {{ contact.username }}</p>
+                            <p><strong>Prénom:</strong> {{ contact.prenom or "Non renseigné" }}</p>
+                            <p><strong>Nom:</strong> {{ contact.nom or "Non renseigné" }}</p>
+                            <p><strong>Email:</strong> {{ contact.email }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Téléphone:</strong> {{ contact.telephone or "Non renseigné" }}</p>
+                            <p><strong>Fonction:</strong> {{ contact.fonction or "Non renseignée" }}</p>
+                            <p><strong>Statut:</strong> 
+                                {% if contact.is_active %}
+                                    <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactif</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Membre depuis:</strong> {{ contact.date_creation.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if contact.operateur %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Informations de l'Entreprise</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nom de l'entreprise:</strong> {{ contact.operateur.nom }}</p>
+                            <p><strong>Type:</strong> {{ contact.operateur.type or "Non renseigné" }}</p>
+                            <p><strong>Numéro de licence:</strong> {{ contact.operateur.numero_licence or "Non renseigné" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Statut de licence:</strong> 
+                                {% if contact.operateur.statut_licence == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif contact.operateur.statut_licence == 'suspendue' %}
+                                    <span class="badge bg-warning">Suspendue</span>
+                                {% elif contact.operateur.statut_licence == 'expiree' %}
+                                    <span class="badge bg-danger">Expirée</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Non renseigné</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Province:</strong> {{ contact.operateur.province or "Non renseignée" }}</p>
+                            <p><strong>Adresse:</strong> {{ contact.operateur.adresse or "Non renseignée" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Historique de Connexion</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Dernière connexion:</strong> 
+                        {% if contact.last_login %}
+                            {{ contact.last_login.strftime('%d/%m/%Y à %H:%M') }}
+                        {% else %}
+                            Première connexion
+                        {% endif %}
+                    </p>
+                    <p><strong>Compte créé:</strong> {{ contact.date_creation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% if contact.date_modification %}
+                        <p><strong>Dernière modification:</strong> {{ contact.date_modification.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="fas fa-edit"></i> Modifier le Profil
+                            <small class="d-block text-muted">Prochainement</small>
+                        </button>
+                        <button class="btn btn-outline-warning" disabled>
+                            <i class="fas fa-key"></i> Changer le Mot de Passe
+                            <small class="d-block text-muted">Prochainement</small>
+                        </button>
+                        <a href="{{ url_for('contacts.logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt"></i> Se Déconnecter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

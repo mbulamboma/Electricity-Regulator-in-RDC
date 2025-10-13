@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-brouillon { background-color: #ffc107; color: #212529; }
+.status-valide { background-color: #28a745; color: white; }
+.status-transmis { background-color: #007bff; color: white; }
+
+.periode-badge {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.centrale-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.action-buttons .btn {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-water me-2 text-primary"></i>{{ title }}
+    </h1>
+    <div>
+        <a href="{{ url_for('production_hydro.centrales') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-industry me-1"></i>Centrales
+        </a>
+        <a href="{{ url_for('production_hydro.nouveau') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Nouveau Rapport
+        </a>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_rapports }}</div>
+            <div class="stat-label">Total Rapports</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333;">
+            <div class="stat-value">{{ stats.rapports_brouillon }}</div>
+            <div class="stat-label">Brouillons</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+            <div class="stat-value">{{ stats.rapports_valides }}</div>
+            <div class="stat-label">Validés</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
+            <div class="stat-value">{{ stats.nombre_centrales }}</div>
+            <div class="stat-label">Centrales</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                {{ filtre_form.centrale_id.label(class="form-label") }}
+                {{ filtre_form.centrale_id(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.annee.label(class="form-label") }}
+                {{ filtre_form.annee(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.mois.label(class="form-label") }}
+                {{ filtre_form.mois(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.statut.label(class="form-label") }}
+                {{ filtre_form.statut(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Recherche</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Nom de centrale..." value="{{ search }}">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des rapports -->
+{% if rapports.items %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Centrale</th>
+                        <th>Période</th>
+                        <th>Énergie Produite</th>
+                        <th>Facteur Charge</th>
+                        <th>Statut</th>
+                        <th>Dernière Modif.</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rapport in rapports.items %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ rapport.centrale.nom }}</div>
+                            <div class="centrale-info">
+                                {{ rapport.centrale.code }} • {{ rapport.centrale.localisation or 'N/A' }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="periode-badge">{{ rapport.get_periode_str() }}</span>
+                            <div class="small text-muted mt-1">
+                                {{ rapport.periode_debut.strftime('%d/%m') }} - {{ rapport.periode_fin.strftime('%d/%m/%Y') }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">
+                                {% if rapport.energie_produite %}
+                                    {{ "{:,.0f}".format(rapport.energie_produite) }} MWh
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </div>
+                            {% if rapport.energie_disponible %}
+                            <div class="small text-muted">
+                                / {{ "{:,.0f}".format(rapport.energie_disponible) }} MWh dispo.
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rapport.facteur_charge %}
+                                <div class="fw-bold">{{ "{:.1f}".format(rapport.facteur_charge) }}%</div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ rapport.facteur_charge }}%"
+                                         aria-valuenow="{{ rapport.facteur_charge }}" 
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ rapport.statut }}">
+                                {{ rapport.statut }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">
+                            {{ rapport.date_modification.strftime('%d/%m/%Y %H:%M') if rapport.date_modification else rapport.date_creation.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('production_hydro.details', id=rapport.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if rapport.statut != 'transmis' or current_user.is_super_admin() %}
+                                <a href="{{ url_for('production_hydro.edit', id=rapport.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if current_user.is_super_admin() %}
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmerSuppression({{ rapport.id }}, '{{ rapport.centrale.nom }}', '{{ rapport.get_periode_str() }}')"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if rapports.pages > 1 %}
+<nav aria-label="Navigation des rapports" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if rapports.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('production_hydro.index', page=rapports.prev_num, **request.args) }}">
+                Précédent
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in rapports.iter_pages() %}
+            {% if page_num %}
+                {% if page_num != rapports.page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('production_hydro.index', page=page_num, **request.args) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% endif %}
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">…</span>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if rapports.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('production_hydro.index', page=rapports.next_num, **request.args) }}">
+                Suivant
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-water fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Aucun rapport trouvé</h5>
+        <p class="text-muted">Commencez par créer votre premier rapport de production hydroélectrique.</p>
+        <a href="{{ url_for('production_hydro.nouveau') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Créer un rapport
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le rapport :</p>
+                <p class="fw-bold" id="deleteInfo"></p>
+                <p class="text-danger">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmerSuppression(rapportId, centraleName, periode) {
+    document.getElementById('deleteInfo').textContent = centraleName + ' - ' + periode;
+    document.getElementById('deleteForm').action = '{{ url_for("production_hydro.delete", id=0) }}'.replace('0', rapportId);
+    
+    var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Auto-submit du formulaire de filtrage
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('select[name="centrale_id"], select[name="annee"], select[name="mois"], select[name="statut"]');
+    
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

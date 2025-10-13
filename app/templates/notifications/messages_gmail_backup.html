@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Design Gmail-like pour la messagerie */
+.gmail-container {
+    background: #f6f8fc;
+    min-height: calc(100vh - 120px);
+    padding: 20px;
+}
+
+.gmail-wrapper {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(60,64,67,0.3);
+    overflow: hidden;
+    min-height: calc(100vh - 160px);
+    display: flex;
+}
+
+/* Sidebar gauche */
+.gmail-sidebar {
+    width: 256px;
+    background: #fafafa;
+    border-right: 1px solid #e8eaed;
+    padding: 16px 0;
+    flex-shrink: 0;
+}
+
+.compose-btn {
+    margin: 0 16px 24px 16px;
+    background: #c2e7ff;
+    border: 1px solid #4285f4;
+    border-radius: 24px;
+    padding: 12px 24px;
+    color: #1a73e8;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.compose-btn:hover {
+    background: #a8dbff;
+    box-shadow: 0 1px 2px rgba(60,64,67,0.3);
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-item {
+    padding: 0 16px;
+    margin: 0 8px;
+    border-radius: 0 20px 20px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    height: 32px;
+    color: #3c4043;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-item.active {
+    background: #fce8e6;
+    color: #d93025;
+    font-weight: 500;
+}
+
+.sidebar-item:hover {
+    background: #f1f3f4;
+}
+
+.sidebar-item i {
+    width: 20px;
+    margin-right: 12px;
+    text-align: center;
+}
+
+.sidebar-count {
+    margin-left: auto;
+    font-size: 13px;
+    color: #5f6368;
+}
+
+/* Zone principale */
+.gmail-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.gmail-toolbar {
+    padding: 8px 20px;
+    border-bottom: 1px solid #e8eaed;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+}
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.toolbar-btn:hover {
+    background: #f1f3f4;
+}
+
+.toolbar-btn.active {
+    background: #e8f0fe;
+    color: #1a73e8;
+}
+
+.search-box {
+    flex: 1;
+    max-width: 600px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 40px 8px 16px;
+    border: 1px solid #e8eaed;
+    border-radius: 8px;
+    background: #f1f3f4;
+    font-size: 14px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #4285f4;
+    background: white;
+}
+
+.search-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #5f6368;
+}
+
+/* Liste des messages */
+.gmail-message-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.message-row {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    height: 40px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.message-row:hover {
+    box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0, 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    z-index: 1;
+}
+
+.message-row.unread {
+    background: #ffffff;
+    font-weight: 500;
+}
+
+.message-checkbox {
+    width: 16px;
+    height: 16px;
+    margin-right: 16px;
+    cursor: pointer;
+}
+
+.message-star {
+    width: 16px;
+    height: 16px;
+    margin-right: 16px;
+    cursor: pointer;
+    color: #dadce0;
+}
+
+.message-star.starred {
+    color: #fbbc04;
+}
+
+.message-sender {
+    width: 200px;
+    font-size: 14px;
+    color: #202124;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-subject {
+    flex: 1;
+    font-size: 14px;
+    color: #202124;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 16px;
+}
+
+.message-snippet {
+    color: #5f6368;
+    font-size: 13px;
+    margin-left: 8px;
+}
+
+.message-date {
+    font-size: 12px;
+    color: #5f6368;
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: right;
+}
+
+.priority-indicator {
+    width: 4px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.priority-urgent {
+    background: #ea4335;
+}
+
+.priority-important {
+    background: #fbbc04;
+}
+
+/* Modal de composition */
+.compose-modal {
+    position: fixed;
+    bottom: 0;
+    right: 40px;
+    width: 500px;
+    background: white;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.compose-modal.open {
+    transform: translateY(0);
+}
+
+.compose-header {
+    background: #404040;
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: move;
+}
+
+.compose-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.compose-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.compose-btn-small {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.compose-btn-small:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.compose-body {
+    padding: 0;
+}
+
+.compose-field {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e8eaed;
+    padding: 8px 16px;
+}
+
+.compose-label {
+    font-size: 14px;
+    color: #5f6368;
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.compose-input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 14px;
+    padding: 4px 0;
+}
+
+.compose-content {
+    padding: 16px;
+    min-height: 200px;
+}
+
+.compose-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    font-family: inherit;
+    min-height: 150px;
+}
+
+.compose-footer {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid #e8eaed;
+}
+
+.btn-send {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-send:hover {
+    background: #1557b0;
+}
+
+.btn-draft {
+    background: none;
+    border: none;
+    color: #5f6368;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 12px;
+}
+
+.btn-draft:hover {
+    background: #f1f3f4;
+    border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .gmail-sidebar {
+        width: 200px;
+    }
+    
+    .message-sender {
+        width: 120px;
+    }
+    
+    .compose-modal {
+        width: 90%;
+        right: 5%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gmail-container">
+    <div class="gmail-wrapper">
+        <!-- Sidebar -->
+        <div class="gmail-sidebar">
+            <div class="compose-btn" onclick="openCompose()">
+                <i class="fas fa-plus"></i>
+                Nouveau message
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="sidebar-item active" data-folder="inbox">
+                    <i class="fas fa-inbox"></i>
+                    Boîte de réception
+                    <span class="sidebar-count">{{ messages_recus|length }}</span>
+                </li>
+                <li class="sidebar-item" data-folder="starred">
+                    <i class="far fa-star"></i>
+                    Suivis
+                </li>
+                <li class="sidebar-item" data-folder="sent">
+                    <i class="fas fa-paper-plane"></i>
+                    Messages envoyés
+                    <span class="sidebar-count">{{ messages_envoyes|length }}</span>
+                </li>
+                <li class="sidebar-item" data-folder="drafts">
+                    <i class="far fa-file-alt"></i>
+                    Brouillons
+                </li>
+                <li class="sidebar-item" data-folder="important">
+                    <i class="fas fa-tag"></i>
+                    Important
+                </li>
+            </ul>
+        </div>
+
+        <!-- Zone principale -->
+        <div class="gmail-main">
+            <!-- Toolbar -->
+            <div class="gmail-toolbar">
+                <div class="toolbar-section">
+                    <button class="toolbar-btn" title="Actualiser">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Marquer comme lu">
+                        <i class="fas fa-envelope-open"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Rechercher dans les messages...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="toolbar-section">
+                    <button class="toolbar-btn" title="Paramètres">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste des messages -->
+            <div class="gmail-message-list" id="messageList">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="message-row {{ 'unread' if not message.lu else '' }} clickable-message" 
+                         data-message-id="{{ message.id }}"
+                         style="position: relative;">
+                        
+                        {% if message.priorite >= 2 %}
+                        <div class="priority-indicator {{ 'priority-urgent' if message.priorite == 3 else 'priority-important' }}"></div>
+                        {% endif %}
+
+                        <input type="checkbox" class="message-checkbox">
+                        
+                        <i class="message-star {{ 'fas starred' if message.priorite >= 2 else 'far' }} fa-star"></i>
+                        
+                        <div class="message-sender">
+                            {{ (message.expediteur.nom_utilisateur or message.expediteur.nom)[:25] }}
+                        </div>
+                        
+                        <div class="message-subject">
+                            {{ message.sujet }}
+                            <span class="message-snippet">- {{ message.contenu[:50] }}...</span>
+                        </div>
+                        
+                        <div class="message-date">
+                            {% set delta = (now - message.date_creation).total_seconds() %}
+                            {% if delta < 86400 %}
+                                {{ message.date_creation.strftime('%H:%M') }}
+                            {% elif delta < 31536000 %}
+                                {{ message.date_creation.strftime('%d %b') }}
+                            {% else %}
+                                {{ message.date_creation.strftime('%d/%m/%y') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 40px; text-align: center; color: #5f6368;">
+                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <div>Aucun message dans la boîte de réception</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de composition -->
+    <div class="compose-modal" id="composeModal">
+        <div class="compose-header">
+            <span class="compose-title">Nouveau message</span>
+            <div class="compose-actions">
+                <button class="compose-btn-small" onclick="minimizeCompose()">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="compose-btn-small" onclick="closeCompose()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="compose-body">
+            <div class="compose-field">
+                <span class="compose-label">À :</span>
+                <input type="text" class="compose-input" placeholder="Destinataires">
+            </div>
+            <div class="compose-field">
+                <span class="compose-label">Objet :</span>
+                <input type="text" class="compose-input" placeholder="Objet">
+            </div>
+            <div class="compose-content">
+                <textarea class="compose-textarea" placeholder="Rédigez votre message..."></textarea>
+            </div>
+        </div>
+        <div class="compose-footer">
+            <button class="btn-send">
+                <i class="fas fa-paper-plane"></i>
+                Envoyer
+            </button>
+            <button class="btn-draft">Enregistrer le brouillon</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let composeOpen = false;
+
+// Gestion de la composition
+function openCompose() {
+    const modal = document.getElementById('composeModal');
+    modal.classList.add('open');
+    composeOpen = true;
+}
+
+function closeCompose() {
+    const modal = document.getElementById('composeModal');
+    modal.classList.remove('open');
+    composeOpen = false;
+}
+
+function minimizeCompose() {
+    // Logique pour minimiser la fenêtre de composition
+    closeCompose();
+}
+
+// Navigation dans les dossiers
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des clics sur les messages
+    document.querySelectorAll('.clickable-message').forEach(function(element) {
+        element.addEventListener('click', function() {
+            const messageId = this.getAttribute('data-message-id');
+            if (messageId) {
+                const baseUrl = "{{ url_for('notifications.messages') }}".replace('/messages', '/messages/');
+                const url = baseUrl + messageId;
+                window.location.href = url;
+            }
+        });
+    });
+
+    // Gestion des dossiers sidebar
+    document.querySelectorAll('.sidebar-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            const folder = this.getAttribute('data-folder');
+            // Logique pour filtrer les messages selon le dossier
+            filterMessages(folder);
+        });
+    });
+
+    // Gestion des checkboxes
+    document.querySelectorAll('.message-checkbox').forEach(function(checkbox) {
+        checkbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Gestion des étoiles
+    document.querySelectorAll('.message-star').forEach(function(star) {
+        star.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('fas');
+            this.classList.toggle('far');
+            this.classList.toggle('starred');
+        });
+    });
+});
+
+function filterMessages(folder) {
+    // Logique pour filtrer les messages selon le dossier sélectionné
+    console.log('Filtrage par dossier:', folder);
+}
+
+// Raccourcis clavier Gmail-like
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 'Enter':
+                if (composeOpen) {
+                    // Envoyer le message
+                    e.preventDefault();
+                }
+                break;
+            case 'k':
+                // Message précédent
+                e.preventDefault();
+                break;
+            case 'j':
+                // Message suivant
+                e.preventDefault();
+                break;
+        }
+    }
+    
+    if (e.key === 'c') {
+        // Composer nouveau message
+        if (!composeOpen) {
+            openCompose();
+        }
+    }
+    
+    if (e.key === 'Escape' && composeOpen) {
+        closeCompose();
+    }
+});
+</script>
+{% endblock %}

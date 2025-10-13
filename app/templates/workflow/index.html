@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow de Validation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-tasks me-2"></i>Workflow de Validation
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('workflow.en_attente') }}" class="btn btn-primary">
+                        <i class="fas fa-clock me-2"></i>En Attente
+                        {% if stats.en_attente > 0 %}
+                        <span class="badge bg-warning text-dark ms-1">{{ stats.en_attente }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('workflow.liste_validations') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>Toutes les Validations
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <div class="text-primary">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                    </div>
+                    <h3 class="mb-1">{{ stats.en_attente }}</h3>
+                    <p class="text-muted mb-0">En Attente</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <div class="text-success">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    </div>
+                    <h3 class="mb-1">{{ stats.validees }}</h3>
+                    <p class="text-muted mb-0">Validées</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <div class="text-danger">
+                        <i class="fas fa-times-circle fa-2x mb-2"></i>
+                    </div>
+                    <h3 class="mb-1">{{ stats.rejetees }}</h3>
+                    <p class="text-muted mb-0">Rejetées</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <div class="text-warning">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    </div>
+                    <h3 class="mb-1">{{ stats.expirees }}</h3>
+                    <p class="text-muted mb-0">Expirées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Validations Urgentes -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation text-danger me-2"></i>Validations Urgentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if validations_urgentes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rapport</th>
+                                    <th>Type</th>
+                                    <th>Priorité</th>
+                                    <th>Soumis</th>
+                                    <th>Expire</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for validation in validations_urgentes %}
+                                <tr class="{% if validation.est_expire() %}table-danger{% elif validation.priorite == 3 %}table-warning{% endif %}">
+                                    <td>
+                                        <strong>#{{ validation.rapport_id }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ validation.type_rapport.value.title() }}</span>
+                                    </td>
+                                    <td>
+                                        {% if validation.priorite == 3 %}
+                                        <span class="badge bg-danger">Critique</span>
+                                        {% elif validation.priorite == 2 %}
+                                        <span class="badge bg-warning">Urgente</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Normale</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ validation.date_soumission.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if validation.est_expire() %}
+                                        <span class="text-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Expiré
+                                        </span>
+                                        {% else %}
+                                        <span class="text-{% if validation.temps_restant() and '24h' not in validation.temps_restant() %}success{% else %}warning{% endif %}">
+                                            {{ validation.temps_restant() }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('workflow.detail_validation', id=validation.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if validation.validateur_id == current_user.id or current_user.is_admin() %}
+                                            <a href="{{ url_for('workflow.valider_rapport', validation_id=validation.id) }}" 
+                                               class="btn btn-success btn-sm">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                        <p class="text-muted">Aucune validation urgente en attente</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique Récent -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Activité Récente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if historique_recent %}
+                    <div class="timeline">
+                        {% for action in historique_recent %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker 
+                                {% if action.action.value == 'validation' %}bg-success
+                                {% elif action.action.value == 'rejet' %}bg-danger
+                                {% elif action.action.value == 'soumission' %}bg-primary
+                                {% else %}bg-secondary{% endif %}">
+                                {% if action.action.value == 'validation' %}
+                                <i class="fas fa-check text-white"></i>
+                                {% elif action.action.value == 'rejet' %}
+                                <i class="fas fa-times text-white"></i>
+                                {% elif action.action.value == 'soumission' %}
+                                <i class="fas fa-paper-plane text-white"></i>
+                                {% else %}
+                                <i class="fas fa-circle text-white"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('workflow.historique_rapport', rapport_id=action.rapport_id) }}">
+                                        Rapport #{{ action.rapport_id }}
+                                    </a>
+                                </h6>
+                                <p class="mb-1 small">{{ action.details }}</p>
+                                <small class="text-muted">
+                                    {{ action.timestamp.strftime('%d/%m/%Y %H:%M') }} par {{ action.utilisateur.nom_complet }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history text-muted fa-2x mb-3"></i>
+                        <p class="text-muted">Aucune activité récente</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 10px;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh des statistiques toutes les 30 secondes
+    setInterval(function() {
+        // TODO: Implémenter le rafraîchissement automatique via API
+    }, 30000);
+});
+</script>
+{% endblock %}

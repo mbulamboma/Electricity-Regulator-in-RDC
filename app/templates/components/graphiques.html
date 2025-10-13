@@ -1,0 +1,487 @@
+<!-- Composant graphiques réutilisable -->
+<!-- Usage: {% include 'components/graphiques.html' with context %} -->
+
+<!-- Graphique linéaire -->
+{% macro graphique_ligne(id, titre, donnees, options={}) %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>{{ titre }}
+        </h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="telechargerGraphique('{{ id }}', 'png')" title="Télécharger PNG">
+                <i class="fas fa-download"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="basculerPleinEcran('{{ id }}-container')" title="Plein écran">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body" id="{{ id }}-container">
+        <div class="chart-container">
+            <canvas id="{{ id }}" width="400" height="{{ options.height or 200 }}"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration des données pour le graphique -->
+<script type="application/json" id="{{ id }}-config">
+{
+    "type": "line",
+    "data": {
+        "labels": {{ donnees.labels | tojson }},
+        "datasets": [
+            {% for dataset in donnees.datasets %}
+            {
+                "label": "{{ dataset.label }}",
+                "data": {{ dataset.data | tojson }},
+                "borderColor": "{{ dataset.color or 'rgb(75, 192, 192)' }}",
+                "backgroundColor": "{{ dataset.background or 'rgba(75, 192, 192, 0.2)' }}",
+                "tension": {{ dataset.tension or 0.1 }},
+                "fill": {{ dataset.fill or false | tojson }}
+            }{{ "," if not loop.last }}
+            {% endfor %}
+        ]
+    },
+    "options": {
+        "responsive": true,
+        "maintainAspectRatio": false,
+        "interaction": {
+            "intersect": false,
+            "mode": "index"
+        },
+        "scales": {
+            "x": {
+                "display": true,
+                "title": {
+                    "display": {{ (options.x_title is defined) | tojson }},
+                    "text": "{{ options.x_title or '' }}"
+                }
+            },
+            "y": {
+                "display": true,
+                "beginAtZero": {{ options.begin_at_zero or true | tojson }},
+                "title": {
+                    "display": {{ (options.y_title is defined) | tojson }},
+                    "text": "{{ options.y_title or '' }}"
+                }
+            }
+        },
+        "plugins": {
+            "legend": {
+                "display": {{ options.show_legend or true | tojson }},
+                "position": "{{ options.legend_position or 'top' }}"
+            },
+            "tooltip": {
+                "enabled": true,
+                "mode": "index",
+                "intersect": false
+            }
+        }
+    }
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initGraphiqueLigne('{{ id }}');
+});
+</script>
+{% endmacro %}
+
+<!-- Composant graphiques réutilisable -->
+<!-- Usage: {% include 'components/graphiques.html' with context %} -->
+
+<!-- Graphique linéaire -->
+{% macro graphique_ligne(id, titre, donnees, options={}) %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>{{ titre }}
+        </h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="telechargerGraphique('{{ id }}', 'png')" title="Télécharger PNG">
+                <i class="fas fa-download"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="basculerPleinEcran('{{ id }}-container')" title="Plein écran">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body" id="{{ id }}-container">
+        <div class="chart-container">
+            <canvas id="{{ id }}" width="400" height="{{ options.height or 200 }}"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration des données pour le graphique -->
+<script type="application/json" id="{{ id }}-config">
+{
+    "type": "line",
+    "data": {
+        "labels": {{ donnees.labels | tojson }},
+        "datasets": [
+            {% for dataset in donnees.datasets %}
+            {
+                "label": "{{ dataset.label }}",
+                "data": {{ dataset.data | tojson }},
+                "borderColor": "{{ dataset.color or 'rgb(75, 192, 192)' }}",
+                "backgroundColor": "{{ dataset.background or 'rgba(75, 192, 192, 0.2)' }}",
+                "tension": {{ dataset.tension or 0.1 }},
+                "fill": {{ dataset.fill or false | tojson }}
+            }{{ "," if not loop.last }}
+            {% endfor %}
+        ]
+    },
+    "options": {
+        "responsive": true,
+        "maintainAspectRatio": false,
+        "interaction": {
+            "intersect": false,
+            "mode": "index"
+        },
+        "scales": {
+            "x": {
+                "display": true,
+                "title": {
+                    "display": {{ (options.x_title is defined) | tojson }},
+                    "text": "{{ options.x_title or '' }}"
+                }
+            },
+            "y": {
+                "display": true,
+                "beginAtZero": {{ options.begin_at_zero or true | tojson }},
+                "title": {
+                    "display": {{ (options.y_title is defined) | tojson }},
+                    "text": "{{ options.y_title or '' }}"
+                }
+            }
+        },
+        "plugins": {
+            "legend": {
+                "display": {{ options.show_legend or true | tojson }},
+                "position": "{{ options.legend_position or 'top' }}"
+            },
+            "tooltip": {
+                "enabled": true,
+                "mode": "index",
+                "intersect": false
+            }
+        }
+    }
+}
+</script>
+{% endmacro %}
+
+<!-- Graphique en barres -->
+{% macro graphique_barres(id, titre, donnees, options={}) %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-chart-bar me-2"></i>{{ titre }}
+        </h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="telechargerGraphique('{{ id }}', 'png')" title="Télécharger PNG">
+                <i class="fas fa-download"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="basculerPleinEcran('{{ id }}-container')" title="Plein écran">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body" id="{{ id }}-container">
+        <div class="chart-container">
+            <canvas id="{{ id }}" width="400" height="{{ options.height or 200 }}"></canvas>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="{{ id }}-config">
+{
+    "type": "{{ options.type or 'bar' }}",
+    "data": {
+        "labels": {{ donnees.labels | tojson }},
+        "datasets": [
+            {% for dataset in donnees.datasets %}
+            {
+                "label": "{{ dataset.label }}",
+                "data": {{ dataset.data | tojson }},
+                "backgroundColor": [
+                    {% if dataset.colors %}
+                        {% for color in dataset.colors %}
+                        "{{ color }}"{{ "," if not loop.last }}
+                        {% endfor %}
+                    {% else %}
+                        "rgba(54, 162, 235, 0.8)"
+                    {% endif %}
+                ],
+                "borderColor": [
+                    {% if dataset.border_colors %}
+                        {% for color in dataset.border_colors %}
+                        "{{ color }}"{{ "," if not loop.last }}
+                        {% endfor %}
+                    {% else %}
+                        "rgba(54, 162, 235, 1)"
+                    {% endif %}
+                ],
+                "borderWidth": {{ dataset.border_width or 1 }}
+            }{{ "," if not loop.last }}
+            {% endfor %}
+        ]
+    },
+    "options": {
+        "responsive": true,
+        "maintainAspectRatio": false,
+        {% if options.type == 'horizontalBar' %}
+        "indexAxis": "y",
+        {% endif %}
+        "scales": {
+            {% if options.type == 'horizontalBar' %}
+            "x": {
+                "beginAtZero": true,
+                "title": {
+                    "display": {{ (options.x_title is defined) | tojson }},
+                    "text": "{{ options.x_title or '' }}"
+                }
+            },
+            "y": {
+                "title": {
+                    "display": {{ (options.y_title is defined) | tojson }},
+                    "text": "{{ options.y_title or '' }}"
+                }
+            }
+            {% else %}
+            "x": {
+                "title": {
+                    "display": {{ (options.x_title is defined) | tojson }},
+                    "text": "{{ options.x_title or '' }}"
+                }
+            },
+            "y": {
+                "beginAtZero": true,
+                "title": {
+                    "display": {{ (options.y_title is defined) | tojson }},
+                    "text": "{{ options.y_title or '' }}"
+                }
+            }
+            {% endif %}
+        },
+        "plugins": {
+            "legend": {
+                "display": {{ options.show_legend or true | tojson }},
+                "position": "{{ options.legend_position or 'top' }}"
+            }
+        }
+    }
+}
+</script>
+{% endmacro %}
+
+<!-- Graphique en secteurs (camembert) -->
+{% macro graphique_secteurs(id, titre, donnees, options={}) %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-chart-pie me-2"></i>{{ titre }}
+        </h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="telechargerGraphique('{{ id }}', 'png')" title="Télécharger PNG">
+                <i class="fas fa-download"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" 
+                    onclick="basculerPleinEcran('{{ id }}-container')" title="Plein écran">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body" id="{{ id }}-container">
+        <div class="chart-container">
+            <canvas id="{{ id }}" width="400" height="{{ options.height or 300 }}"></canvas>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="{{ id }}-config">
+{
+    "type": "{{ options.type or 'pie' }}",
+    "data": {
+        "labels": {{ donnees.labels | tojson }},
+        "datasets": [{
+            "data": {{ donnees.data | tojson }},
+            "backgroundColor": [
+                {% if donnees.colors %}
+                    {% for color in donnees.colors %}
+                    "{{ color }}"{{ "," if not loop.last }}
+                    {% endfor %}
+                {% else %}
+                    "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"
+                {% endif %}
+            ],
+            "borderColor": "#fff",
+            "borderWidth": 2
+        }]
+    },
+    "options": {
+        "responsive": true,
+        "maintainAspectRatio": false,
+        "plugins": {
+            "legend": {
+                "display": {{ options.show_legend or true | tojson }},
+                "position": "{{ options.legend_position or 'right' }}"
+            },
+            "tooltip": {
+                "callbacks": {
+                    "label": "function(context) { const label = context.label || ''; const value = context.parsed; const total = context.dataset.data.reduce((a, b) => a + b, 0); const percentage = ((value / total) * 100).toFixed(1); return label + ': ' + value + ' (' + percentage + '%)'; }"
+                }
+            }
+        }
+    }
+}
+</script>
+{% endmacro %}
+
+<!-- Graphique de jauge -->
+{% macro graphique_jauge(id, titre, valeur, max_value=100, options={}) %}
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i>{{ titre }}
+        </h6>
+    </div>
+    <div class="card-body text-center">
+        <div class="gauge-container" id="{{ id }}-container">
+            <canvas id="{{ id }}" width="200" height="120"></canvas>
+            <div class="gauge-value">
+                <span class="gauge-number">{{ valeur }}</span>
+                <span class="gauge-unit">{{ options.unite or "%" }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="{{ id }}-gauge-data">
+{
+    "valeur": {{ valeur }},
+    "max_value": {{ max_value }},
+    "options": {
+        "unite": "{{ options.unite or '%' }}",
+        "color_ranges": [
+            {% if options.color_ranges %}
+                {% for range in options.color_ranges %}
+                {
+                    "min": {{ range.min }},
+                    "max": {{ range.max }},
+                    "color": "{{ range.color }}"
+                }{{ "," if not loop.last }}
+                {% endfor %}
+            {% endif %}
+        ]
+    }
+}
+</script>
+{% endmacro %}
+
+<!-- Graphique de tendance simple -->
+{% macro mini_graphique(id, donnees, type="line", couleur="#007bff") %}
+<div class="mini-chart-container">
+    <canvas id="{{ id }}" width="100" height="40"></canvas>
+</div>
+
+<script type="application/json" id="{{ id }}-mini-config">
+{
+    "type": "{{ type }}",
+    "data": {
+        "labels": {{ range(donnees|length) | list | tojson }},
+        "datasets": [{
+            "data": {{ donnees | tojson }},
+            "borderColor": "{{ couleur }}",
+            "backgroundColor": "{{ couleur }}33",
+            "borderWidth": 2,
+            "pointRadius": 0,
+            "tension": 0.1
+        }]
+    },
+    "options": {
+        "responsive": true,
+        "maintainAspectRatio": false,
+        "plugins": {
+            "legend": { "display": false },
+            "tooltip": { "enabled": false }
+        },
+        "scales": {
+            "x": { "display": false },
+            "y": { "display": false }
+        },
+        "elements": {
+            "point": { "radius": 0 }
+        }
+    }
+}
+</script>
+{% endmacro %}
+
+<!-- Styles CSS pour les graphiques -->
+<style>
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.fullscreen-chart .chart-container {
+    height: 90vh;
+}
+
+.card .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.gauge-container {
+    position: relative;
+    display: inline-block;
+}
+
+.gauge-value {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+.gauge-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #495057;
+}
+
+.gauge-unit {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-left: 2px;
+}
+
+.mini-chart-container {
+    width: 100px;
+    height: 40px;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .fullscreen-chart .chart-container {
+        height: 80vh;
+    }
+}
+</style>

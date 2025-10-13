@@ -1,0 +1,966 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<style>
+.form-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #007bff;
+}
+
+.form-section h5 {
+    color: #007bff;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.dynamic-formset {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.formset-header {
+    background: #e9ecef;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.formset-item {
+    padding: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    position: relative;
+}
+
+.formset-item:last-child {
+    border-bottom: none;
+}
+
+.formset-item.marked-for-deletion {
+    opacity: 0.5;
+    background-color: #f8d7da;
+}
+
+.delete-formset-item {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.add-formset-item {
+    background: #28a745;
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.calculated-field {
+    background-color: #e9ecef;
+    position: relative;
+}
+
+.calculated-field::after {
+    content: "Auto-calculé";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: #6c757d;
+    background: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.required-field label::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.progress-indicator {
+    position: sticky;
+    top: 80px;
+    z-index: 100;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.progress-step {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background: #e9ecef;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.progress-step.active {
+    background: #007bff;
+    color: white;
+}
+
+.progress-step.completed {
+    background: #28a745;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-file-alt me-2 text-primary"></i>{{ title }}
+    </h1>
+    <a href="{{ url_for('production_hydro.index') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+    </a>
+</div>
+
+{% if rapport and rapport.statut == 'transmis' and not current_user.is_super_admin() %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Ce rapport a été transmis et ne peut plus être modifié.
+</div>
+{% endif %}
+
+<!-- Indicateur de progression -->
+<div class="progress-indicator">
+    <div class="d-flex flex-wrap align-items-center">
+        <span class="me-2 fw-bold">Sections :</span>
+        <a href="#section-general" class="progress-step active" data-section="general">
+            <i class="fas fa-info-circle me-1"></i>Général
+        </a>
+        <a href="#section-production" class="progress-step" data-section="production">
+            <i class="fas fa-bolt me-1"></i>Production
+        </a>
+        <a href="#section-groupes" class="progress-step" data-section="groupes">
+            <i class="fas fa-cogs me-1"></i>Groupes
+        </a>
+        <a href="#section-transformateurs" class="progress-step" data-section="transformateurs">
+            <i class="fas fa-plug me-1"></i>Transformateurs
+        </a>
+        <a href="#section-maintenance" class="progress-step" data-section="maintenance">
+            <i class="fas fa-tools me-1"></i>Maintenance
+        </a>
+    </div>
+</div>
+
+<form method="POST" id="rapportForm" novalidate>
+    {{ form.hidden_tag() }}
+    
+    <!-- Section Informations Générales -->
+    <div class="form-section" id="section-general">
+        <h5><i class="fas fa-info-circle me-2"></i>Informations Générales</h5>
+        <div class="row">
+            <div class="col-md-6 required-field">
+                {{ form.centrale_id.label(class="form-label") }}
+                {{ form.centrale_id(class="form-select" + (" is-invalid" if form.centrale_id.errors else ""), id="centrale_id") }}
+                {% if form.centrale_id.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.centrale_id.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-3 required-field">
+                {{ form.annee.label(class="form-label") }}
+                {{ form.annee(class="form-control" + (" is-invalid" if form.annee.errors else "")) }}
+                {% if form.annee.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.annee.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-3 required-field">
+                {{ form.mois.label(class="form-label") }}
+                {{ form.mois(class="form-select" + (" is-invalid" if form.mois.errors else "")) }}
+                {% if form.mois.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.mois.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6 required-field">
+                {{ form.periode_debut.label(class="form-label") }}
+                {{ form.periode_debut(class="form-control" + (" is-invalid" if form.periode_debut.errors else ""), placeholder="dd/mm/yyyy") }}
+                {% if form.periode_debut.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.periode_debut.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 required-field">
+                {{ form.periode_fin.label(class="form-label") }}
+                {{ form.periode_fin(class="form-control" + (" is-invalid" if form.periode_fin.errors else ""), placeholder="dd/mm/yyyy") }}
+                {% if form.periode_fin.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.periode_fin.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Informations sur la centrale sélectionnée -->
+        <div id="centrale-info" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+                <h6>Informations de la centrale :</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Puissance installée :</strong> <span id="centrale-puissance">-</span> MW
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Groupes :</strong> <span id="centrale-groupes">-</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Transformateurs :</strong> <span id="centrale-transformateurs">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section Données Hydrologiques -->
+    <div class="form-section">
+        <h5><i class="fas fa-tint me-2"></i>Données Hydrologiques</h5>
+        <div class="row">
+            <div class="col-md-4">
+                {{ form.niveau_retenue_moyen.label(class="form-label") }}
+                {{ form.niveau_retenue_moyen(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Niveau moyen de la retenue en mètres</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.niveau_retenue_min.label(class="form-label") }}
+                {{ form.niveau_retenue_min(class="form-control", placeholder="0.00") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.niveau_retenue_max.label(class="form-label") }}
+                {{ form.niveau_retenue_max(class="form-control", placeholder="0.00") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                {{ form.debit_moyen.label(class="form-label") }}
+                {{ form.debit_moyen(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Débit moyen en m³/s</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.debit_min.label(class="form-label") }}
+                {{ form.debit_min(class="form-control", placeholder="0.00") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.debit_max.label(class="form-label") }}
+                {{ form.debit_max(class="form-control", placeholder="0.00") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                {{ form.volume_turbiné.label(class="form-label") }}
+                {{ form.volume_turbiné(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Volume total turbiné en millions de m³</div>
+            </div>
+            <div class="col-md-6">
+                {{ form.debit_reserve.label(class="form-label") }}
+                {{ form.debit_reserve(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Débit réservé environnemental en m³/s</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section Production et Performance -->
+    <div class="form-section" id="section-production">
+        <h5><i class="fas fa-bolt me-2"></i>Production et Performance</h5>
+        <div class="row">
+            <div class="col-md-4">
+                {{ form.energie_produite.label(class="form-label") }}
+                {{ form.energie_produite(class="form-control", placeholder="0.00", id="energie_produite") }}
+                <div class="help-text">Énergie totale produite en MWh</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.energie_disponible.label(class="form-label") }}
+                {{ form.energie_disponible(class="form-control", placeholder="0.00", id="energie_disponible") }}
+                <div class="help-text">Énergie théoriquement disponible</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.facteur_charge.label(class="form-label") }}
+                {{ form.facteur_charge(class="form-control calculated-field", readonly=True, id="facteur_charge") }}
+                <div class="help-text">Calculé automatiquement</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                {{ form.temps_fonctionnement.label(class="form-label") }}
+                {{ form.temps_fonctionnement(class="form-control", placeholder="0.00", id="temps_fonctionnement") }}
+                <div class="help-text">Temps total de fonctionnement en heures</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.nombre_arrets.label(class="form-label") }}
+                {{ form.nombre_arrets(class="form-control", placeholder="0") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.duree_arrets.label(class="form-label") }}
+                {{ form.duree_arrets(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Durée totale des arrêts en heures</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                {{ form.rendement_global.label(class="form-label") }}
+                {{ form.rendement_global(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Rendement global de la centrale (%)</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.rendement_turbine.label(class="form-label") }}
+                {{ form.rendement_turbine(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Rendement des turbines (%)</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.rendement_alternateur.label(class="form-label") }}
+                {{ form.rendement_alternateur(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Rendement des alternateurs (%)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section Groupes de Production -->
+    <div class="form-section" id="section-groupes">
+        <h5><i class="fas fa-cogs me-2"></i>Groupes de Production</h5>
+        
+        <div class="dynamic-formset" id="groupes-formset">
+            <div class="formset-header">
+                <h6 class="mb-0">Groupes de production</h6>
+                <button type="button" class="add-formset-item" onclick="ajouterGroupe()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un groupe
+                </button>
+            </div>
+            
+            <div id="groupes-container">
+                {% for groupe in form.groupes_production %}
+                <div class="formset-item" id="groupe-{{ loop.index0 }}">
+                    {{ groupe.id }}
+                    {{ groupe.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                            onclick="supprimerGroupe({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ groupe.numero_groupe.label(class="form-label") }}
+                            {{ groupe.numero_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.nom_groupe.label(class="form-label") }}
+                            {{ groupe.nom_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.puissance_nominale.label(class="form-label") }}
+                            {{ groupe.puissance_nominale(class="form-control groupe-puissance") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.type_turbine.label(class="form-label") }}
+                            {{ groupe.type_turbine(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            {{ groupe.heures_fonctionnement.label(class="form-label") }}
+                            {{ groupe.heures_fonctionnement(class="form-control groupe-heures") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.energie_produite.label(class="form-label") }}
+                            {{ groupe.energie_produite(class="form-control groupe-energie") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.puissance_moyenne.label(class="form-label") }}
+                            {{ groupe.puissance_moyenne(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.rendement_moyen.label(class="form-label") }}
+                            {{ groupe.rendement_moyen(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            {{ groupe.incidents.label(class="form-label") }}
+                            {{ groupe.incidents(class="form-control", rows="3") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ groupe.observations.label(class="form-label") }}
+                            {{ groupe.observations(class="form-control", rows="3") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section Transformateurs -->
+    <div class="form-section" id="section-transformateurs">
+        <h5><i class="fas fa-plug me-2"></i>Transformateurs</h5>
+        
+        <div class="dynamic-formset" id="transformateurs-formset">
+            <div class="formset-header">
+                <h6 class="mb-0">Transformateurs</h6>
+                <button type="button" class="add-formset-item" onclick="ajouterTransformateur()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un transformateur
+                </button>
+            </div>
+            
+            <div id="transformateurs-container">
+                {% for transfo in form.transformateurs %}
+                <div class="formset-item" id="transformateur-{{ loop.index0 }}">
+                    {{ transfo.id }}
+                    {{ transfo.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                            onclick="supprimerTransformateur({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ transfo.numero_transformateur.label(class="form-label") }}
+                            {{ transfo.numero_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.nom_transformateur.label(class="form-label") }}
+                            {{ transfo.nom_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.puissance_nominale.label(class="form-label") }}
+                            {{ transfo.puissance_nominale(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.type_refroidissement.label(class="form-label") }}
+                            {{ transfo.type_refroidissement(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            {{ transfo.tension_primaire.label(class="form-label") }}
+                            {{ transfo.tension_primaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ transfo.tension_secondaire.label(class="form-label") }}
+                            {{ transfo.tension_secondaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ transfo.etat_general.label(class="form-label") }}
+                            {{ transfo.etat_general(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            {{ transfo.incidents.label(class="form-label") }}
+                            {{ transfo.incidents(class="form-control", rows="3") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ transfo.observations.label(class="form-label") }}
+                            {{ transfo.observations(class="form-control", rows="3") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section Maintenance et Incidents -->
+    <div class="form-section" id="section-maintenance">
+        <h5><i class="fas fa-tools me-2"></i>Maintenance et Incidents</h5>
+        <div class="row">
+            <div class="col-md-4">
+                {{ form.maintenances_preventives.label(class="form-label") }}
+                {{ form.maintenances_preventives(class="form-control", placeholder="0") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.maintenances_correctives.label(class="form-label") }}
+                {{ form.maintenances_correctives(class="form-control", placeholder="0") }}
+            </div>
+            <div class="col-md-4">
+                {{ form.incidents_majeurs.label(class="form-label") }}
+                {{ form.incidents_majeurs(class="form-control", placeholder="0") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                {{ form.description_incidents.label(class="form-label") }}
+                {{ form.description_incidents(class="form-control", rows="4") }}
+            </div>
+            <div class="col-md-6">
+                {{ form.impact_environnemental.label(class="form-label") }}
+                {{ form.impact_environnemental(class="form-control", rows="4") }}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                {{ form.statut.label(class="form-label") }}
+                {{ form.statut(class="form-select") }}
+            </div>
+            <div class="col-md-6">
+                {{ form.observations.label(class="form-label") }}
+                {{ form.observations(class="form-control", rows="3") }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Boutons de soumission -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('production_hydro.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Annuler
+                </a>
+                <div>
+                    {{ form.submit(class="btn btn-primary me-2") }}
+                    {% if form.statut.data == 'brouillon' %}
+                    {{ form.submit_validate(class="btn btn-success") }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+
+<script>
+// Variables globales
+let groupeIndex = {{ form.groupes_production|length }};
+let transformateurIndex = {{ form.transformateurs|length }};
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les sélecteurs de date
+    flatpickr('.form-control[type="date"]', {
+        locale: 'fr',
+        dateFormat: 'Y-m-d',
+        allowInput: true
+    });
+    
+    // Charger les infos de la centrale si une est sélectionnée
+    const centraleSelect = document.getElementById('centrale_id');
+    if (centraleSelect.value) {
+        chargerInfosCentrale(centraleSelect.value);
+    }
+    
+    // Événements pour les calculs automatiques
+    setupCalculsAutomatiques();
+    
+    // Scroll spy pour les sections
+    setupScrollSpy();
+    
+    // Validation en temps réel
+    setupValidationTempsReel();
+});
+
+// Charger les informations de la centrale
+function chargerInfosCentrale(centraleId) {
+    if (!centraleId) {
+        document.getElementById('centrale-info').style.display = 'none';
+        return;
+    }
+    
+    fetch(`/production-hydro/api/centrale/${centraleId}/info`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const centrale = data.centrale;
+                document.getElementById('centrale-puissance').textContent = centrale.puissance_installee || '-';
+                document.getElementById('centrale-groupes').textContent = centrale.nombre_groupes || '-';
+                document.getElementById('centrale-transformateurs').textContent = centrale.nombre_transformateurs || '-';
+                document.getElementById('centrale-info').style.display = 'block';
+                
+                // Ajuster le nombre de groupes et transformateurs si nécessaire
+                ajusterNombreFormsets('groupes', centrale.nombre_groupes);
+                ajusterNombreFormsets('transformateurs', centrale.nombre_transformateurs);
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+
+// Ajuster le nombre de formsets selon les données de la centrale
+function ajusterNombreFormsets(type, nombre) {
+    if (!nombre) return;
+    
+    const container = document.getElementById(`${type}-container`);
+    const current = container.children.length;
+    
+    if (current < nombre) {
+        for (let i = current; i < nombre; i++) {
+            if (type === 'groupes') {
+                ajouterGroupe();
+            } else {
+                ajouterTransformateur();
+            }
+        }
+    }
+}
+
+// Ajouter un groupe de production
+function ajouterGroupe() {
+    const container = document.getElementById('groupes-container');
+    const template = `
+        <div class="formset-item" id="groupe-${groupeIndex}">
+            <input type="hidden" name="groupes_production-${groupeIndex}-id" value="">
+            <input type="hidden" name="groupes_production-${groupeIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                    onclick="supprimerGroupe(${groupeIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-numero_groupe" class="form-control" placeholder="G01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom du groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-nom_groupe" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance nominale (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_nominale" class="form-control groupe-puissance">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type de turbine</label>
+                    <select name="groupes_production-${groupeIndex}-type_turbine" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="Pelton">Pelton</option>
+                        <option value="Francis">Francis</option>
+                        <option value="Kaplan">Kaplan</option>
+                        <option value="Turgo">Turgo</option>
+                        <option value="Banki">Banki</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Heures fonctionnement</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-heures_fonctionnement" class="form-control groupe-heures">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Énergie produite (MWh)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-energie_produite" class="form-control groupe-energie">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance moyenne (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_moyenne" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Rendement moyen (%)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-rendement_moyen" class="form-control">
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Incidents</label>
+                    <textarea name="groupes_production-${groupeIndex}-incidents" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observations</label>
+                    <textarea name="groupes_production-${groupeIndex}-observations" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    groupeIndex++;
+    
+    // Reconfigurer les événements pour les calculs
+    setupCalculsAutomatiques();
+}
+
+// Supprimer un groupe
+function supprimerGroupe(index) {
+    const element = document.getElementById(`groupe-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        // Déjà marqué pour suppression, le supprimer visuellement
+        element.remove();
+    } else {
+        // Marquer pour suppression
+        deleteInput.value = 'true';
+        element.classList.add('marked-for-deletion');
+    }
+}
+
+// Ajouter un transformateur (similaire aux groupes)
+function ajouterTransformateur() {
+    const container = document.getElementById('transformateurs-container');
+    const template = `
+        <div class="formset-item" id="transformateur-${transformateurIndex}">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-id" value="">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                    onclick="supprimerTransformateur(${transformateurIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Transformateur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-numero_transformateur" class="form-control" placeholder="T01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-nom_transformateur" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance (MVA)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-puissance_nominale" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Refroidissement</label>
+                    <select name="transformateurs-${transformateurIndex}-type_refroidissement" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="ONAN">ONAN - Huile naturelle</option>
+                        <option value="ONAF">ONAF - Huile forcée</option>
+                        <option value="OFAF">OFAF - Huile/Air forcé</option>
+                        <option value="ODAF">ODAF - Huile dirigée</option>
+                        <option value="Sec">Transformateur sec</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tension primaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_primaire" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tension secondaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_secondaire" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">État général</label>
+                    <select name="transformateurs-${transformateurIndex}-etat_general" class="form-select">
+                        <option value="bon">Bon</option>
+                        <option value="moyen">Moyen</option>
+                        <option value="mauvais">Mauvais</option>
+                        <option value="critique">Critique</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Incidents</label>
+                    <textarea name="transformateurs-${transformateurIndex}-incidents" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observations</label>
+                    <textarea name="transformateurs-${transformateurIndex}-observations" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    transformateurIndex++;
+}
+
+// Supprimer un transformateur
+function supprimerTransformateur(index) {
+    const element = document.getElementById(`transformateur-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        element.remove();
+    } else {
+        deleteInput.value = 'true';
+        element.classList.add('marked-for-deletion');
+    }
+}
+
+// Configuration des calculs automatiques
+function setupCalculsAutomatiques() {
+    // Calcul du facteur de charge global
+    const energieInput = document.getElementById('energie_produite');
+    const energieDispoInput = document.getElementById('energie_disponible');
+    const facteurChargeInput = document.getElementById('facteur_charge');
+    
+    if (energieInput && energieDispoInput && facteurChargeInput) {
+        [energieInput, energieDispoInput].forEach(input => {
+            input.addEventListener('input', calculerFacteurCharge);
+        });
+    }
+    
+    // Calculs pour les groupes
+    document.querySelectorAll('.groupe-puissance, .groupe-heures, .groupe-energie').forEach(input => {
+        input.addEventListener('input', calculerTotauxGroupes);
+    });
+    
+    // Événement pour changement de centrale
+    const centraleSelect = document.getElementById('centrale_id');
+    if (centraleSelect) {
+        centraleSelect.addEventListener('change', function() {
+            chargerInfosCentrale(this.value);
+        });
+    }
+}
+
+// Calculer le facteur de charge
+function calculerFacteurCharge() {
+    const energieProduite = parseFloat(document.getElementById('energie_produite').value) || 0;
+    const energieDispo = parseFloat(document.getElementById('energie_disponible').value) || 0;
+    
+    if (energieDispo > 0) {
+        const facteur = (energieProduite / energieDispo) * 100;
+        document.getElementById('facteur_charge').value = Math.min(100, facteur).toFixed(2);
+    } else {
+        document.getElementById('facteur_charge').value = '';
+    }
+}
+
+// Calculer les totaux des groupes
+function calculerTotauxGroupes() {
+    let totalEnergie = 0;
+    let totalPuissance = 0;
+    
+    document.querySelectorAll('.groupe-energie').forEach(input => {
+        const val = parseFloat(input.value) || 0;
+        totalEnergie += val;
+    });
+    
+    document.querySelectorAll('.groupe-puissance').forEach(input => {
+        const val = parseFloat(input.value) || 0;
+        totalPuissance += val;
+    });
+    
+    // Mettre à jour les champs principaux si vides
+    const energieGlobale = document.getElementById('energie_produite');
+    if (!energieGlobale.value && totalEnergie > 0) {
+        energieGlobale.value = totalEnergie.toFixed(2);
+        calculerFacteurCharge();
+    }
+}
+
+// Configuration du scroll spy
+function setupScrollSpy() {
+    const steps = document.querySelectorAll('.progress-step');
+    const sections = document.querySelectorAll('.form-section');
+    
+    steps.forEach(step => {
+        step.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+    
+    // Observer pour marquer les sections comme actives
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                if (id) {
+                    steps.forEach(step => step.classList.remove('active'));
+                    const activeStep = document.querySelector(`[data-section="${id.replace('section-', '')}"]`);
+                    if (activeStep) activeStep.classList.add('active');
+                }
+            }
+        });
+    }, { threshold: 0.3 });
+    
+    sections.forEach(section => observer.observe(section));
+}
+
+// Validation en temps réel
+function setupValidationTempsReel() {
+    const form = document.getElementById('rapportForm');
+    
+    form.addEventListener('input', function(e) {
+        const field = e.target;
+        
+        // Validation des champs numériques
+        if (field.type === 'number') {
+            const value = parseFloat(field.value);
+            const min = parseFloat(field.min);
+            const max = parseFloat(field.max);
+            
+            field.classList.remove('is-invalid', 'is-valid');
+            
+            if (field.value && (isNaN(value) || (min !== undefined && value < min) || (max !== undefined && value > max))) {
+                field.classList.add('is-invalid');
+            } else if (field.value) {
+                field.classList.add('is-valid');
+            }
+        }
+    });
+    
+    // Validation avant soumission
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Veuillez remplir tous les champs obligatoires.');
+        }
+    });
+}
+
+// Sauvegarder automatiquement en brouillon (optionnel)
+function sauvegardeAutomatique() {
+    // Implémenter la sauvegarde automatique si nécessaire
+    console.log('Sauvegarde automatique...');
+}
+
+// Démarrer la sauvegarde automatique toutes les 5 minutes
+setInterval(sauvegardeAutomatique, 5 * 60 * 1000);
+</script>
+{% endblock %}

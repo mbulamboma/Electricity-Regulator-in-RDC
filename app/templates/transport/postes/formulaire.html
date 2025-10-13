@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if mode == 'creation' %}
+Nouveau Poste de Transport
+{% else %}
+Modifier Poste de Transport
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    {% if mode == 'creation' %}
+                    ⚡ Nouveau Poste de Transport
+                    {% else %}
+                    ⚡ Modifier Poste de Transport
+                    {% endif %}
+                </h1>
+                <a href="{{ url_for('transport.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Opérateur -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.operateur_id.label(class="form-label") }}
+                                {{ form.operateur_id(class="form-select" + (" is-invalid" if form.operateur_id.errors else "")) }}
+                                {% if form.operateur_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.operateur_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Nom -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.nom.label(class="form-label") }}
+                                {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Code -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else "")) }}
+                                {% if form.code.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.code.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Type de poste -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.type_poste.label(class="form-label") }}
+                                {{ form.type_poste(class="form-select" + (" is-invalid" if form.type_poste.errors else "")) }}
+                                {% if form.type_poste.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.type_poste.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Localisation -->
+                        <h5 class="mt-4 mb-3">Localisation</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.localisation.label(class="form-label") }}
+                                {{ form.localisation(class="form-control" + (" is-invalid" if form.localisation.errors else "")) }}
+                                {% if form.localisation.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.localisation.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.province.label(class="form-label") }}
+                                {{ form.province(class="form-select" + (" is-invalid" if form.province.errors else "")) }}
+                                {% if form.province.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.province.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.latitude.label(class="form-label") }}
+                                {{ form.latitude(class="form-control" + (" is-invalid" if form.latitude.errors else "")) }}
+                                {% if form.latitude.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.latitude.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.longitude.label(class="form-label") }}
+                                {{ form.longitude(class="form-control" + (" is-invalid" if form.longitude.errors else "")) }}
+                                {% if form.longitude.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.longitude.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.altitude.label(class="form-label") }}
+                                {{ form.altitude(class="form-control" + (" is-invalid" if form.altitude.errors else "")) }}
+                                {% if form.altitude.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.altitude.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Niveaux de tension -->
+                        <h5 class="mt-4 mb-3">Niveaux de Tension</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.tension_primaire.label(class="form-label") }}
+                                {{ form.tension_primaire(class="form-control" + (" is-invalid" if form.tension_primaire.errors else "")) }}
+                                {% if form.tension_primaire.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.tension_primaire.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.tension_secondaire.label(class="form-label") }}
+                                {{ form.tension_secondaire(class="form-control" + (" is-invalid" if form.tension_secondaire.errors else "")) }}
+                                {% if form.tension_secondaire.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.tension_secondaire.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.tension_tertiaire.label(class="form-label") }}
+                                {{ form.tension_tertiaire(class="form-control" + (" is-invalid" if form.tension_tertiaire.errors else "")) }}
+                                {% if form.tension_tertiaire.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.tension_tertiaire.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Configuration -->
+                        <h5 class="mt-4 mb-3">Configuration</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.nombre_transformateurs.label(class="form-label") }}
+                                {{ form.nombre_transformateurs(class="form-control" + (" is-invalid" if form.nombre_transformateurs.errors else "")) }}
+                                {% if form.nombre_transformateurs.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nombre_transformateurs.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.puissance_installee.label(class="form-label") }}
+                                {{ form.puissance_installee(class="form-control" + (" is-invalid" if form.puissance_installee.errors else "")) }}
+                                {% if form.puissance_installee.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.puissance_installee.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.puissance_disponible.label(class="form-label") }}
+                                {{ form.puissance_disponible(class="form-control" + (" is-invalid" if form.puissance_disponible.errors else "")) }}
+                                {% if form.puissance_disponible.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.puissance_disponible.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.schema_unifilaire.label(class="form-label") }}
+                                {{ form.schema_unifilaire(class="form-select" + (" is-invalid" if form.schema_unifilaire.errors else "")) }}
+                                {% if form.schema_unifilaire.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.schema_unifilaire.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.regime_neutre.label(class="form-label") }}
+                                {{ form.regime_neutre(class="form-select" + (" is-invalid" if form.regime_neutre.errors else "")) }}
+                                {% if form.regime_neutre.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.regime_neutre.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Équipements de protection -->
+                        <h5 class="mt-4 mb-3">Équipements de Protection</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.nombre_disjoncteurs.label(class="form-label") }}
+                                {{ form.nombre_disjoncteurs(class="form-control" + (" is-invalid" if form.nombre_disjoncteurs.errors else "")) }}
+                                {% if form.nombre_disjoncteurs.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nombre_disjoncteurs.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.nombre_sectionneurs.label(class="form-label") }}
+                                {{ form.nombre_sectionneurs(class="form-control" + (" is-invalid" if form.nombre_sectionneurs.errors else "")) }}
+                                {% if form.nombre_sectionneurs.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nombre_sectionneurs.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.parafoudres(class="form-check-input") }}
+                                    {{ form.parafoudres.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Surveillance et contrôle -->
+                        <h5 class="mt-4 mb-3">Surveillance et Contrôle</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.systeme_scada(class="form-check-input") }}
+                                    {{ form.systeme_scada.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.telecommande(class="form-check-input") }}
+                                    {{ form.telecommande.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.telemesure(class="form-check-input") }}
+                                    {{ form.telemesure.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Exploitation -->
+                        <h5 class="mt-4 mb-3">Exploitation</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.date_mise_service.label(class="form-label") }}
+                                {{ form.date_mise_service(class="form-control" + (" is-invalid" if form.date_mise_service.errors else "")) }}
+                                {% if form.date_mise_service.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.date_mise_service.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.statut.label(class="form-label") }}
+                                {{ form.statut(class="form-select" + (" is-invalid" if form.statut.errors else "")) }}
+                                {% if form.statut.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.statut.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Performance -->
+                        <h5 class="mt-4 mb-3">Performance</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.taux_disponibilite.label(class="form-label") }}
+                                {{ form.taux_disponibilite(class="form-control" + (" is-invalid" if form.taux_disponibilite.errors else "")) }}
+                                {% if form.taux_disponibilite.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.taux_disponibilite.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.nombre_incidents_annuels.label(class="form-label") }}
+                                {{ form.nombre_incidents_annuels(class="form-control" + (" is-invalid" if form.nombre_incidents_annuels.errors else "")) }}
+                                {% if form.nombre_incidents_annuels.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nombre_incidents_annuels.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.duree_moyenne_indisponibilite.label(class="form-label") }}
+                                {{ form.duree_moyenne_indisponibilite(class="form-control" + (" is-invalid" if form.duree_moyenne_indisponibilite.errors else "")) }}
+                                {% if form.duree_moyenne_indisponibilite.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.duree_moyenne_indisponibilite.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Maintenance -->
+                        <h5 class="mt-4 mb-3">Maintenance</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.date_derniere_maintenance.label(class="form-label") }}
+                                {{ form.date_derniere_maintenance(class="form-control" + (" is-invalid" if form.date_derniere_maintenance.errors else "")) }}
+                                {% if form.date_derniere_maintenance.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.date_derniere_maintenance.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.periodicite_maintenance.label(class="form-label") }}
+                                {{ form.periodicite_maintenance(class="form-control" + (" is-invalid" if form.periodicite_maintenance.errors else "")) }}
+                                {% if form.periodicite_maintenance.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.periodicite_maintenance.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Sécurité et environnement -->
+                        <h5 class="mt-4 mb-3">Sécurité et Environnement</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.cloture_securite(class="form-check-input") }}
+                                    {{ form.cloture_securite.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.systeme_incendie(class="form-check-input") }}
+                                    {{ form.systeme_incendie.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.bac_retention_huile(class="form-check-input") }}
+                                    {{ form.bac_retention_huile.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description et observations -->
+                        <h5 class="mt-4 mb-3">Description et Observations</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="4") }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.observations.label(class="form-label") }}
+                                {{ form.observations(class="form-control" + (" is-invalid" if form.observations.errors else ""), rows="4") }}
+                                {% if form.observations.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.observations.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('transport.index') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>
+                                        {% if mode == 'creation' %}
+                                        Créer le poste
+                                        {% else %}
+                                        Mettre à jour
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

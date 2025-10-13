@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Réseaux de Distribution{% endblock %}
+
+{% block extra_css %}
+<style>
+.network-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.network-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+    font-size: 0.75rem;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #17a2b8;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-network-wired text-info"></i> Réseaux de Distribution</h2>
+            <p class="text-muted mb-0">Gestion des réseaux de distribution électrique</p>
+        </div>
+        <div>
+            <a href="{{ url_for('distribution.nouveau_reseau') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau Réseau
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Opérateur</label>
+                    {{ filtre_form.operateur(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type de réseau</label>
+                    {{ filtre_form.type_reseau(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Province</label>
+                    {{ filtre_form.province(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Statut</label>
+                    {{ filtre_form.statut(class="form-select") }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <a href="{{ url_for('distribution.liste_reseaux') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Réinitialiser
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des réseaux -->
+    {% if reseaux.items %}
+        <div class="row">
+            {% for reseau in reseaux.items %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card network-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ reseau.nom }}</h6>
+                            <span class="badge bg-{{ 'success' if reseau.statut == 'operationnel' else 'warning' if reseau.statut == 'maintenance' else 'danger' }} status-badge">
+                                {{ reseau.statut|title }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Code:</small><br>
+                                    <strong>{{ reseau.code }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Type:</small><br>
+                                    <strong>{{ reseau.type_reseau|title if reseau.type_reseau else 'N/A' }}</strong>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <small class="text-muted">Opérateur:</small><br>
+                                    <strong>{{ reseau.operateur.nom }}</strong>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <small class="text-muted">Zone de desserte:</small><br>
+                                    <strong>{{ reseau.zone_desserte if reseau.zone_desserte else 'Non spécifiée' }}</strong>
+                                </div>
+                            </div>
+
+                            <!-- Métriques -->
+                            <div class="row border-top pt-3">
+                                <div class="col-4 metric-item">
+                                    <div class="metric-value">{{ reseau.tension_distribution|round(1) if reseau.tension_distribution else 'N/A' }}</div>
+                                    <div class="metric-label">kV</div>
+                                </div>
+                                <div class="col-4 metric-item">
+                                    <div class="metric-value">{{ reseau.nombre_postes_distribution or 0 }}</div>
+                                    <div class="metric-label">Postes</div>
+                                </div>
+                                <div class="col-4 metric-item">
+                                    <div class="metric-value">{{ reseau.nombre_clients_total or 0 }}</div>
+                                    <div class="metric-label">Clients</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group w-100" role="group">
+                                <a href="{{ url_for('distribution.detail_reseau', id=reseau.id) }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-eye"></i> Voir
+                                </a>
+                                <a href="{{ url_for('distribution.modifier_reseau', id=reseau.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmerSuppression({{ reseau.id }}, '{{ reseau.nom }}')">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if reseaux.pages > 1 %}
+            <nav aria-label="Navigation des réseaux">
+                <ul class="pagination justify-content-center">
+                    {% if reseaux.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('distribution.liste_reseaux', page=reseaux.prev_num) }}">Précédent</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in reseaux.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != reseaux.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('distribution.liste_reseaux', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if reseaux.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('distribution.liste_reseaux', page=reseaux.next_num) }}">Suivant</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- État vide -->
+        <div class="text-center py-5">
+            <i class="fas fa-network-wired text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-4 text-muted">Aucun réseau trouvé</h4>
+            <p class="text-muted">{{ 'Aucun réseau de distribution ne correspond aux critères de filtrage.' if request.args else 'Aucun réseau de distribution n\'a été créé.' }}</p>
+            <a href="{{ url_for('distribution.nouveau_reseau') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer le premier réseau
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le réseau <strong id="networkName"></strong> ?</p>
+                <p class="text-danger small">Cette action est irréversible et supprimera également tous les postes et feeders associés.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmerSuppression(reseauId, reseauNom) {
+    document.getElementById('networkName').textContent = reseauNom;
+    document.getElementById('deleteForm').action = `/distribution/reseaux/${reseauId}/supprimer`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

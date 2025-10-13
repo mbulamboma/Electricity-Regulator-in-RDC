@@ -1,0 +1,644 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .modele-card {
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    
+    .modele-card:hover {
+        border-color: #0d6efd;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-form-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .form-floating > label {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .unit-display {
+        background-color: #e9ecef;
+        border-left: 1px solid #ced4da;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .code-feedback, .coherence-feedback {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .validation-icon {
+        margin-right: 0.25rem;
+    }
+    
+    .alert-success {
+        background-color: #d1edff;
+        border-color: #b8daff;
+        color: #004085;
+    }
+    
+    .btn-outline-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+</style>
+{% endblock %}
+{% block title %}{{ title }} - Dashboard ARE{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">{{ title }}</h1>
+                    <p class="text-muted">Gestion des indicateurs clés de performance</p>
+                </div>
+                <a href="{{ url_for('are_dashboard.kpis') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour aux KPIs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i>
+                        {% if kpi %}Modifier KPI{% else %}Nouveau KPI{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <!-- Modèle KPI prédéfini -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-lightbulb"></i> Facilité de création</h6>
+                            <p class="mb-0">Choisissez un modèle prédéfini pour remplir automatiquement les champs, ou créez un KPI personnalisé.</p>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.modele_kpi.label(class="form-label") }}
+                            {{ form.modele_kpi(class="form-select" + (" is-invalid" if form.modele_kpi.errors else "")) }}
+                            {% if form.modele_kpi.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.modele_kpi.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Sélectionnez un modèle pour pré-remplir les champs</div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.code.label(class="form-label") }}
+                                    {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else "")) }}
+                                    {% if form.code.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.code.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Code unique pour identifier le KPI (ex: TAUX_ACCES_NATIONAL)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.annee.label(class="form-label") }}
+                                    {{ form.annee(class="form-control" + (" is-invalid" if form.annee.errors else "")) }}
+                                    {% if form.annee.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.annee.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.nom.label(class="form-label") }}
+                            {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                            {% if form.nom.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else "")) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.valeur.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.valeur(class="form-control" + (" is-invalid" if form.valeur.errors else "")) }}
+                                        <span class="input-group-text" id="unite-display">{{ form.unite.data or 'unité' }}</span>
+                                    </div>
+                                    {% if form.valeur.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.valeur.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.unite.label(class="form-label") }}
+                                    {{ form.unite(class="form-control" + (" is-invalid" if form.unite.errors else ""), onchange="updateUniteDisplay(this.value)") }}
+                                    {% if form.unite.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.unite.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.periode.label(class="form-label") }}
+                                    {{ form.periode(class="form-control" + (" is-invalid" if form.periode.errors else "")) }}
+                                    {% if form.periode.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.periode.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.objectif.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.objectif(class="form-control" + (" is-invalid" if form.objectif.errors else "")) }}
+                                        <span class="input-group-text" id="unite-objectif">{{ form.unite.data or 'unité' }}</span>
+                                    </div>
+                                    {% if form.objectif.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.objectif.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Valeur cible à atteindre (optionnel)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.seuil_alerte.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.seuil_alerte(class="form-control" + (" is-invalid" if form.seuil_alerte.errors else "")) }}
+                                        <span class="input-group-text" id="unite-seuil">{{ form.unite.data or 'unité' }}</span>
+                                    </div>
+                                    {% if form.seuil_alerte.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.seuil_alerte.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Seuil déclenchant une alerte (optionnel)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.operateur_id.label(class="form-label") }}
+                                    {{ form.operateur_id(class="form-select" + (" is-invalid" if form.operateur_id.errors else "")) }}
+                                    {% if form.operateur_id.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.operateur_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Laisser vide pour un KPI national</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.source_donnees.label(class="form-label") }}
+                                    {{ form.source_donnees(class="form-select" + (" is-invalid" if form.source_donnees.errors else "")) }}
+                                    {% if form.source_donnees.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.source_donnees.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Origine des données utilisées pour calculer ce KPI</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aperçu du KPI -->
+                        {% if kpi %}
+                        <div class="card bg-light mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Aperçu du KPI</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3">
+                                            <h6 class="mb-1">{{ kpi.nom }}</h6>
+                                            <div class="h4 mb-1 text-primary">
+                                                {{ "{:,.1f}".format(kpi.valeur) }} {{ kpi.unite }}
+                                            </div>
+                                            {% if kpi.objectif %}
+                                            <small class="text-muted">
+                                                Objectif: {{ "{:,.1f}".format(kpi.objectif) }} {{ kpi.unite }}
+                                            </small>
+                                            {% endif %}
+                                            {% if kpi.seuil_alerte and kpi.valeur < kpi.seuil_alerte %}
+                                            <div class="mt-2">
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> Seuil d'alerte atteint
+                                                </small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="mb-0">
+                                            <dt>Code:</dt>
+                                            <dd>{{ kpi.code }}</dd>
+                                            <dt>Période:</dt>
+                                            <dd>{{ kpi.periode }}</dd>
+                                            <dt>Source:</dt>
+                                            <dd>{{ kpi.source_donnees or 'Non spécifiée' }}</dd>
+                                            <dt>Dernière mise à jour:</dt>
+                                            <dd>{{ kpi.date_modification|time_ago }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('are_dashboard.kpis') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <div>
+                                {% if kpi %}
+                                <button type="button" class="btn btn-outline-danger me-2" onclick="confirmerSuppression()">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                                {% endif %}
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+{% if kpi %}
+<div class="modal fade" id="modalSuppression" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer ce KPI ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> Cette action est irréversible. Toutes les données historiques de ce KPI seront perdues.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="#" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="supprimer">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateUniteDisplay(unite) {
+    // Mettre à jour l'affichage de l'unité dans tous les input-group-text
+    document.getElementById('unite-display').textContent = unite || 'unité';
+    document.getElementById('unite-objectif').textContent = unite || 'unité';
+    document.getElementById('unite-seuil').textContent = unite || 'unité';
+}
+
+function confirmerSuppression() {
+    const modal = new bootstrap.Modal(document.getElementById('modalSuppression'));
+    modal.show();
+}
+
+// Validation côté client
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const valeurInput = document.querySelector('#valeur');
+    const objectifInput = document.querySelector('#objectif');
+    const seuilInput = document.querySelector('#seuil_alerte');
+    
+    function validateNumbers() {
+        const valeur = parseFloat(valeurInput.value);
+        const objectif = parseFloat(objectifInput.value);
+        const seuil = parseFloat(seuilInput.value);
+        
+        // Validation logique des seuils
+        if (!isNaN(seuil) && !isNaN(valeur) && seuil > valeur) {
+            seuilInput.setCustomValidity('Le seuil d\'alerte ne peut pas être supérieur à la valeur actuelle');
+        } else {
+            seuilInput.setCustomValidity('');
+        }
+        
+        if (!isNaN(objectif) && !isNaN(valeur) && objectif < valeur) {
+            // Avertissement si la valeur dépasse déjà l'objectif
+            objectifInput.classList.add('border-warning');
+        } else {
+            objectifInput.classList.remove('border-warning');
+        }
+    }
+    
+    valeurInput.addEventListener('input', validateNumbers);
+    objectifInput.addEventListener('input', validateNumbers);
+    seuilInput.addEventListener('input', validateNumbers);
+    
+    // Initialiser l'affichage de l'unité
+    const uniteInput = document.querySelector('#unite');
+    if (uniteInput.value) {
+        updateUniteDisplay(uniteInput.value);
+    }
+});
+
+// Fonction pour remplir automatiquement le formulaire selon le modèle choisi
+function remplirModeleKPI(modele) {
+    const modeles = {
+        'taux_acces': {
+            code: 'TAUX_ACCES_NATIONAL',
+            nom: 'Taux d\'accès à l\'électricité',
+            description: 'Pourcentage de la population ayant accès à l\'électricité',
+            unite: '%',
+            periode: 'annuelle',
+            objectif: 50,
+            seuil_alerte: 25,
+            source_donnees: 'Enquêtes nationales et rapports des opérateurs'
+        },
+        'production_nationale': {
+            code: 'PRODUCTION_NATIONALE',
+            nom: 'Production électrique nationale',
+            description: 'Production totale d\'électricité au niveau national',
+            unite: 'GWh',
+            periode: 'annuelle',
+            objectif: 10000,
+            seuil_alerte: 5000,
+            source_donnees: 'Rapports mensuels des centrales'
+        },
+        'puissance_installee': {
+            code: 'PUISSANCE_INSTALLEE_MW',
+            nom: 'Puissance installée totale',
+            description: 'Capacité totale installée des centrales électriques',
+            unite: 'MW',
+            periode: 'annuelle',
+            objectif: 5000,
+            seuil_alerte: 2000,
+            source_donnees: 'Inventaire des centrales électriques'
+        },
+        'fiabilite_reseau': {
+            code: 'SAIDI_NATIONAL',
+            nom: 'Fiabilité du réseau (SAIDI)',
+            description: 'Durée moyenne d\'interruption par client (SAIDI)',
+            unite: 'minutes',
+            periode: 'annuelle',
+            objectif: 180,
+            seuil_alerte: 300,
+            source_donnees: 'Rapports de qualité de service des distributeurs'
+        },
+        'qualite_service': {
+            code: 'SAIFI_NATIONAL',
+            nom: 'Qualité de service (SAIFI)',
+            description: 'Fréquence moyenne d\'interruption par client (SAIFI)',
+            unite: 'nombre',
+            periode: 'annuelle',
+            objectif: 5,
+            seuil_alerte: 10,
+            source_donnees: 'Rapports de qualité de service des distributeurs'
+        },
+        'consommation_habitant': {
+            code: 'CONSO_PAR_HABITANT',
+            nom: 'Consommation par habitant',
+            description: 'Consommation moyenne d\'électricité par habitant',
+            unite: 'kWh/hab',
+            periode: 'annuelle',
+            objectif: 500,
+            seuil_alerte: 200,
+            source_donnees: 'Bilans énergétiques nationaux'
+        },
+        'pertes_techniques': {
+            code: 'PERTES_TECHNIQUES',
+            nom: 'Pertes techniques',
+            description: 'Pourcentage de pertes techniques dans le réseau',
+            unite: '%',
+            periode: 'annuelle',
+            objectif: 8,
+            seuil_alerte: 15,
+            source_donnees: 'Bilans énergétiques des opérateurs'
+        },
+        'taux_collecte': {
+            code: 'TAUX_COLLECTE',
+            nom: 'Taux de collecte',
+            description: 'Pourcentage de facturation collectée',
+            unite: '%',
+            periode: 'mensuelle',
+            objectif: 85,
+            seuil_alerte: 70,
+            source_donnees: 'Rapports financiers des distributeurs'
+        }
+    };
+    
+    if (modele && modeles[modele]) {
+        const data = modeles[modele];
+        
+        // Remplir les champs
+        document.querySelector('#code').value = data.code;
+        document.querySelector('#nom').value = data.nom;
+        document.querySelector('#description').value = data.description;
+        document.querySelector('#unite').value = data.unite;
+        document.querySelector('#periode').value = data.periode;
+        
+        if (data.objectif) {
+            document.querySelector('#objectif').value = data.objectif;
+        }
+        if (data.seuil_alerte) {
+            document.querySelector('#seuil_alerte').value = data.seuil_alerte;
+        }
+        if (data.source_donnees) {
+            document.querySelector('#source_donnees').value = data.source_donnees;
+        }
+        
+        // Mettre à jour l'affichage de l'unité
+        updateUniteDisplay(data.unite);
+        
+        // Afficher une notification
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+        alert.innerHTML = `
+            <i class="fas fa-check"></i> 
+            Modèle "${data.nom}" appliqué ! Vous pouvez modifier les valeurs selon vos besoins.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const form = document.querySelector('form');
+        form.insertBefore(alert, form.firstChild);
+        
+        // Auto-supprimer l'alerte après 5 secondes
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Validation en temps réel et assistance
+function setupAdvancedValidation() {
+    const codeField = document.querySelector('#code');
+    const objectifField = document.querySelector('#objectif');
+    const seuilField = document.querySelector('#seuil_alerte');
+    const uniteField = document.querySelector('#unite');
+    
+    // Validation du code en temps réel
+    if (codeField) {
+        codeField.addEventListener('input', function() {
+            const value = this.value.toUpperCase();
+            this.value = value;
+            
+            let feedback = this.parentNode.querySelector('.code-feedback');
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'code-feedback small mt-1';
+                this.parentNode.appendChild(feedback);
+            }
+            
+            if (value && !/^[A-Z_0-9]+$/.test(value)) {
+                feedback.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Utilisez uniquement majuscules, chiffres et underscores';
+                feedback.className = 'code-feedback small mt-1 text-warning';
+            } else if (value.length > 50) {
+                feedback.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Maximum 50 caractères';
+                feedback.className = 'code-feedback small mt-1 text-warning';
+            } else if (value) {
+                feedback.innerHTML = '<i class="fas fa-check text-success"></i> Format correct';
+                feedback.className = 'code-feedback small mt-1 text-success';
+            } else {
+                feedback.innerHTML = '';
+            }
+        });
+    }
+    
+    // Validation de cohérence objectif/seuil
+    function validateCoherence() {
+        if (!objectifField || !seuilField || !uniteField) return;
+        
+        const objectif = parseFloat(objectifField.value || 0);
+        const seuil = parseFloat(seuilField.value || 0);
+        const unite = uniteField.value;
+        
+        let feedback = seuilField.parentNode.querySelector('.coherence-feedback');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.className = 'coherence-feedback small mt-1';
+            seuilField.parentNode.appendChild(feedback);
+        }
+        
+        if (objectif && seuil && unite) {
+            let isValid = true;
+            let message = '';
+            let icon = 'fas fa-check text-success';
+            
+            // Validation selon le type d'indicateur
+            if (unite === '%') {
+                if (objectif < 0 || objectif > 100 || seuil < 0 || seuil > 100) {
+                    isValid = false;
+                    message = 'Les pourcentages doivent être entre 0 et 100%';
+                    icon = 'fas fa-exclamation-triangle text-warning';
+                }
+            }
+            
+            // Pour les indicateurs où "moins c'est mieux" (SAIDI, SAIFI, pertes)
+            if (unite === 'minutes' || (unite === 'nombre' && codeField.value.includes('SAIFI')) || 
+                (unite === '%' && codeField.value.includes('PERTES'))) {
+                if (objectif >= seuil) {
+                    isValid = false;
+                    message = 'Pour cet indicateur, l\'objectif devrait être inférieur au seuil d\'alerte';
+                    icon = 'fas fa-info-circle text-info';
+                }
+            } else {
+                // Pour la plupart des autres indicateurs, objectif > seuil
+                if (objectif <= seuil) {
+                    isValid = false;
+                    message = 'L\'objectif devrait généralement être supérieur au seuil d\'alerte';
+                    icon = 'fas fa-info-circle text-info';
+                }
+            }
+            
+            if (isValid && !message) {
+                message = 'Valeurs cohérentes';
+            }
+            
+            feedback.innerHTML = `<i class="${icon}"></i> ${message}`;
+            feedback.className = `coherence-feedback small mt-1 ${isValid ? 'text-success' : 'text-warning'}`;
+        } else {
+            feedback.innerHTML = '';
+        }
+    }
+    
+    if (objectifField && seuilField && uniteField) {
+        objectifField.addEventListener('input', validateCoherence);
+        seuilField.addEventListener('input', validateCoherence);
+        uniteField.addEventListener('change', validateCoherence);
+    }
+}
+
+// Initialiser les validations avancées
+document.addEventListener('DOMContentLoaded', function() {
+    setupAdvancedValidation();
+});
+</script>
+{% endblock %}

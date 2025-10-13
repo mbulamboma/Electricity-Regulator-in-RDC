@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Profil - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        Mon Profil
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.nom.label(class="form-label") }}
+                                {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nom.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.prenom.label(class="form-label") }}
+                                {{ form.prenom(class="form-control" + (" is-invalid" if form.prenom.errors else "")) }}
+                                {% if form.prenom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.prenom.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.telephone.label(class="form-label") }}
+                            {{ form.telephone(class="form-control" + (" is-invalid" if form.telephone.errors else "")) }}
+                            {% if form.telephone.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.telephone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Informations du compte -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informations du compte
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nom d'utilisateur:</strong> {{ user.username }}</p>
+                    <p><strong>Rôle:</strong> 
+                        {% if user.is_super_admin() %}
+                            <span class="badge bg-danger">Super Administrateur</span>
+                        {% elif user.is_admin_operateur() %}
+                            <span class="badge bg-warning">Admin Opérateur</span>
+                        {% else %}
+                            <span class="badge bg-info">Utilisateur Opérateur</span>
+                        {% endif %}
+                    </p>
+                    {% if user.operateur %}
+                        <p><strong>Opérateur:</strong> {{ user.operateur.nom }}</p>
+                    {% endif %}
+                    <p><strong>Dernière connexion:</strong> 
+                        {% if user.derniere_connexion %}
+                            {{ user.derniere_connexion.strftime('%d/%m/%Y à %H:%M') }}
+                        {% else %}
+                            Jamais
+                        {% endif %}
+                    </p>
+                    <p><strong>Compte créé:</strong> {{ user.date_creation.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+            
+            <!-- Changement de mot de passe -->
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>
+                        Changer le mot de passe
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ change_password_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ change_password_form.current_password.label(class="form-label") }}
+                            {{ change_password_form.current_password(class="form-control" + (" is-invalid" if change_password_form.current_password.errors else "")) }}
+                            {% if change_password_form.current_password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in change_password_form.current_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ change_password_form.new_password.label(class="form-label") }}
+                            {{ change_password_form.new_password(class="form-control" + (" is-invalid" if change_password_form.new_password.errors else "")) }}
+                            {% if change_password_form.new_password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in change_password_form.new_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ change_password_form.new_password2.label(class="form-label") }}
+                            {{ change_password_form.new_password2(class="form-control" + (" is-invalid" if change_password_form.new_password2.errors else "")) }}
+                            {% if change_password_form.new_password2.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in change_password_form.new_password2.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ change_password_form.submit(class="btn btn-warning") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

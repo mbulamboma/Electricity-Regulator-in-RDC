@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}{{ transformateur.nom }} - Transport{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ transformateur.nom }}</h4>
+                        <small class="text-muted">
+                            Poste: {{ transformateur.poste.nom }} - {{ transformateur.poste.operateur.nom }}
+                        </small>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{{ url_for('transport.liste_transformateurs') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        {% if current_user.is_admin() or current_user.operateur_id == transformateur.poste.operateur_id %}
+                        <a href="{{ url_for('transport.modifier_transformateur', id=transformateur.id) }}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Statut et alerte si nécessaire -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            {% if transformateur.statut == 'hors_service' %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Ce transformateur est actuellement hors service.
+                                </div>
+                            {% elif transformateur.statut == 'maintenance' %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-tools"></i>
+                                    Ce transformateur est en maintenance.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Informations générales -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Informations générales</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Nom:</strong></td>
+                                            <td>{{ transformateur.nom }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Poste:</strong></td>
+                                            <td>
+                                                <a href="{{ url_for('transport.detail_poste', id=transformateur.poste.id) }}">
+                                                    {{ transformateur.poste.nom }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Numéro de série:</strong></td>
+                                            <td>{{ transformateur.numero_serie or '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Constructeur:</strong></td>
+                                            <td>{{ transformateur.constructeur or '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Année de fabrication:</strong></td>
+                                            <td>{{ transformateur.annee_fabrication or '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Statut:</strong></td>
+                                            <td>
+                                                {% if transformateur.statut == 'en_service' %}
+                                                    <span class="badge bg-success">En service</span>
+                                                {% elif transformateur.statut == 'hors_service' %}
+                                                    <span class="badge bg-danger">Hors service</span>
+                                                {% elif transformateur.statut == 'maintenance' %}
+                                                    <span class="badge bg-warning">En maintenance</span>
+                                                {% elif transformateur.statut == 'reserve' %}
+                                                    <span class="badge bg-info">En réserve</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Date de mise en service:</strong></td>
+                                            <td>{{ transformateur.date_mise_service.strftime('%d/%m/%Y') if transformateur.date_mise_service else '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Caractéristiques électriques -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Caractéristiques électriques</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Puissance nominale:</strong></td>
+                                            <td>{{ transformateur.puissance_nominale }} MVA</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tension primaire:</strong></td>
+                                            <td>{{ transformateur.tension_primaire }} kV</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tension secondaire:</strong></td>
+                                            <td>{{ transformateur.tension_secondaire }} kV</td>
+                                        </tr>
+                                        {% if transformateur.tension_tertiaire %}
+                                        <tr>
+                                            <td><strong>Tension tertiaire:</strong></td>
+                                            <td>{{ transformateur.tension_tertiaire }} kV</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.couplage %}
+                                        <tr>
+                                            <td><strong>Couplage:</strong></td>
+                                            <td>{{ transformateur.couplage }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.type_refroidissement %}
+                                        <tr>
+                                            <td><strong>Refroidissement:</strong></td>
+                                            <td>{{ transformateur.type_refroidissement }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.impedance_cc %}
+                                        <tr>
+                                            <td><strong>Impédance CC:</strong></td>
+                                            <td>{{ transformateur.impedance_cc }}%</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <!-- Réglage -->
+                        {% if transformateur.changeur_prises %}
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Réglage</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Changeur de prises:</strong></td>
+                                            <td><span class="badge bg-success">Oui</span></td>
+                                        </tr>
+                                        {% if transformateur.nombre_prises %}
+                                        <tr>
+                                            <td><strong>Nombre de prises:</strong></td>
+                                            <td>{{ transformateur.nombre_prises }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.plage_reglage %}
+                                        <tr>
+                                            <td><strong>Plage de réglage:</strong></td>
+                                            <td>{{ transformateur.plage_reglage }}%</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.pas_reglage %}
+                                        <tr>
+                                            <td><strong>Pas de réglage:</strong></td>
+                                            <td>{{ transformateur.pas_reglage }}%</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Surveillance -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Surveillance</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        {% if transformateur.temperature_huile %}
+                                        <tr>
+                                            <td><strong>Température huile:</strong></td>
+                                            <td>
+                                                {{ transformateur.temperature_huile }}°C
+                                                {% if transformateur.temperature_huile > 80 %}
+                                                    <i class="fas fa-exclamation-triangle text-danger" title="Température élevée"></i>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.temperature_enroulements %}
+                                        <tr>
+                                            <td><strong>Température enroulements:</strong></td>
+                                            <td>
+                                                {{ transformateur.temperature_enroulements }}°C
+                                                {% if transformateur.temperature_enroulements > 100 %}
+                                                    <i class="fas fa-exclamation-triangle text-danger" title="Température élevée"></i>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.niveau_huile %}
+                                        <tr>
+                                            <td><strong>Niveau d'huile:</strong></td>
+                                            <td>
+                                                {% if transformateur.niveau_huile == 'normal' %}
+                                                    <span class="badge bg-success">Normal</span>
+                                                {% elif transformateur.niveau_huile == 'bas' %}
+                                                    <span class="badge bg-warning">Bas</span>
+                                                {% elif transformateur.niveau_huile == 'critique' %}
+                                                    <span class="badge bg-danger">Critique</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if transformateur.pression_huile %}
+                                        <tr>
+                                            <td><strong>Pression huile:</strong></td>
+                                            <td>{{ transformateur.pression_huile }} bar</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Maintenance -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Maintenance et tests</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Maintenance</h6>
+                                            <table class="table table-borderless">
+                                                {% if transformateur.date_derniere_maintenance %}
+                                                <tr>
+                                                    <td><strong>Dernière maintenance:</strong></td>
+                                                    <td>{{ transformateur.date_derniere_maintenance.strftime('%d/%m/%Y') }}</td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if transformateur.type_derniere_maintenance %}
+                                                <tr>
+                                                    <td><strong>Type:</strong></td>
+                                                    <td>{{ transformateur.type_derniere_maintenance }}</td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if transformateur.prochaine_maintenance %}
+                                                <tr>
+                                                    <td><strong>Prochaine maintenance:</strong></td>
+                                                    <td>
+                                                        {{ transformateur.prochaine_maintenance.strftime('%d/%m/%Y') }}
+                                                        {% set jours_restants = (transformateur.prochaine_maintenance - datetime.now().date()).days %}
+                                                        {% if jours_restants < 0 %}
+                                                            <span class="badge bg-danger">En retard</span>
+                                                        {% elif jours_restants < 30 %}
+                                                            <span class="badge bg-warning">Bientôt</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Tests et analyses</h6>
+                                            <table class="table table-borderless">
+                                                {% if transformateur.date_derniere_analyse_huile %}
+                                                <tr>
+                                                    <td><strong>Dernière analyse huile:</strong></td>
+                                                    <td>{{ transformateur.date_derniere_analyse_huile.strftime('%d/%m/%Y') }}</td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if transformateur.date_dernier_test_isolement %}
+                                                <tr>
+                                                    <td><strong>Dernier test isolement:</strong></td>
+                                                    <td>{{ transformateur.date_dernier_test_isolement.strftime('%d/%m/%Y') }}</td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if transformateur.resistance_isolement %}
+                                                <tr>
+                                                    <td><strong>Résistance isolement:</strong></td>
+                                                    <td>{{ transformateur.resistance_isolement }} MΩ</td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if transformateur.resultat_analyse_huile %}
+                                    <h6 class="mt-3">Résultats de l'analyse d'huile</h6>
+                                    <div class="bg-light p-3 rounded">
+                                        {{ transformateur.resultat_analyse_huile|nl2br }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if transformateur.observations %}
+                    <!-- Observations -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0 text-primary">Observations</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="bg-light p-3 rounded">
+                                        {{ transformateur.observations|nl2br }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Informations système -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0 text-muted">Informations système</h6>
+                                </div>
+                                <div class="card-body">
+                                    <small class="text-muted">
+                                        Créé le {{ transformateur.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                                        {% if transformateur.date_modification != transformateur.date_creation %}
+                                        - Modifié le {{ transformateur.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

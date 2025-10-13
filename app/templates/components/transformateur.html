@@ -1,0 +1,294 @@
+<!-- Composant réutilisable pour les transformateurs -->
+<!-- Usage: {% include 'components/transformateur.html' with context %} -->
+
+<div class="card mt-3" id="transformateur-{{ loop.index0 if loop else 0 }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-cog me-2"></i>
+            {% if transformateur %}
+                Transformateur {{ loop.index if loop else 1 }} - {{ transformateur.nom.data or 'Nouveau' }}
+            {% else %}
+                Nouveau Transformateur
+            {% endif %}
+        </h6>
+        <button type="button" class="btn btn-sm btn-outline-danger" 
+                onclick="supprimerTransformateur({{ loop.index0 if loop else 0 }})">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Identification -->
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-id-card me-2"></i>Identification</h6>
+                <div class="mb-3">
+                    {{ transformateur.nom.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.nom(class="form-control") if transformateur else '' }}
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.numero_serie.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.numero_serie(class="form-control") if transformateur else '' }}
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.constructeur.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.constructeur(class="form-control") if transformateur else '' }}
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.annee_fabrication.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.annee_fabrication(class="form-control") if transformateur else '' }}
+                </div>
+            </div>
+            
+            <!-- Caractéristiques électriques -->
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-bolt me-2"></i>Caractéristiques Électriques</h6>
+                <div class="mb-3">
+                    {{ transformateur.puissance_nominale.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.puissance_nominale(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">
+                            {% if 'transport' in request.endpoint %}MVA{% else %}kVA{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.tension_primaire.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.tension_primaire(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">kV</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.tension_secondaire.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.tension_secondaire(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">
+                            {% if 'transport' in request.endpoint %}kV{% else %}V{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% if transformateur and transformateur.tension_tertiaire %}
+                <div class="mb-3">
+                    {{ transformateur.tension_tertiaire.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ transformateur.tension_tertiaire(class="form-control") }}
+                        <span class="input-group-text">kV</span>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ transformateur.couplage.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.couplage(class="form-control") if transformateur else '' }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Caractéristiques techniques -->
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-tools me-2"></i>Caractéristiques Techniques</h6>
+                <div class="mb-3">
+                    {{ transformateur.type_refroidissement.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.type_refroidissement(class="form-control") if transformateur else '' }}
+                </div>
+                {% if transformateur and hasattr(transformateur, 'type_installation') %}
+                <div class="mb-3">
+                    {{ transformateur.type_installation.label(class="form-label") }}
+                    {{ transformateur.type_installation(class="form-control") }}
+                </div>
+                {% endif %}
+                {% if transformateur and hasattr(transformateur, 'poids_total') %}
+                <div class="mb-3">
+                    {{ transformateur.poids_total.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ transformateur.poids_total(class="form-control") }}
+                        <span class="input-group-text">tonnes</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if transformateur and hasattr(transformateur, 'volume_huile') %}
+                <div class="mb-3">
+                    {{ transformateur.volume_huile.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ transformateur.volume_huile(class="form-control") }}
+                        <span class="input-group-text">litres</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Impédances et pertes -->
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-chart-line me-2"></i>Impédances et Pertes</h6>
+                <div class="mb-3">
+                    {{ transformateur.impedance_cc.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.impedance_cc(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.pertes_vide.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.pertes_vide(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">
+                            {% if 'transport' in request.endpoint %}kW{% else %}W{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.pertes_charge.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.pertes_charge(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">
+                            {% if 'transport' in request.endpoint %}kW{% else %}W{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ transformateur.courant_vide.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.courant_vide(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Réglage et surveillance -->
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-sliders-h me-2"></i>Réglage</h6>
+                {% if transformateur and hasattr(transformateur, 'changeur_prises') %}
+                <div class="mb-3">
+                    <div class="form-check">
+                        {{ transformateur.changeur_prises(class="form-check-input") }}
+                        {{ transformateur.changeur_prises.label(class="form-check-label") }}
+                    </div>
+                </div>
+                {% endif %}
+                {% if transformateur and (hasattr(transformateur, 'nombre_prises') or hasattr(transformateur, 'prises_reglage')) %}
+                <div class="mb-3">
+                    {% if hasattr(transformateur, 'nombre_prises') %}
+                        {{ transformateur.nombre_prises.label(class="form-label") }}
+                        {{ transformateur.nombre_prises(class="form-control") }}
+                    {% else %}
+                        {{ transformateur.prises_reglage.label(class="form-label") }}
+                        {{ transformateur.prises_reglage(class="form-control") }}
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ transformateur.plage_reglage.label(class="form-label") if transformateur else '' }}
+                    <div class="input-group">
+                        {{ transformateur.plage_reglage(class="form-control") if transformateur else '' }}
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="text-primary"><i class="fas fa-eye me-2"></i>Surveillance</h6>
+                <div class="mb-3">
+                    {{ transformateur.statut.label(class="form-label") if transformateur else '' }}
+                    {{ transformateur.statut(class="form-control") if transformateur else '' }}
+                </div>
+                {% if transformateur and transformateur.temperature_huile %}
+                <div class="mb-3">
+                    {{ transformateur.temperature_huile.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ transformateur.temperature_huile(class="form-control") }}
+                        <span class="input-group-text">°C</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if transformateur and transformateur.niveau_huile %}
+                <div class="mb-3">
+                    {{ transformateur.niveau_huile.label(class="form-label") }}
+                    {{ transformateur.niveau_huile(class="form-control") }}
+                </div>
+                {% endif %}
+                {% if transformateur and hasattr(transformateur, 'charge_actuelle') %}
+                <div class="mb-3">
+                    {{ transformateur.charge_actuelle.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ transformateur.charge_actuelle(class="form-control") }}
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Maintenance -->
+        <div class="row">
+            <div class="col-12">
+                <h6 class="text-primary"><i class="fas fa-wrench me-2"></i>Maintenance</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ transformateur.date_mise_service.label(class="form-label") if transformateur else '' }}
+                            {{ transformateur.date_mise_service(class="form-control") if transformateur else '' }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ transformateur.date_derniere_maintenance.label(class="form-label") if transformateur else '' }}
+                            {{ transformateur.date_derniere_maintenance(class="form-control") if transformateur else '' }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ transformateur.prochaine_maintenance.label(class="form-label") if transformateur else '' }}
+                            {{ transformateur.prochaine_maintenance(class="form-control") if transformateur else '' }}
+                        </div>
+                    </div>
+                </div>
+                {% if transformateur and transformateur.type_derniere_maintenance %}
+                <div class="mb-3">
+                    {{ transformateur.type_derniere_maintenance.label(class="form-label") }}
+                    {{ transformateur.type_derniere_maintenance(class="form-control") }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Observations -->
+        <div class="row">
+            <div class="col-12">
+                <h6 class="text-primary"><i class="fas fa-comment me-2"></i>Observations</h6>
+                <div class="mb-3">
+                    {{ transformateur.observations(class="form-control", rows="3") if transformateur else '' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.text-primary {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    font-weight: 500;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>

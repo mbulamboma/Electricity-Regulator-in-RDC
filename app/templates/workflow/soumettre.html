@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Soumettre un Rapport pour Validation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>Soumettre un Rapport pour Validation
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Informations du rapport -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Rapport à soumettre</h6>
+                        <p class="mb-1"><strong>ID:</strong> #{{ rapport_id }}</p>
+                        <p class="mb-0"><strong>Statut:</strong> Prêt pour soumission</p>
+                    </div>
+
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.type_rapport.label(class="form-label") }}
+                                {{ form.type_rapport(class="form-select") }}
+                                {% if form.type_rapport.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.type_rapport.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.priorite.label(class="form-label") }}
+                                {{ form.priorite(class="form-select") }}
+                                <div class="form-text">
+                                    La priorité détermine l'urgence de la validation
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.commentaires.label(class="form-label") }}
+                            {{ form.commentaires(class="form-control", rows="4") }}
+                            {% if form.commentaires.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.commentaires.errors[0] }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Ajoutez des commentaires pour guider les validateurs (optionnel)
+                            </div>
+                        </div>
+
+                        <!-- Workflow Information -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-route me-2"></i>Processus de Validation
+                                </h6>
+                                <div class="row text-center">
+                                    <div class="col">
+                                        <div class="step-icon bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small><strong>1. Soumission</strong></small>
+                                            <br><small class="text-muted">Le rapport est soumis</small>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="step-icon bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small><strong>2. Examen</strong></small>
+                                            <br><small class="text-muted">Validation par un expert</small>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="step-icon bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small><strong>3. Validation</strong></small>
+                                            <br><small class="text-muted">Rapport approuvé</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-3">
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            <strong>Délai de validation:</strong> 72 heures par défaut
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-bell me-1"></i>
+                                            <strong>Notifications:</strong> Automatiques à chaque étape
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation Disclaimer -->
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Important</h6>
+                            <ul class="mb-0">
+                                <li>Une fois soumis, le rapport ne pourra plus être modifié sans demande de modification</li>
+                                <li>Vous recevrez des notifications à chaque étape du processus</li>
+                                <li>Le validateur peut demander des modifications ou rejeter le rapport</li>
+                                <li>En cas de rejet, vous pourrez modifier et resoumettre le rapport</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('workflow.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Annuler
+                            </a>
+                            
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+.step-icon + .step-icon::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -50%;
+    right: 50%;
+    height: 2px;
+    background: #dee2e6;
+    z-index: -1;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de la priorité
+    const prioriteSelect = document.getElementById('priorite');
+    const typeRapportSelect = document.getElementById('type_rapport');
+    
+    // Ajuster automatiquement la priorité selon le type de rapport
+    typeRapportSelect.addEventListener('change', function() {
+        const type = this.value;
+        if (type === 'incident' || type === 'maintenance') {
+            prioriteSelect.value = '2'; // Urgente
+        } else if (type === 'financier') {
+            prioriteSelect.value = '3'; // Critique
+        }
+    });
+    
+    // Confirmation avant soumission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const confirmation = confirm(
+            'Êtes-vous sûr de vouloir soumettre ce rapport pour validation ?\n\n' +
+            'Une fois soumis, vous ne pourrez plus le modifier sans demande de modification.'
+        );
+        
+        if (!confirmation) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

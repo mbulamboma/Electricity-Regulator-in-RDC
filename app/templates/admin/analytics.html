@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.filter-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.analytics-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.analytics-card:hover {
+    transform: translateY(-5px);
+}
+.metric-big {
+    font-size: 3rem;
+    font-weight: bold;
+}
+.chart-wrapper {
+    position: relative;
+    height: 400px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">📊 Analyses Avancées</h1>
+                    <p class="text-muted">Analyses détaillées de la production hydroélectrique</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Retour Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card filter-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">🔍 Filtres d'Analyse</h5>
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Année</label>
+                            <select name="annee" class="form-select">
+                                <option value="">Toutes les années</option>
+                                {% for annee in annees %}
+                                    <option value="{{ annee }}" {{ 'selected' if annee == filters.annee }}>{{ annee }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Mois</label>
+                            <select name="mois" class="form-select">
+                                <option value="">Tous les mois</option>
+                                {% for i in range(1, 13) %}
+                                    <option value="{{ i }}" {{ 'selected' if i == filters.mois }}>
+                                        {{ ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                                            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Opérateur</label>
+                            <select name="operateur_id" class="form-select">
+                                <option value="">Tous les opérateurs</option>
+                                {% for operateur in operateurs %}
+                                    <option value="{{ operateur.id }}" {{ 'selected' if operateur.id == filters.operateur_id }}>
+                                        {{ operateur.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-light w-100">
+                                <i class="fas fa-search"></i> Analyser
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques principales -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card analytics-card text-center">
+                <div class="card-body">
+                    <div class="metric-big text-primary">{{ analytics_data.total_rapports or 0 }}</div>
+                    <h6 class="card-title text-muted">Rapports Analysés</h6>
+                    <small class="text-muted">Total dans la période</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card analytics-card text-center">
+                <div class="card-body">
+                    <div class="metric-big text-success">{{ "%.1f"|format(analytics_data.energie_totale or 0) }}</div>
+                    <h6 class="card-title text-muted">Énergie Totale (MWh)</h6>
+                    <small class="text-muted">Production cumulée</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card analytics-card text-center">
+                <div class="card-body">
+                    <div class="metric-big text-info">{{ "%.1f"|format(analytics_data.facteur_charge_moyen or 0) }}%</div>
+                    <h6 class="card-title text-muted">Facteur de Charge Moyen</h6>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: {{ analytics_data.facteur_charge_moyen or 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card analytics-card text-center">
+                <div class="card-body">
+                    <div class="metric-big text-warning">{{ analytics_data.total_incidents or 0 }}</div>
+                    <h6 class="card-title text-muted">Incidents Majeurs</h6>
+                    <small class="text-muted">{{ "%.2f"|format(analytics_data.taux_incidents or 0) }} par rapport</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques d'analyse -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-3">
+            <div class="card analytics-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📈 Performance des Centrales</h5>
+                    <small class="text-muted">Top 5 des centrales par production</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="centralesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card analytics-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🎯 Répartition par Statut</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="statutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card analytics-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🔧 Maintenance vs Incidents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="maintenanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-3">
+            <div class="card analytics-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📊 Distribution Facteur de Charge</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="metric-big text-success">{{ "%.1f"|format(analytics_data.facteur_charge_max or 0) }}%</div>
+                            <small class="text-muted">Maximum</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-big text-warning">{{ "%.1f"|format(analytics_data.facteur_charge_moyen or 0) }}%</div>
+                            <small class="text-muted">Moyenne</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-big text-danger">{{ "%.1f"|format(analytics_data.facteur_charge_min or 0) }}%</div>
+                            <small class="text-muted">Minimum</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 20px;">
+                        <div class="progress-bar bg-danger" style="width: {{ (analytics_data.facteur_charge_min or 0) / 3 }}%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ ((analytics_data.facteur_charge_moyen or 0) - (analytics_data.facteur_charge_min or 0)) / 3 }}%"></div>
+                        <div class="progress-bar bg-success" style="width: {{ ((analytics_data.facteur_charge_max or 0) - (analytics_data.facteur_charge_moyen or 0)) / 3 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau détaillé -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card analytics-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🏭 Top Centrales par Production</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics_data.top_centrales %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Centrale</th>
+                                    <th>Production (MWh)</th>
+                                    <th>Pourcentage</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i, centrale in analytics_data.top_centrales[:10].items() if loop.index <= 10 %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index <= 3 %}
+                                            <span class="badge bg-{{ 'warning' if loop.index == 1 else 'secondary' if loop.index == 2 else 'dark' }}">
+                                                {{ loop.index }}
+                                            </span>
+                                        {% else %}
+                                            {{ loop.index }}
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ centrale.nom }}</strong></td>
+                                    <td>{{ "%.1f"|format(centrale.production) }}</td>
+                                    <td>
+                                        {% set pct = (centrale.production / analytics_data.energie_totale * 100) if analytics_data.energie_totale > 0 else 0 %}
+                                        {{ "%.1f"|format(pct) }}%
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ pct }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                        <p>Aucune donnée disponible pour les filtres sélectionnés</p>
+                        <small>Modifiez les critères de filtre pour voir les analyses</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions d'export -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card analytics-card">
+                <div class="card-body">
+                    <h6 class="card-title">📥 Actions d'Export</h6>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('admin.export_data', export_type='rapports_csv') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </a>
+                        <a href="{{ url_for('admin.export_data', export_type='operateurs_excel') }}" class="btn btn-outline-success">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </a>
+                        <button onclick="window.print()" class="btn btn-outline-secondary">
+                            <i class="fas fa-print"></i> Imprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Données d'analyse
+const analyticsData = {{ analytics_data | tojson }};
+
+// Configuration des couleurs
+const colors = {
+    primary: '#0d6efd',
+    success: '#198754',
+    info: '#0dcaf0',
+    warning: '#ffc107',
+    danger: '#dc3545'
+};
+
+// Graphique top centrales
+if (analyticsData.top_centrales && analyticsData.top_centrales.length > 0) {
+    const centralesCtx = document.getElementById('centralesChart').getContext('2d');
+    new Chart(centralesCtx, {
+        type: 'bar',
+        data: {
+            labels: analyticsData.top_centrales.map(c => c.nom),
+            datasets: [{
+                label: 'Production (MWh)',
+                data: analyticsData.top_centrales.map(c => c.production),
+                backgroundColor: colors.primary + '80',
+                borderColor: colors.primary,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' MWh';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Graphique répartition par statut
+if (analyticsData.repartition_statuts) {
+    const statutCtx = document.getElementById('statutChart').getContext('2d');
+    const statuts = Object.keys(analyticsData.repartition_statuts);
+    const values = Object.values(analyticsData.repartition_statuts);
+    
+    new Chart(statutCtx, {
+        type: 'pie',
+        data: {
+            labels: statuts.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    colors.success,
+                    colors.warning,
+                    colors.info,
+                    colors.danger
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Graphique maintenance vs incidents
+const maintenanceCtx = document.getElementById('maintenanceChart').getContext('2d');
+new Chart(maintenanceCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Maintenances', 'Incidents'],
+        datasets: [{
+            data: [analyticsData.total_maintenances || 0, analyticsData.total_incidents || 0],
+            backgroundColor: [colors.info, colors.danger]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

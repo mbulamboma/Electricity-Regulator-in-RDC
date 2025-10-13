@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Feeders de Distribution{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🌐 Feeders de Distribution</h1>
+                    <p class="text-muted">Gestion des feeders et lignes de distribution</p>
+                </div>
+                {% if current_user.is_admin() %}
+                <div>
+                    <a href="{{ url_for('distribution.nouveau_feeder') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nouveau Feeder
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-center text-muted py-5">
+                        <i class="fas fa-sitemap fa-3x mb-3"></i><br>
+                        Page en développement<br>
+                        <small>Les fonctionnalités des feeders seront bientôt disponibles.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,545 @@
+<!-- Composant tableau dynamique réutilisable -->
+<!-- Usage: {% include 'components/tableau_dynamique.html' with context %} -->
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover" id="{{ table_id or 'tableau-dynamique' }}">
+        <thead class="table-dark">
+            <tr>
+                {% if selectable %}
+                <th scope="col" width="30">
+                    <input type="checkbox" class="form-check-input" id="select-all" 
+                           onchange="toggleSelectAll(this)">
+                </th>
+                {% endif %}
+                
+                {% if row_numbers %}
+                <th scope="col" width="60">#</th>
+                {% endif %}
+                
+                {% for colonne in colonnes %}
+                <th scope="col" 
+                    {% if colonne.width %}width="{{ colonne.width }}"{% endif %}
+                    {% if colonne.sortable %}
+                        class="sortable cursor-pointer" 
+                        data-column="{{ colonne.key }}"
+                        onclick="trierTableau('{{ table_id or 'tableau-dynamique' }}', '{{ colonne.key }}')"
+                    {% endif %}>
+                    {{ colonne.titre }}
+                    {% if colonne.sortable %}
+                        <i class="fas fa-sort ms-1" id="sort-{{ colonne.key }}"></i>
+                    {% endif %}
+                </th>
+                {% endfor %}
+                
+                {% if actions %}
+                <th scope="col" width="{{ actions.width or '120' }}">{{ actions.titre or 'Actions' }}</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if donnees and donnees|length > 0 %}
+                {% for item in donnees %}
+                <tr {% if item.id %}data-id="{{ item.id }}"{% endif %} 
+                    {% if item.class %}class="{{ item.class }}"{% endif %}>
+                    
+                    {% if selectable %}
+                    <td>
+                        <input type="checkbox" class="form-check-input row-select" 
+                               value="{{ item.id or loop.index0 }}"
+                               onchange="updateSelectAll()">
+                    </td>
+                    {% endif %}
+                    
+                    {% if row_numbers %}
+                    <td class="text-muted">{{ loop.index }}</td>
+                    {% endif %}
+                    
+                    {% for colonne in colonnes %}
+                    <td {% if colonne.class %}class="{{ colonne.class }}"{% endif %}>
+                        {% set valeur = item[colonne.key] %}
+                        
+                        {% if colonne.type == 'badge' %}
+                            {% if valeur %}
+                                {% set badge_class = colonne.badge_map.get(valeur, 'secondary') %}
+                                <span class="badge bg-{{ badge_class }}">{{ valeur }}</span>
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'date' %}
+                            {% if valeur %}
+                                {{ valeur.strftime('%d/%m/%Y') if valeur is datetime else valeur }}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'datetime' %}
+                            {% if valeur %}
+                                {{ valeur.strftime('%d/%m/%Y %H:%M') if valeur is datetime else valeur }}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'number' %}
+                            {% if valeur is not none %}
+                                {{ "{:,.{}f}".format(valeur, colonne.decimals or 0) }}
+                                {% if colonne.unite %}<small class="text-muted ms-1">{{ colonne.unite }}</small>{% endif %}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'percentage' %}
+                            {% if valeur is not none %}
+                                {{ "{:.{}f}%".format(valeur, colonne.decimals or 1) }}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'currency' %}
+                            {% if valeur is not none %}
+                                {{ "{:,.0f}".format(valeur) }} {{ colonne.devise or 'USD' }}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'boolean' %}
+                            {% if valeur is not none %}
+                                {% if valeur %}
+                                    <i class="fas fa-check text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-times text-danger"></i>
+                                {% endif %}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'progress' %}
+                            {% if valeur is not none %}
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar 
+                                        {% if valeur >= 80 %}bg-success
+                                        {% elif valeur >= 60 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        role="progressbar" 
+                                        style="width: {{ valeur }}%" 
+                                        aria-valuenow="{{ valeur }}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                        {{ valeur }}%
+                                    </div>
+                                </div>
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'link' %}
+                            {% if valeur %}
+                                <a href="{{ colonne.url_template.format(id=item.id, value=valeur) }}" 
+                                   class="{{ colonne.link_class or 'text-decoration-none' }}">
+                                    {{ valeur }}
+                                </a>
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'icon' %}
+                            {% if valeur %}
+                                <i class="{{ colonne.icon_map.get(valeur, 'fas fa-circle') }}"></i>
+                                {% if colonne.show_text %}{{ valeur }}{% endif %}
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'image' %}
+                            {% if valeur %}
+                                <img src="{{ valeur }}" 
+                                     alt="{{ colonne.alt or 'Image' }}" 
+                                     class="img-thumbnail"
+                                     style="max-width: {{ colonne.max_width or '50px' }}; max-height: {{ colonne.max_height or '50px' }};">
+                            {% endif %}
+                        
+                        {% elif colonne.type == 'html' %}
+                            {{ valeur|safe if valeur else '' }}
+                        
+                        {% elif colonne.type == 'truncate' %}
+                            {% if valeur %}
+                                <span title="{{ valeur }}">
+                                    {{ valeur[:colonne.max_length or 30] }}
+                                    {% if valeur|length > (colonne.max_length or 30) %}...{% endif %}
+                                </span>
+                            {% endif %}
+                        
+                        {% else %}
+                            {{ valeur if valeur is not none else '' }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    
+                    {% if actions %}
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            {% for action in actions.boutons %}
+                                {% if action.type == 'link' %}
+                                    <a href="{{ action.url.format(id=item.id) }}" 
+                                       class="btn btn-{{ action.style or 'outline-primary' }}"
+                                       title="{{ action.titre }}">
+                                        <i class="{{ action.icon }}"></i>
+                                        {% if action.text %}{{ action.text }}{% endif %}
+                                    </a>
+                                {% elif action.type == 'button' %}
+                                    <button type="button" 
+                                            class="btn btn-{{ action.style or 'outline-primary' }}"
+                                            onclick="{{ action.onclick.format(id=item.id) }}"
+                                            title="{{ action.titre }}">
+                                        <i class="{{ action.icon }}"></i>
+                                        {% if action.text %}{{ action.text }}{% endif %}
+                                    </button>
+                                {% elif action.type == 'modal' %}
+                                    <button type="button" 
+                                            class="btn btn-{{ action.style or 'outline-primary' }}"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#{{ action.modal_id }}"
+                                            data-id="{{ item.id }}"
+                                            title="{{ action.titre }}">
+                                        <i class="{{ action.icon }}"></i>
+                                        {% if action.text %}{{ action.text }}{% endif %}
+                                    </button>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ colonnes|length + (1 if selectable else 0) + (1 if row_numbers else 0) + (1 if actions else 0) }}" 
+                        class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <br>
+                        {{ message_vide or 'Aucune donnée disponible' }}
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination (si activée) -->
+{% if pagination %}
+<nav aria-label="Navigation des pages" class="mt-3">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <small class="text-muted">
+                Affichage de {{ pagination.debut }} à {{ pagination.fin }} 
+                sur {{ pagination.total }} éléments
+            </small>
+        </div>
+        <div class="col-md-6">
+            <ul class="pagination pagination-sm justify-content-end mb-0">
+                <!-- Première page -->
+                <li class="page-item {% if pagination.page_actuelle == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.url_base }}?page=1" aria-label="Première">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Page précédente -->
+                <li class="page-item {% if pagination.page_actuelle == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.url_base }}?page={{ pagination.page_actuelle - 1 }}" aria-label="Précédente">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Pages numérotées -->
+                {% for page in pagination.pages %}
+                    {% if page == '...' %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item {% if page == pagination.page_actuelle %}active{% endif %}">
+                            <a class="page-link" href="{{ pagination.url_base }}?page={{ page }}">{{ page }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Page suivante -->
+                <li class="page-item {% if pagination.page_actuelle == pagination.total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.url_base }}?page={{ pagination.page_actuelle + 1 }}" aria-label="Suivante">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Dernière page -->
+                <li class="page-item {% if pagination.page_actuelle == pagination.total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.url_base }}?page={{ pagination.total_pages }}" aria-label="Dernière">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endif %}
+
+<!-- JavaScript pour la fonctionnalité du tableau -->
+<script>
+/**
+ * Fonctions pour le tableau dynamique
+ */
+
+// Sélection multiple
+function toggleSelectAll(checkbox) {
+    const tableId = checkbox.closest('table').id;
+    const rowCheckboxes = document.querySelectorAll(`#${tableId} .row-select`);
+    
+    rowCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    
+    updateActionButtons();
+}
+
+function updateSelectAll() {
+    const table = event.target.closest('table');
+    const selectAll = table.querySelector('#select-all');
+    const rowCheckboxes = table.querySelectorAll('.row-select');
+    const checkedBoxes = table.querySelectorAll('.row-select:checked');
+    
+    selectAll.checked = checkedBoxes.length === rowCheckboxes.length;
+    selectAll.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < rowCheckboxes.length;
+    
+    updateActionButtons();
+}
+
+function updateActionButtons() {
+    const checkedBoxes = document.querySelectorAll('.row-select:checked');
+    const bulkActions = document.querySelector('.bulk-actions');
+    
+    if (bulkActions) {
+        bulkActions.style.display = checkedBoxes.length > 0 ? 'block' : 'none';
+    }
+    
+    // Mettre à jour le compteur
+    const counter = document.querySelector('.selected-count');
+    if (counter) {
+        counter.textContent = checkedBoxes.length;
+    }
+}
+
+// Tri des colonnes
+let sortState = {};
+
+function trierTableau(tableId, column) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Déterminer la direction du tri
+    const currentSort = sortState[tableId + '_' + column] || 'none';
+    let newSort;
+    
+    if (currentSort === 'none' || currentSort === 'desc') {
+        newSort = 'asc';
+    } else {
+        newSort = 'desc';
+    }
+    
+    sortState[tableId + '_' + column] = newSort;
+    
+    // Réinitialiser tous les indicateurs de tri
+    table.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort ms-1';
+    });
+    
+    // Mettre à jour l'indicateur pour cette colonne
+    const sortIcon = document.getElementById(`sort-${column}`);
+    if (sortIcon) {
+        sortIcon.className = `fas fa-sort-${newSort === 'asc' ? 'up' : 'down'} ms-1`;
+    }
+    
+    // Obtenir l'index de la colonne
+    const headers = table.querySelectorAll('th');
+    let columnIndex = -1;
+    
+    headers.forEach((header, index) => {
+        if (header.dataset.column === column) {
+            columnIndex = index;
+        }
+    });
+    
+    if (columnIndex === -1) return;
+    
+    // Trier les lignes
+    rows.sort((a, b) => {
+        const aValue = a.cells[columnIndex].textContent.trim();
+        const bValue = b.cells[columnIndex].textContent.trim();
+        
+        // Déterminer le type de données
+        const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+        const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+        
+        let comparison;
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            // Tri numérique
+            comparison = aNum - bNum;
+        } else {
+            // Tri alphabétique
+            comparison = aValue.localeCompare(bValue, 'fr', { numeric: true });
+        }
+        
+        return newSort === 'asc' ? comparison : -comparison;
+    });
+    
+    // Réinsérer les lignes triées
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Animation de tri
+    tbody.style.opacity = '0.7';
+    setTimeout(() => {
+        tbody.style.opacity = '1';
+    }, 150);
+}
+
+// Filtrage en temps réel
+function filtrerTableau(tableId, searchInput) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const isVisible = text.includes(searchTerm);
+        
+        row.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+    });
+    
+    // Mettre à jour le compteur de résultats
+    const counter = document.querySelector('.search-results-count');
+    if (counter) {
+        counter.textContent = `${visibleCount} résultat(s)`;
+    }
+    
+    // Afficher message si aucun résultat
+    const noResults = table.querySelector('.no-results');
+    if (noResults) {
+        noResults.style.display = visibleCount === 0 ? 'table-row' : 'none';
+    }
+}
+
+// Export des données
+function exporterTableau(tableId, format = 'csv') {
+    const table = document.getElementById(tableId);
+    const rows = table.querySelectorAll('tr');
+    
+    let data = [];
+    
+    rows.forEach((row, index) => {
+        if (row.style.display === 'none') return; // Ignorer les lignes cachées
+        
+        const cells = row.querySelectorAll('th, td');
+        const rowData = [];
+        
+        cells.forEach(cell => {
+            // Ignorer les colonnes de sélection et d'actions
+            if (!cell.querySelector('input[type="checkbox"]') && 
+                !cell.querySelector('.btn-group')) {
+                rowData.push(cell.textContent.trim());
+            }
+        });
+        
+        if (rowData.length > 0) {
+            data.push(rowData);
+        }
+    });
+    
+    if (format === 'csv') {
+        exporterCSV(data, `tableau_${tableId}_${new Date().toISOString().split('T')[0]}.csv`);
+    } else if (format === 'json') {
+        exporterJSON(data, `tableau_${tableId}_${new Date().toISOString().split('T')[0]}.json`);
+    }
+}
+
+function exporterCSV(data, filename) {
+    const csv = data.map(row => 
+        row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    telechargerFichier(blob, filename);
+}
+
+function exporterJSON(data, filename) {
+    const headers = data[0];
+    const jsonData = data.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+            obj[header] = row[index];
+        });
+        return obj;
+    });
+    
+    const json = JSON.stringify(jsonData, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+    telechargerFichier(blob, filename);
+}
+
+function telechargerFichier(blob, filename) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(link.href);
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les tooltips pour les boutons d'action
+    const tooltips = document.querySelectorAll('[title]');
+    tooltips.forEach(element => {
+        new bootstrap.Tooltip(element);
+    });
+    
+    // Mettre à jour l'état des boutons d'actions groupées
+    updateActionButtons();
+});
+</script>
+
+<style>
+.table th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.table th.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.progress {
+    border-radius: 4px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.pagination .page-link {
+    color: #6c757d;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+</style>

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord Entreprise{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Tableau de Bord - {{ contact.prenom }} {{ contact.nom }}</h2>
+                <div>
+                    <a href="{{ url_for('contacts.profile') }}" class="btn btn-outline-primary me-2">Mon Profil</a>
+                    <a href="{{ url_for('contacts.logout') }}" class="btn btn-outline-danger">Déconnexion</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informations du Contact</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Email:</strong> {{ contact.email }}</p>
+                    <p><strong>Téléphone:</strong> {{ contact.telephone or "Non renseigné" }}</p>
+                    <p><strong>Fonction:</strong> {{ contact.fonction or "Non renseignée" }}</p>
+                    {% if contact.operateur %}
+                        <p><strong>Entreprise:</strong> {{ contact.operateur.nom }}</p>
+                    {% endif %}
+                    <p><strong>Dernière connexion:</strong> 
+                        {% if contact.last_login %}
+                            {{ contact.last_login.strftime('%d/%m/%Y à %H:%M') }}
+                        {% else %}
+                            Première connexion
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions Disponibles</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-upload fa-3x text-primary mb-3"></i>
+                                    <h6>Soumettre un Rapport</h6>
+                                    <p class="text-muted small">Envoyez directement vos rapports d'activité</p>
+                                    <a href="#" class="btn btn-primary">Nouveau Rapport</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-history fa-3x text-info mb-3"></i>
+                                    <h6>Historique des Rapports</h6>
+                                    <p class="text-muted small">Consultez vos rapports précédents</p>
+                                    <a href="#" class="btn btn-info">Voir l'Historique</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                                    <h6>Données de Production</h6>
+                                    <p class="text-muted small">Saisissez vos données de production</p>
+                                    <a href="#" class="btn btn-success">Saisir Données</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-cog fa-3x text-warning mb-3"></i>
+                                    <h6>Paramètres</h6>
+                                    <p class="text-muted small">Gérez vos informations personnelles</p>
+                                    <a href="{{ url_for('contacts.profile') }}" class="btn btn-warning">Paramètres</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Bienvenue dans votre espace entreprise</h6>
+                        <ul class="mb-0">
+                            <li>Vous pouvez maintenant soumettre vos rapports directement sans validation préalable</li>
+                            <li>Assurez-vous que toutes les informations fournies sont exactes et à jour</li>
+                            <li>En cas de problème, contactez l'administration via les canaux officiels</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

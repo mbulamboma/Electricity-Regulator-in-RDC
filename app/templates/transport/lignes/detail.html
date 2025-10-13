@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ligne.nom }} - Détails{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">⚡ {{ ligne.nom }}</h1>
+                <div>
+                    <a href="{{ url_for('transport.index') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('transport.modifier_ligne', id=ligne.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations générales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations Générales</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Nom :</dt>
+                        <dd class="col-sm-7">{{ ligne.nom }}</dd>
+                        
+                        <dt class="col-sm-5">Code :</dt>
+                        <dd class="col-sm-7">{{ ligne.code }}</dd>
+                        
+                        <dt class="col-sm-5">Désignation :</dt>
+                        <dd class="col-sm-7">{{ ligne.designation or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Opérateur :</dt>
+                        <dd class="col-sm-7">{{ ligne.operateur.nom if ligne.operateur else '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Statut :</dt>
+                        <dd class="col-sm-7">
+                            {% if ligne.statut == 'en_service' %}
+                                <span class="badge bg-success">En service</span>
+                            {% elif ligne.statut == 'hors_service' %}
+                                <span class="badge bg-danger">Hors service</span>
+                            {% elif ligne.statut == 'maintenance' %}
+                                <span class="badge bg-warning">Maintenance</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ ligne.statut }}</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Caractéristiques électriques -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Caractéristiques Électriques</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Tension nominale :</dt>
+                        <dd class="col-sm-7">{{ ligne.tension_nominale or '-' }} kV</dd>
+                        
+                        <dt class="col-sm-5">Longueur totale :</dt>
+                        <dd class="col-sm-7">{{ ligne.longueur_totale or '-' }} km</dd>
+                        
+                        <dt class="col-sm-5">Nombre de circuits :</dt>
+                        <dd class="col-sm-7">{{ ligne.nombre_circuits or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Type de ligne :</dt>
+                        <dd class="col-sm-7">{{ ligne.type_ligne or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Capacité transport :</dt>
+                        <dd class="col-sm-7">{{ ligne.capacite_transport or '-' }} MVA</dd>
+                        
+                        <dt class="col-sm-5">Capacité thermique :</dt>
+                        <dd class="col-sm-7">{{ ligne.capacite_thermique or '-' }} A</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Points de connexion -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Points de Connexion</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Poste de départ :</dt>
+                        <dd class="col-sm-7">{{ ligne.poste_depart or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Poste d'arrivée :</dt>
+                        <dd class="col-sm-7">{{ ligne.poste_arrivee or '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Caractéristiques techniques -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Caractéristiques Techniques</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Type conducteur :</dt>
+                        <dd class="col-sm-6">{{ ligne.type_conducteur or '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Section conducteur :</dt>
+                        <dd class="col-sm-6">{{ ligne.section_conducteur or '-' }} mm²</dd>
+                        
+                        <dt class="col-sm-6">Conducteurs/phase :</dt>
+                        <dd class="col-sm-6">{{ ligne.nombre_conducteurs_par_phase or '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Type supports :</dt>
+                        <dd class="col-sm-6">{{ ligne.type_supports or '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Hauteur supports :</dt>
+                        <dd class="col-sm-6">{{ ligne.hauteur_moyenne_supports or '-' }} m</dd>
+                        
+                        <dt class="col-sm-6">Portée moyenne :</dt>
+                        <dd class="col-sm-6">{{ ligne.portee_moyenne or '-' }} m</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Protection -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Protection</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Conducteur de terre :</dt>
+                        <dd class="col-sm-6">
+                            {% if ligne.conducteur_terre %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Câble de garde :</dt>
+                        <dd class="col-sm-6">
+                            {% if ligne.cable_garde %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Système protection :</dt>
+                        <dd class="col-sm-6">{{ ligne.systeme_protection or '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Type isolateurs :</dt>
+                        <dd class="col-sm-6">{{ ligne.type_isolateurs or '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exploitation -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Exploitation</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Date mise en service :</dt>
+                        <dd class="col-sm-6">{{ ligne.date_mise_service.strftime('%d/%m/%Y') if ligne.date_mise_service else '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Propriétaire :</dt>
+                        <dd class="col-sm-6">{{ ligne.proprietaire or '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Exploitant :</dt>
+                        <dd class="col-sm-6">{{ ligne.exploitant or '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Performance -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Performance</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-7">Taux indisponibilité :</dt>
+                        <dd class="col-sm-5">{{ ligne.taux_indisponibilite or 0 }}%</dd>
+                        
+                        <dt class="col-sm-7">Défauts annuels :</dt>
+                        <dd class="col-sm-5">{{ ligne.nombre_defauts_annuels or 0 }}</dd>
+                        
+                        <dt class="col-sm-7">Durée moy. coupures :</dt>
+                        <dd class="col-sm-5">{{ ligne.duree_moyenne_coupures or 0 }} min</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Maintenance</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-7">Dernière inspection :</dt>
+                        <dd class="col-sm-5">{{ ligne.date_derniere_inspection.strftime('%d/%m/%Y') if ligne.date_derniere_inspection else '-' }}</dd>
+                        
+                        <dt class="col-sm-7">Périodicité inspection :</dt>
+                        <dd class="col-sm-5">{{ ligne.periodicite_inspection or '-' }} mois</dd>
+                        
+                        <dt class="col-sm-7">Dernière maintenance :</dt>
+                        <dd class="col-sm-5">{{ ligne.date_derniere_maintenance.strftime('%d/%m/%Y') if ligne.date_derniere_maintenance else '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if ligne.observations %}
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Observations</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ ligne.observations }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Informations système -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations Système</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-2">Date création :</dt>
+                        <dd class="col-sm-4">{{ ligne.date_creation.strftime('%d/%m/%Y %H:%M') if ligne.date_creation else '-' }}</dd>
+                        
+                        <dt class="col-sm-2">Dernière modification :</dt>
+                        <dd class="col-sm-4">{{ ligne.date_modification.strftime('%d/%m/%Y %H:%M') if ligne.date_modification else '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

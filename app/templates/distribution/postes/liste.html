@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Postes de distribution{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Postes de distribution</h1>
+                    <p class="text-muted">Gestion des postes de transformation de distribution</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('distribution.nouveau_poste') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouveau poste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-filter"></i> Filtres</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Réseau</label>
+                            <select name="reseau_id" class="form-select">
+                                <option value="">Tous les réseaux</option>
+                                {% for reseau in reseaux %}
+                                <option value="{{ reseau.id }}" 
+                                    {{ 'selected' if request.args.get('reseau_id')|int == reseau.id }}>
+                                    {{ reseau.nom }} ({{ reseau.operateur.nom if reseau.operateur else 'N/A' }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Type de poste</label>
+                            <select name="type_poste" class="form-select">
+                                <option value="">Tous les types</option>
+                                <option value="source" {{ 'selected' if request.args.get('type_poste') == 'source' }}>Source</option>
+                                <option value="distribution" {{ 'selected' if request.args.get('type_poste') == 'distribution' }}>Distribution</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select name="statut" class="form-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="en_service" {{ 'selected' if request.args.get('statut') == 'en_service' }}>En service</option>
+                                <option value="hors_service" {{ 'selected' if request.args.get('statut') == 'hors_service' }}>Hors service</option>
+                                <option value="maintenance" {{ 'selected' if request.args.get('statut') == 'maintenance' }}>Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-search"></i> Filtrer
+                            </button>
+                            <a href="{{ url_for('distribution.liste_postes') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des postes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Liste des postes ({{ postes.total }} total{{ 's' if postes.total > 1 else '' }})</h6>
+                    <div>
+                        <small class="text-muted">
+                            Page {{ postes.page }} sur {{ postes.pages }}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if postes.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Réseau</th>
+                                    <th>Type</th>
+                                    <th>Tension</th>
+                                    <th>Puissance</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for poste in postes.items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ poste.nom }}</strong>
+                                        {% if poste.localisation %}
+                                        <br><small class="text-muted">{{ poste.localisation }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ poste.code }}</code></td>
+                                    <td>
+                                        {{ poste.reseau.nom if poste.reseau else 'N/A' }}
+                                        {% if poste.reseau and poste.reseau.operateur %}
+                                        <br><small class="text-muted">{{ poste.reseau.operateur.nom }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if poste.type_poste == 'source' else 'secondary' }}">
+                                            {{ poste.type_poste.title() if poste.type_poste else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if poste.tension_primaire %}
+                                        {{ poste.tension_primaire }} / {{ poste.tension_secondaire or 'N/A' }} kV
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if poste.puissance_installee %}
+                                        {{ poste.puissance_installee }} kVA
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'success' if poste.statut == 'en_service' 
+                                            else 'danger' if poste.statut == 'hors_service'
+                                            else 'warning' }}">
+                                            {{ poste.statut.replace('_', ' ').title() if poste.statut else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('distribution.detail_poste', id=poste.id) }}" 
+                                               class="btn btn-outline-success" title="Voir détails">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_admin() %}
+                                            {# TODO: Implémenter la route distribution.modifier_poste
+                                            <a href="{{ url_for('distribution.modifier_poste', id=poste.id) }}" 
+                                               class="btn btn-outline-warning" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            #}
+                                            {# TODO: Implémenter la route distribution.supprimer_poste
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="confirmerSuppression('{{ poste.nom }}', '{{ url_for('distribution.supprimer_poste', id=poste.id) }}')"
+                                                    title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            #}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-electricity fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun poste trouvé</h5>
+                        <p class="text-muted">
+                            {% if request.args %}
+                            Aucun poste ne correspond aux critères de recherche.
+                            {% else %}
+                            Commencez par créer votre premier poste de distribution.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('distribution.nouveau_poste') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Créer un poste
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if postes.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Navigation des pages">
+                        {{ macros.render_pagination(postes, 'distribution.liste_postes', **request.args) }}
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="modalSuppression" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le poste <strong id="nomPoste"></strong> ?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Cette action est irréversible et supprimera également tous les transformateurs associés.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <a id="lienSuppression" href="#" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmerSuppression(nom, url) {
+    document.getElementById('nomPoste').textContent = nom;
+    document.getElementById('lienSuppression').href = url;
+    new bootstrap.Modal(document.getElementById('modalSuppression')).show();
+}
+</script>
+{% endblock %}

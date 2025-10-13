@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if mode == 'creation' %}Nouveau Poste de Distribution
+    {% else %}Modifier le Poste{{ ' - ' + poste.nom if poste.nom }}
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #007bff;
+    }
+    
+    .form-floating > label {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #0056b3, #004085);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-plug text-primary"></i>
+                {% if mode == 'creation' %}
+                    Nouveau Poste de Distribution
+                {% else %}
+                    Modifier le Poste
+                {% endif %}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('distribution.index') }}">Distribution</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('distribution.liste_postes') }}">Postes</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if mode == 'creation' %}Nouveau{% else %}Modifier{% endif %}
+                    </li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('distribution.liste_postes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="form-container">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Section : Informations générales -->
+                    <div class="form-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Informations Générales
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                                    {{ form.nom.label(class="required-field") }}
+                                    {% if form.nom.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Nom distinctif du poste de distribution
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else ""), placeholder="Code unique") }}
+                                    {{ form.code.label() }}
+                                    {% if form.code.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.code.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Code d'identification unique (ex: PST_001)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.reseau_id(class="form-select" + (" is-invalid" if form.reseau_id.errors else "")) }}
+                                    {{ form.reseau_id.label(class="required-field") }}
+                                    {% if form.reseau_id.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.reseau_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.type_poste(class="form-select" + (" is-invalid" if form.type_poste.errors else "")) }}
+                                    {{ form.type_poste.label() }}
+                                    {% if form.type_poste.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.type_poste.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section : Caractéristiques techniques -->
+                    <div class="form-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Caractéristiques Techniques
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    {{ form.puissance_installee(class="form-control" + (" is-invalid" if form.puissance_installee.errors else ""), step="0.01") }}
+                                    {{ form.puissance_installee.label() }}
+                                    {% if form.puissance_installee.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.puissance_installee.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-bolt"></i>
+                                    Puissance en kVA
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    {{ form.tension_primaire(class="form-control" + (" is-invalid" if form.tension_primaire.errors else ""), step="0.01") }}
+                                    {{ form.tension_primaire.label() }}
+                                    {% if form.tension_primaire.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.tension_primaire.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-plug"></i>
+                                    Tension en volts (côté HT)
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    {{ form.tension_secondaire(class="form-control" + (" is-invalid" if form.tension_secondaire.errors else ""), step="0.01") }}
+                                    {{ form.tension_secondaire.label() }}
+                                    {% if form.tension_secondaire.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.tension_secondaire.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-plug"></i>
+                                    Tension en volts (côté BT)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.nombre_transformateurs(class="form-control" + (" is-invalid" if form.nombre_transformateurs.errors else "")) }}
+                                    {{ form.nombre_transformateurs.label() }}
+                                    {% if form.nombre_transformateurs.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.nombre_transformateurs.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.date_mise_service(class="form-control" + (" is-invalid" if form.date_mise_service.errors else "")) }}
+                                    {{ form.date_mise_service.label() }}
+                                    {% if form.date_mise_service.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.date_mise_service.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section : Localisation -->
+                    <div class="form-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Localisation
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3">
+                                    {{ form.localisation(class="form-control" + (" is-invalid" if form.localisation.errors else "")) }}
+                                    {{ form.localisation.label() }}
+                                    {% if form.localisation.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.localisation.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Adresse complète ou description de l'emplacement
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.latitude(class="form-control" + (" is-invalid" if form.latitude.errors else ""), step="any") }}
+                                    {{ form.latitude.label() }}
+                                    {% if form.latitude.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.latitude.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-globe"></i>
+                                    Coordonnée géographique (ex: -4.3285)
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    {{ form.longitude(class="form-control" + (" is-invalid" if form.longitude.errors else ""), step="any") }}
+                                    {{ form.longitude.label() }}
+                                    {% if form.longitude.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.longitude.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-globe"></i>
+                                    Coordonnée géographique (ex: 15.2975)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section : Description et statut -->
+                    <div class="form-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-file-text"></i>
+                            Informations Complémentaires
+                        </h4>
+                        
+                        <div class="mb-3">
+                            {{ form.observations.label(class="form-label") }}
+                            {{ form.observations(class="form-control" + (" is-invalid" if form.observations.errors else ""), rows="4") }}
+                            {% if form.observations.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.observations.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Description détaillée, équipements spéciaux, notes techniques, etc.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('distribution.liste_postes') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        
+                        <div>
+                            {% if mode == 'modification' %}
+                                <button type="button" class="btn btn-outline-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Créer le poste' if mode == 'creation' else 'Sauvegarder' }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de suppression -->
+{% if mode == 'modification' %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer ce poste de distribution ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> Cette action est irréversible. Toutes les données associées à ce poste seront perdues.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                {# TODO: Implémenter la route distribution.supprimer_poste
+                <form method="POST" action="{{ url_for('distribution.supprimer_poste', id=poste.id) }}" class="d-inline">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </form>
+                #}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation en temps réel
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+    
+    function validateField(field) {
+        const value = field.value.trim();
+        const fieldName = field.name;
+        
+        // Retirer les classes de validation précédentes
+        field.classList.remove('is-valid', 'is-invalid');
+        
+        // Validation spécifique selon le champ
+        if (fieldName === 'nom' && value.length < 3) {
+            field.classList.add('is-invalid');
+        } else if (fieldName === 'puissance_installee' && value && (isNaN(value) || parseFloat(value) <= 0)) {
+            field.classList.add('is-invalid');
+        } else if ((fieldName === 'tension_primaire' || fieldName === 'tension_secondaire') && value && (isNaN(value) || parseFloat(value) <= 0)) {
+            field.classList.add('is-invalid');
+        } else if (fieldName === 'latitude' && value && (isNaN(value) || Math.abs(parseFloat(value)) > 90)) {
+            field.classList.add('is-invalid');
+        } else if (fieldName === 'longitude' && value && (isNaN(value) || Math.abs(parseFloat(value)) > 180)) {
+            field.classList.add('is-invalid');
+        } else if (value && field.required) {
+            field.classList.add('is-valid');
+        }
+    }
+    
+    // Géolocalisation automatique
+    const btnGeoloc = document.createElement('button');
+    btnGeoloc.type = 'button';
+    btnGeoloc.className = 'btn btn-outline-info btn-sm mt-2';
+    btnGeoloc.innerHTML = '<i class="fas fa-crosshairs"></i> Ma position';
+    btnGeoloc.onclick = obtenirPosition;
+    
+    const latitudeField = document.querySelector('input[name="latitude"]');
+    if (latitudeField) {
+        latitudeField.parentNode.appendChild(btnGeoloc);
+    }
+    
+    function obtenirPosition() {
+        if (navigator.geolocation) {
+            btnGeoloc.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localisation...';
+            btnGeoloc.disabled = true;
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.querySelector('input[name="latitude"]').value = position.coords.latitude.toFixed(6);
+                document.querySelector('input[name="longitude"]').value = position.coords.longitude.toFixed(6);
+                
+                btnGeoloc.innerHTML = '<i class="fas fa-check"></i> Position obtenue';
+                setTimeout(() => {
+                    btnGeoloc.innerHTML = '<i class="fas fa-crosshairs"></i> Ma position';
+                    btnGeoloc.disabled = false;
+                }, 2000);
+            }, function(error) {
+                alert('Erreur de géolocalisation: ' + error.message);
+                btnGeoloc.innerHTML = '<i class="fas fa-crosshairs"></i> Ma position';
+                btnGeoloc.disabled = false;
+            });
+        } else {
+            alert('La géolocalisation n\'est pas supportée par ce navigateur.');
+        }
+    }
+});
+</script>
+{% endblock %}

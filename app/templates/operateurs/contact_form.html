@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-address-book me-2"></i>{{ title }}
+    </h1>
+    <a href="{{ url_for('operateurs.details', id=operateur.id) }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour à {{ operateur.nom }}
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Informations de l'opérateur -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-industry me-2"></i>{{ operateur.nom }}
+                    {% if operateur.sigle %}
+                        <small class="text-muted">({{ operateur.sigle }})</small>
+                    {% endif %}
+                </h5>
+                <p class="card-text text-muted">
+                    {% if contact %}
+                        Modification du contact {{ contact.prenom }} {{ contact.nom }}
+                    {% else %}
+                        Ajout d'un nouveau contact pour cet opérateur
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Formulaire de contact -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>{% if contact %}Modifier{% else %}Nouveau{% endif %} contact
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.contact.prenom.label(class="form-label") }}
+                                {{ form.contact.prenom(class="form-control" + (" is-invalid" if form.contact.prenom.errors else "")) }}
+                                {% if form.contact.prenom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact.prenom.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.contact.nom.label(class="form-label") }}
+                                {{ form.contact.nom(class="form-control" + (" is-invalid" if form.contact.nom.errors else "")) }}
+                                {% if form.contact.nom.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact.nom.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.contact.fonction.label(class="form-label") }}
+                        {{ form.contact.fonction(class="form-control" + (" is-invalid" if form.contact.fonction.errors else ""), placeholder="Ex: Directeur Général, Responsable Technique...") }}
+                        {% if form.contact.fonction.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.contact.fonction.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.contact.email.label(class="form-label") }}
+                                {{ form.contact.email(class="form-control" + (" is-invalid" if form.contact.email.errors else ""), type="email") }}
+                                {% if form.contact.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact.email.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.contact.telephone.label(class="form-label") }}
+                                {{ form.contact.telephone(class="form-control" + (" is-invalid" if form.contact.telephone.errors else ""), placeholder="+243 XXX XXX XXX") }}
+                                {% if form.contact.telephone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact.telephone.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('operateurs.details', id=operateur.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{% if contact %}Modifier{% else %}Ajouter{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aide et informations -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informations
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Champs obligatoires</h6>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success me-1"></i>Prénom</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Nom</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Email</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Exemples de fonctions</h6>
+                <ul class="list-unstyled small">
+                    <li>• Directeur Général</li>
+                    <li>• Directeur Technique</li>
+                    <li>• Responsable Commercial</li>
+                    <li>• Chef d'Exploitation</li>
+                    <li>• Responsable Maintenance</li>
+                    <li>• Chargé de Communication</li>
+                </ul>
+                
+                <hr>
+                
+                <div class="alert alert-info small">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Les contacts permettent d'identifier les personnes clés de chaque opérateur pour faciliter la communication.
+                </div>
+            </div>
+        </div>
+        
+        {% if contact %}
+        <!-- Informations du contact actuel -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Contact actuel
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-user fa-2x text-muted"></i>
+                    </div>
+                </div>
+                <h6 class="text-center">{{ contact.prenom }} {{ contact.nom }}</h6>
+                {% if contact.fonction %}
+                <p class="text-center text-muted small">{{ contact.fonction }}</p>
+                {% endif %}
+                <div class="small">
+                    <div class="mb-2">
+                        <i class="fas fa-envelope text-muted me-2"></i>
+                        {{ contact.email }}
+                    </div>
+                    {% if contact.telephone %}
+                    <div class="mb-2">
+                        <i class="fas fa-phone text-muted me-2"></i>
+                        {{ contact.telephone }}
+                    </div>
+                    {% endif %}
+                    <div class="text-muted">
+                        <i class="fas fa-clock text-muted me-2"></i>
+                        Créé le {{ contact.date_creation.strftime('%d/%m/%Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

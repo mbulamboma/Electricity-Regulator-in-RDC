@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Lignes de Transport{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ligne-card {
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    
+    .ligne-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-color: #007bff;
+    }
+    
+    .ligne-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    .tension-badge {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .tension-ht { background-color: #dc3545; color: white; }
+    .tension-mt { background-color: #ffc107; color: #000; }
+    .tension-bt { background-color: #28a745; color: white; }
+    
+    .statut-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    
+    .stats-row {
+        background: #f8f9fa;
+        border-radius: 0 0 10px 10px;
+        padding: 1rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .search-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .filters-row {
+        margin-top: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .action-buttons {
+            justify-content: center;
+        }
+        
+        .ligne-card {
+            margin-bottom: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de la page -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-route text-primary"></i>
+                Lignes de Transport
+            </h1>
+            <p class="text-muted mb-0">Gestion des lignes de transport électrique</p>
+        </div>
+        <div>
+            <a href="{{ url_for('transport.nouvelle_ligne') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle Ligne
+            </a>
+            <a href="{{ url_for('transport.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Recherche et filtres -->
+    <div class="search-container">
+        <form method="GET" class="mb-0">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="search" class="form-label">Rechercher</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Nom de ligne, poste..." 
+                                   value="{{ request.args.get('search', '') }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="tension" class="form-label">Tension</label>
+                        <select class="form-select" id="tension" name="tension">
+                            <option value="">Toutes</option>
+                            <option value="HT" {{ 'selected' if request.args.get('tension') == 'HT' }}>Haute Tension</option>
+                            <option value="MT" {{ 'selected' if request.args.get('tension') == 'MT' }}>Moyenne Tension</option>
+                            <option value="BT" {{ 'selected' if request.args.get('tension') == 'BT' }}>Basse Tension</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="statut" class="form-label">Statut</label>
+                        <select class="form-select" id="statut" name="statut">
+                            <option value="">Tous</option>
+                            <option value="en_service" {{ 'selected' if request.args.get('statut') == 'en_service' }}>En Service</option>
+                            <option value="maintenance" {{ 'selected' if request.args.get('statut') == 'maintenance' }}>Maintenance</option>
+                            <option value="hors_service" {{ 'selected' if request.args.get('statut') == 'hors_service' }}>Hors Service</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="operateur" class="form-label">Opérateur</label>
+                        <select class="form-select" id="operateur" name="operateur">
+                            <option value="">Tous</option>
+                            {% for operateur in operateurs %}
+                            <option value="{{ operateur.id }}" 
+                                    {{ 'selected' if request.args.get('operateur')|string == operateur.id|string }}>
+                                {{ operateur.sigle or operateur.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-filter"></i> Filtrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistiques rapides -->
+    {% if stats %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <div class="stat-value">{{ stats.total_lignes }}</div>
+                    <div class="stat-label text-white-50">Total Lignes</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <div class="stat-value">{{ stats.lignes_en_service }}</div>
+                    <div class="stat-label text-white-50">En Service</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <div class="stat-value">{{ stats.lignes_maintenance }}</div>
+                    <div class="stat-label">Maintenance</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <div class="stat-value">{{ "%.1f"|format(stats.longueur_totale or 0) }} km</div>
+                    <div class="stat-label text-white-50">Longueur Totale</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Liste des lignes -->
+    {% if lignes %}
+    <div class="row">
+        {% for ligne in lignes.items %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="ligne-card">
+                <!-- En-tête de la ligne -->
+                <div class="ligne-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1">{{ ligne.nom }}</h5>
+                            <p class="mb-2 opacity-75">
+                                {{ ligne.poste_depart }} → {{ ligne.poste_arrivee }}
+                            </p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="tension-badge tension-{{ ligne.niveau_tension.lower() }}">
+                                    {{ ligne.niveau_tension }} - {{ ligne.tension_nominale }} kV
+                                </span>
+                                <span class="statut-badge badge 
+                                    {% if ligne.statut == 'en_service' %}bg-success
+                                    {% elif ligne.statut == 'maintenance' %}bg-warning text-dark
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ ligne.statut.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            {% if ligne.operateur %}
+                            <small class="opacity-75">{{ ligne.operateur.sigle }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corps de la carte -->
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ ligne.longueur or 0 }}</div>
+                                <div class="stat-label">km</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ ligne.puissance_transit or 0 }}</div>
+                                <div class="stat-label">MW</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ ligne.nombre_circuits or 1 }}</div>
+                                <div class="stat-label">Circuits</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if ligne.description %}
+                    <p class="text-muted mt-2 mb-3">{{ ligne.description[:100] }}...</p>
+                    {% endif %}
+
+                    <!-- Informations techniques -->
+                    <div class="mt-3">
+                        <h6 class="text-muted mb-2">Informations Techniques</h6>
+                        <div class="row">
+                            {% if ligne.conducteur_type %}
+                            <div class="col-6">
+                                <small class="text-muted">Conducteur:</small><br>
+                                <strong>{{ ligne.conducteur_type }}</strong>
+                            </div>
+                            {% endif %}
+                            {% if ligne.date_mise_service %}
+                            <div class="col-6">
+                                <small class="text-muted">Mise en service:</small><br>
+                                <strong>{{ ligne.date_mise_service.strftime('%Y') }}</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="action-buttons mt-3">
+                        <a href="{{ url_for('transport.detail_ligne', id=ligne.id) }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> Détails
+                        </a>
+                        {% if current_user.is_admin() or current_user.operateur_id == ligne.operateur_id %}
+                        <a href="{{ url_for('transport.modifier_ligne', id=ligne.id) }}" 
+                           class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-info" 
+                                onclick="afficherCarteLigne({{ ligne.id }})">
+                            <i class="fas fa-map"></i> Carte
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if lignes.pages > 1 %}
+    <nav aria-label="Pagination des lignes" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if lignes.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('transport.lignes', page=lignes.prev_num, **request.args) }}">
+                    <i class="fas fa-chevron-left"></i> Précédent
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in lignes.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != lignes.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transport.lignes', page=page_num, **request.args) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if lignes.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('transport.lignes', page=lignes.next_num, **request.args) }}">
+                    Suivant <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Aucune ligne trouvée -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="fas fa-route fa-4x text-muted"></i>
+        </div>
+        <h4 class="text-muted">Aucune ligne de transport trouvée</h4>
+        <p class="text-muted">
+            {% if request.args.get('search') or request.args.get('tension') or request.args.get('statut') %}
+                Aucun résultat ne correspond à vos critères de recherche.
+            {% else %}
+                Commencez par ajouter une nouvelle ligne de transport.
+            {% endif %}
+        </p>
+        <div class="mt-4">
+            {% if request.args.get('search') or request.args.get('tension') or request.args.get('statut') %}
+            <a href="{{ url_for('transport.lignes') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-times"></i> Effacer les filtres
+            </a>
+            {% endif %}
+            <a href="{{ url_for('transport.nouvelle_ligne') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Ajouter une ligne
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal pour la carte (exemple) -->
+<div class="modal fade" id="carteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tracé de la ligne</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="carte-container" style="height: 400px; background: #f8f9fa; border-radius: 5px;">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="text-center">
+                            <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Fonctionnalité de cartographie en développement</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function afficherCarteLigne(ligneId) {
+    // Afficher la modal de carte
+    const modal = new bootstrap.Modal(document.getElementById('carteModal'));
+    modal.show();
+    
+    // Ici, implémenter l'affichage de la carte avec la ligne
+    console.log('Affichage carte pour ligne ID:', ligneId);
+}
+
+// Filtres automatiques
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit des filtres quand on change les valeurs
+    const filterSelects = document.querySelectorAll('#tension, #statut, #operateur');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Optionnel: submit automatique du formulaire
+            // this.form.submit();
+        });
+    });
+    
+    // Clear search
+    const searchInput = document.getElementById('search');
+    if (searchInput.value) {
+        searchInput.style.backgroundColor = '#e3f2fd';
+    }
+});
+</script>
+{% endblock %}

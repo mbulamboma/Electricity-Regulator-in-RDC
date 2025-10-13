@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Postes de Transport{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">⚡ Postes de Transport</h1>
+                    <p class="text-muted">Gestion des postes de transformation et de commutation</p>
+                </div>
+                {% if current_user.is_admin() %}
+                <div>
+                    <a href="{{ url_for('transport.nouveau_poste') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouveau Poste
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-center text-muted py-5">
+                        <i class="fas fa-bolt fa-3x mb-3"></i><br>
+                        Page en développement<br>
+                        <small>Les fonctionnalités des postes de transport seront bientôt disponibles.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

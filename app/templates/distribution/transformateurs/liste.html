@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête avec statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-microchip me-2"></i>{{ title }}</h2>
+            <p class="text-muted mb-0">Gestion des transformateurs de distribution</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('distribution.nouveau_transformateur') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau Transformateur
+            </a>
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Total</h5>
+                            <h3 class="mb-0">{{ stats.total }}</h3>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-microchip fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">En Service</h5>
+                            <h3 class="mb-0 text-success">{{ stats.en_service }}</h3>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Hors Service</h5>
+                            <h3 class="mb-0 text-danger">{{ stats.hors_service }}</h3>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-times-circle fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Puissance Totale</h5>
+                            <h3 class="mb-0 text-info">{{ "{:,.0f}".format(stats.puissance_totale) }} kVA</h3>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-bolt fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        {% if current_user.is_admin() %}
+                        <div class="col-md-4">
+                            <label class="form-label">Opérateur</label>
+                            <select name="operateur_id" class="form-select">
+                                <option value="">Tous les opérateurs</option>
+                                {% for operateur in operateurs %}
+                                <option value="{{ operateur.id }}" 
+                                    {% if request.args.get('operateur_id')|int == operateur.id %}selected{% endif %}>
+                                    {{ operateur.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Poste</label>
+                            <select name="poste_id" class="form-select">
+                                <option value="">Tous les postes</option>
+                                <!-- Sera rempli dynamiquement -->
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filtrer
+                                </button>
+                                <a href="{{ url_for('distribution.liste_transformateurs') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Réinitialiser
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des transformateurs -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Liste des transformateurs
+                <span class="badge bg-primary ms-2">{{ transformateurs.total }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if transformateurs.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Poste</th>
+                            <th>Type</th>
+                            <th>Puissance (kVA)</th>
+                            <th>Tension</th>
+                            <th>Statut</th>
+                            <th>Date Installation</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transformateur in transformateurs.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ transformateur.nom }}</strong>
+                                {% if transformateur.numero_serie %}
+                                <br><small class="text-muted">S/N: {{ transformateur.numero_serie }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('distribution.detail_poste', id=transformateur.poste_distribution.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ transformateur.poste_distribution.nom }}
+                                </a>
+                                <br><small class="text-muted">{{ transformateur.poste_distribution.reseau.nom }}</small>
+                            </td>
+                            <td>{{ transformateur.type_transformateur.replace('_', ' ').title() if transformateur.type_transformateur else 'N/A' }}</td>
+                            <td class="text-end">
+                                <span class="fw-bold">{{ "{:,.0f}".format(transformateur.puissance_nominale) }}</span>
+                            </td>
+                            <td>
+                                {{ transformateur.tension_primaire }}/{{ transformateur.tension_secondaire }} kV
+                            </td>
+                            <td>
+                                {% if transformateur.statut == 'en_service' %}
+                                <span class="badge bg-success">En Service</span>
+                                {% elif transformateur.statut == 'hors_service' %}
+                                <span class="badge bg-danger">Hors Service</span>
+                                {% elif transformateur.statut == 'maintenance' %}
+                                <span class="badge bg-warning text-dark">Maintenance</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ transformateur.statut }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if transformateur.date_installation %}
+                                {{ transformateur.date_installation.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                <span class="text-muted">Non renseignée</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('distribution.detail_transformateur', id=transformateur.id) }}" 
+                                       class="btn btn-outline-primary" title="Voir les détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('distribution.modifier_transformateur', id=transformateur.id) }}" 
+                                       class="btn btn-outline-secondary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="confirmerSuppression('{{ transformateur.nom }}', '{{ transformateur.id }}')" 
+                                            title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if transformateurs.pages > 1 %}
+            <nav aria-label="Navigation des pages">
+                <ul class="pagination justify-content-center mt-3">
+                    {% if transformateurs.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('distribution.liste_transformateurs', page=transformateurs.prev_num, **request.args) }}">
+                            Précédent
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in transformateurs.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != transformateurs.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('distribution.liste_transformateurs', page=page_num, **request.args) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if transformateurs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('distribution.liste_transformateurs', page=transformateurs.next_num, **request.args) }}">
+                            Suivant
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-microchip fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucun transformateur trouvé</h5>
+                <p class="text-muted">Commencez par ajouter votre premier transformateur.</p>
+                <a href="{{ url_for('distribution.nouveau_transformateur') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nouveau Transformateur
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="modalSuppression" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le transformateur <strong id="nomTransformateur"></strong> ?</p>
+                <p class="text-muted mb-0">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="formSuppression" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmerSuppression(nom, id) {
+    document.getElementById('nomTransformateur').textContent = nom;
+    document.getElementById('formSuppression').action = 
+        "{{ url_for('distribution.supprimer_transformateur', id=0) }}".replace('0', id);
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalSuppression'));
+    modal.show();
+}
+</script>
+{% endblock %}

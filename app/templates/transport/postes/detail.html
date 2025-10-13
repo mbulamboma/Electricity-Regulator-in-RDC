@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poste.nom }} - Détails{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">⚡ {{ poste.nom }}</h1>
+                <div>
+                    <a href="{{ url_for('transport.index') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('transport.modifier_poste', id=poste.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations générales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations Générales</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Nom :</dt>
+                        <dd class="col-sm-7">{{ poste.nom }}</dd>
+                        
+                        <dt class="col-sm-5">Code :</dt>
+                        <dd class="col-sm-7">{{ poste.code }}</dd>
+                        
+                        <dt class="col-sm-5">Type :</dt>
+                        <dd class="col-sm-7">{{ poste.type_poste|title if poste.type_poste else '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Opérateur :</dt>
+                        <dd class="col-sm-7">{{ poste.operateur.nom if poste.operateur else '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Statut :</dt>
+                        <dd class="col-sm-7">
+                            {% if poste.statut == 'en_service' %}
+                                <span class="badge bg-success">En service</span>
+                            {% elif poste.statut == 'hors_service' %}
+                                <span class="badge bg-danger">Hors service</span>
+                            {% elif poste.statut == 'maintenance' %}
+                                <span class="badge bg-warning">Maintenance</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ poste.statut }}</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Localisation -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Localisation</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Localisation :</dt>
+                        <dd class="col-sm-7">{{ poste.localisation or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Province :</dt>
+                        <dd class="col-sm-7">{{ poste.province|replace('_', ' ')|title if poste.province else '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Latitude :</dt>
+                        <dd class="col-sm-7">{{ poste.latitude or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Longitude :</dt>
+                        <dd class="col-sm-7">{{ poste.longitude or '-' }}</dd>
+                        
+                        <dt class="col-sm-5">Altitude :</dt>
+                        <dd class="col-sm-7">{{ poste.altitude or '-' }} m</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Niveaux de tension -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Niveaux de Tension</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Tension primaire :</dt>
+                        <dd class="col-sm-6">{{ poste.tension_primaire or '-' }} kV</dd>
+                        
+                        <dt class="col-sm-6">Tension secondaire :</dt>
+                        <dd class="col-sm-6">{{ poste.tension_secondaire or '-' }} kV</dd>
+                        
+                        <dt class="col-sm-6">Tension tertiaire :</dt>
+                        <dd class="col-sm-6">{{ poste.tension_tertiaire or '-' }} kV</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Nb transformateurs :</dt>
+                        <dd class="col-sm-6">{{ poste.nombre_transformateurs or 0 }}</dd>
+                        
+                        <dt class="col-sm-6">Puissance installée :</dt>
+                        <dd class="col-sm-6">{{ poste.puissance_installee or '-' }} MVA</dd>
+                        
+                        <dt class="col-sm-6">Puissance disponible :</dt>
+                        <dd class="col-sm-6">{{ poste.puissance_disponible or '-' }} MVA</dd>
+                        
+                        <dt class="col-sm-6">Schéma unifilaire :</dt>
+                        <dd class="col-sm-6">{{ poste.schema_unifilaire|replace('_', ' ')|title if poste.schema_unifilaire else '-' }}</dd>
+                        
+                        <dt class="col-sm-6">Régime de neutre :</dt>
+                        <dd class="col-sm-6">{{ poste.regime_neutre|title if poste.regime_neutre else '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Équipements de protection -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Équipements de Protection</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Disjoncteurs :</dt>
+                        <dd class="col-sm-6">{{ poste.nombre_disjoncteurs or 0 }}</dd>
+                        
+                        <dt class="col-sm-6">Sectionneurs :</dt>
+                        <dd class="col-sm-6">{{ poste.nombre_sectionneurs or 0 }}</dd>
+                        
+                        <dt class="col-sm-6">Parafoudres :</dt>
+                        <dd class="col-sm-6">
+                            {% if poste.parafoudres %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Surveillance et contrôle -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Surveillance et Contrôle</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Système SCADA :</dt>
+                        <dd class="col-sm-6">
+                            {% if poste.systeme_scada %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Télécommande :</dt>
+                        <dd class="col-sm-6">
+                            {% if poste.telecommande %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Télémesure :</dt>
+                        <dd class="col-sm-6">
+                            {% if poste.telemesure %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Performance -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Performance</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-7">Taux disponibilité :</dt>
+                        <dd class="col-sm-5">{{ poste.taux_disponibilite or 100 }}%</dd>
+                        
+                        <dt class="col-sm-7">Incidents annuels :</dt>
+                        <dd class="col-sm-5">{{ poste.nombre_incidents_annuels or 0 }}</dd>
+                        
+                        <dt class="col-sm-7">Durée moy. indisponibilité :</dt>
+                        <dd class="col-sm-5">{{ poste.duree_moyenne_indisponibilite or 0 }} h</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sécurité et environnement -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Sécurité et Environnement</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-7">Clôture sécurité :</dt>
+                        <dd class="col-sm-5">
+                            {% if poste.cloture_securite %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-7">Système incendie :</dt>
+                        <dd class="col-sm-5">
+                            {% if poste.systeme_incendie %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-7">Bac rétention huile :</dt>
+                        <dd class="col-sm-5">
+                            {% if poste.bac_retention_huile %}
+                                <i class="fas fa-check text-success"></i> Oui
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Non
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dates importantes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Dates Importantes</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-7">Mise en service :</dt>
+                        <dd class="col-sm-5">{{ poste.date_mise_service.strftime('%d/%m/%Y') if poste.date_mise_service else '-' }}</dd>
+                        
+                        <dt class="col-sm-7">Dernière maintenance :</dt>
+                        <dd class="col-sm-5">{{ poste.date_derniere_maintenance.strftime('%d/%m/%Y') if poste.date_derniere_maintenance else '-' }}</dd>
+                        
+                        <dt class="col-sm-7">Périodicité maintenance :</dt>
+                        <dd class="col-sm-5">{{ poste.periodicite_maintenance or '-' }} mois</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if poste.description or poste.observations %}
+    <div class="row">
+        {% if poste.description %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Description</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ poste.description }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if poste.observations %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Observations</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ poste.observations }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Informations système -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations Système</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-2">Date création :</dt>
+                        <dd class="col-sm-4">{{ poste.date_creation.strftime('%d/%m/%Y %H:%M') if poste.date_creation else '-' }}</dd>
+                        
+                        <dt class="col-sm-2">Dernière modification :</dt>
+                        <dd class="col-sm-4">{{ poste.date_modification.strftime('%d/%m/%Y %H:%M') if poste.date_modification else '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

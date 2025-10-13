@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.config-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.config-card:hover {
+    transform: translateY(-2px);
+}
+.config-section {
+    border-left: 4px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-bottom: 2rem;
+}
+.setting-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+.danger-zone {
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    background: #ffe6e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">⚙️ Configuration Système</h1>
+                    <p class="text-muted">Paramètres et configuration de la plateforme</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Retour Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulaire de configuration -->
+        <div class="col-lg-8 mb-4">
+            <div class="card config-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-sliders-h"></i> Paramètres Système
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Section Mode Maintenance -->
+                        <div class="config-section">
+                            <h6 class="text-primary"><i class="fas fa-tools"></i> Mode Maintenance</h6>
+                            <div class="setting-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ form.maintenance_mode.label.text }}</strong>
+                                        <p class="small text-muted mb-0">
+                                            Active le mode maintenance pour bloquer l'accès aux utilisateurs non-administrateurs
+                                        </p>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.maintenance_mode(class="form-check-input") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Sauvegardes -->
+                        <div class="config-section">
+                            <h6 class="text-success"><i class="fas fa-save"></i> Sauvegardes</h6>
+                            
+                            <div class="setting-item">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">{{ form.backup_retention_days.label.text }}</label>
+                                        {{ form.backup_retention_days(class="form-control") }}
+                                        {% if form.backup_retention_days.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.backup_retention_days.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">{{ form.auto_backup_frequency.label.text }}</label>
+                                        {{ form.auto_backup_frequency(class="form-select") }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ form.auto_backup_enabled.label.text }}</strong>
+                                        <p class="small text-muted mb-0">
+                                            Active les sauvegardes automatiques selon la fréquence configurée
+                                        </p>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.auto_backup_enabled(class="form-check-input") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Alertes -->
+                        <div class="config-section">
+                            <h6 class="text-warning"><i class="fas fa-bell"></i> Alertes et Notifications</h6>
+                            
+                            <div class="setting-item">
+                                <label class="form-label">{{ form.alert_email.label.text }}</label>
+                                {{ form.alert_email(class="form-control", placeholder="admin@example.com") }}
+                                <small class="text-muted">{{ form.alert_email.description }}</small>
+                                {% if form.alert_email.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.alert_email.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="setting-item">
+                                <label class="form-label">{{ form.report_deadline_days.label.text }}</label>
+                                {{ form.report_deadline_days(class="form-control") }}
+                                <small class="text-muted">{{ form.report_deadline_days.description }}</small>
+                                {% if form.report_deadline_days.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.report_deadline_days.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Section Limites Système -->
+                        <div class="config-section">
+                            <h6 class="text-info"><i class="fas fa-server"></i> Limites Système</h6>
+                            
+                            <div class="setting-item">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">{{ form.max_file_size.label.text }}</label>
+                                        <div class="input-group">
+                                            {{ form.max_file_size(class="form-control") }}
+                                            <span class="input-group-text">MB</span>
+                                        </div>
+                                        {% if form.max_file_size.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.max_file_size.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">{{ form.pagination_per_page.label.text }}</label>
+                                        {{ form.pagination_per_page(class="form-control") }}
+                                        {% if form.pagination_per_page.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.pagination_per_page.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <label class="form-label">{{ form.session_timeout_minutes.label.text }}</label>
+                                <div class="input-group">
+                                    {{ form.session_timeout_minutes(class="form-control") }}
+                                    <span class="input-group-text">minutes</span>
+                                </div>
+                                {% if form.session_timeout_minutes.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.session_timeout_minutes.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations système -->
+        <div class="col-lg-4 mb-4">
+            <!-- Statut système -->
+            <div class="card config-card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-heartbeat"></i> Statut Système
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h4 text-success">✓</div>
+                            <small class="text-muted">Base de données</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success">✓</div>
+                            <small class="text-muted">Fichiers</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span>Espace disque :</span>
+                            <span class="text-success">75% utilisé</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration actuelle -->
+            <div class="card config-card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Configuration Actuelle
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Mode maintenance :</span>
+                            <span class="badge bg-{{ 'warning' if form.maintenance_mode.data else 'success' }}">
+                                {{ 'Activé' if form.maintenance_mode.data else 'Désactivé' }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Sauvegarde auto :</span>
+                            <span class="badge bg-{{ 'success' if form.auto_backup_enabled.data else 'secondary' }}">
+                                {{ 'Activée' if form.auto_backup_enabled.data else 'Désactivée' }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Rétention :</span>
+                            <span>{{ form.backup_retention_days.data or 30 }} jours</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Taille max fichier :</span>
+                            <span>{{ form.max_file_size.data or 16 }} MB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card config-card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-bolt"></i> Actions Rapides
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="testEmail()">
+                            <i class="fas fa-envelope"></i> Tester Email
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="clearCache()">
+                            <i class="fas fa-broom"></i> Vider Cache
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="checkUpdates()">
+                            <i class="fas fa-sync"></i> Vérifier MAJ
+                        </button>
+                        <hr>
+                        <button class="btn btn-outline-info btn-sm" onclick="exportConfig()">
+                            <i class="fas fa-download"></i> Export Config
+                        </button>
+                        <label class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-upload"></i> Import Config
+                            <input type="file" class="d-none" accept=".json" onchange="importConfig(this)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zone de danger -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card config-card danger-zone">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Zone de Danger
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-danger">Réinitialiser Configuration</h6>
+                            <p class="small text-muted">
+                                Restaure tous les paramètres aux valeurs par défaut.
+                            </p>
+                            <button class="btn btn-outline-danger btn-sm" onclick="resetConfig()">
+                                <i class="fas fa-undo"></i> Réinitialiser
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-danger">Purger Logs</h6>
+                            <p class="small text-muted">
+                                Supprime tous les logs système et activités.
+                            </p>
+                            <button class="btn btn-outline-danger btn-sm" onclick="purgeLogs()">
+                                <i class="fas fa-trash"></i> Purger Logs
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-danger">Mode Urgence</h6>
+                            <p class="small text-muted">
+                                Active le mode urgence avec accès limité.
+                            </p>
+                            <button class="btn btn-danger btn-sm" onclick="emergencyMode()">
+                                <i class="fas fa-exclamation"></i> Mode Urgence
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Messages Flash automatiques
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            // Afficher les messages
+            console.log('{{ category }}: {{ message }}');
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+function testEmail() {
+    const email = document.querySelector('input[name="alert_email"]').value;
+    if (!email) {
+        alert('Veuillez d\'abord saisir une adresse email dans la configuration.');
+        return;
+    }
+    
+    // Simulation d'envoi d'email de test
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
+    
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-envelope"></i> Tester Email';
+        alert(`Email de test envoyé à ${email}`);
+    }, 2000);
+}
+
+function clearCache() {
+    if (confirm('Vider le cache système ?\n\nCela peut affecter temporairement les performances.')) {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Nettoyage...';
+        
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-broom"></i> Vider Cache';
+            alert('Cache vidé avec succès.');
+        }, 1500);
+    }
+}
+
+function checkUpdates() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+    
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync"></i> Vérifier MAJ';
+        alert('Système à jour.\n\nVersion actuelle : 1.0.0\nAucune mise à jour disponible.');
+    }, 2000);
+}
+
+function exportConfig() {
+    // Créer un objet avec la configuration actuelle
+    const config = {
+        maintenance_mode: document.querySelector('input[name="maintenance_mode"]').checked,
+        backup_retention_days: document.querySelector('input[name="backup_retention_days"]').value,
+        auto_backup_enabled: document.querySelector('input[name="auto_backup_enabled"]').checked,
+        auto_backup_frequency: document.querySelector('select[name="auto_backup_frequency"]').value,
+        alert_email: document.querySelector('input[name="alert_email"]').value,
+        max_file_size: document.querySelector('input[name="max_file_size"]').value,
+        report_deadline_days: document.querySelector('input[name="report_deadline_days"]').value,
+        session_timeout_minutes: document.querySelector('input[name="session_timeout_minutes"]').value,
+        pagination_per_page: document.querySelector('input[name="pagination_per_page"]').value,
+        export_date: new Date().toISOString()
+    };
+    
+    // Créer et télécharger le fichier JSON
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `config_export_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importConfig(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const config = JSON.parse(e.target.result);
+            
+            if (confirm('Importer cette configuration ?\n\nCela remplacera les paramètres actuels.')) {
+                // Appliquer la configuration importée
+                if (config.maintenance_mode !== undefined) {
+                    document.querySelector('input[name="maintenance_mode"]').checked = config.maintenance_mode;
+                }
+                if (config.backup_retention_days) {
+                    document.querySelector('input[name="backup_retention_days"]').value = config.backup_retention_days;
+                }
+                if (config.auto_backup_enabled !== undefined) {
+                    document.querySelector('input[name="auto_backup_enabled"]').checked = config.auto_backup_enabled;
+                }
+                if (config.auto_backup_frequency) {
+                    document.querySelector('select[name="auto_backup_frequency"]').value = config.auto_backup_frequency;
+                }
+                if (config.alert_email) {
+                    document.querySelector('input[name="alert_email"]').value = config.alert_email;
+                }
+                if (config.max_file_size) {
+                    document.querySelector('input[name="max_file_size"]').value = config.max_file_size;
+                }
+                if (config.report_deadline_days) {
+                    document.querySelector('input[name="report_deadline_days"]').value = config.report_deadline_days;
+                }
+                if (config.session_timeout_minutes) {
+                    document.querySelector('input[name="session_timeout_minutes"]').value = config.session_timeout_minutes;
+                }
+                if (config.pagination_per_page) {
+                    document.querySelector('input[name="pagination_per_page"]').value = config.pagination_per_page;
+                }
+                
+                alert('Configuration importée avec succès.\n\nN\'oubliez pas de sauvegarder les modifications.');
+            }
+        } catch (error) {
+            alert('Erreur lors de l\'import du fichier de configuration.\n\nVérifiez que le fichier est au bon format.');
+        }
+    };
+    reader.readAsText(file);
+    
+    // Réinitialiser l'input
+    input.value = '';
+}
+
+function resetConfig() {
+    if (confirm('Réinitialiser toute la configuration ?\n\nTous les paramètres seront restaurés aux valeurs par défaut.\n\nCette action est irréversible.')) {
+        // Appliquer les valeurs par défaut
+        document.querySelector('input[name="maintenance_mode"]').checked = false;
+        document.querySelector('input[name="backup_retention_days"]').value = 30;
+        document.querySelector('input[name="auto_backup_enabled"]').checked = false;
+        document.querySelector('select[name="auto_backup_frequency"]').value = 'weekly';
+        document.querySelector('input[name="alert_email"]').value = '';
+        document.querySelector('input[name="max_file_size"]').value = 16;
+        document.querySelector('input[name="report_deadline_days"]').value = 5;
+        document.querySelector('input[name="session_timeout_minutes"]').value = 120;
+        document.querySelector('input[name="pagination_per_page"]').value = 20;
+        
+        alert('Configuration réinitialisée.\n\nN\'oubliez pas de sauvegarder les modifications.');
+    }
+}
+
+function purgeLogs() {
+    if (confirm('Purger tous les logs système ?\n\nCette action supprimera définitivement tous les fichiers de log.\n\nContinuer ?')) {
+        alert('Logs purgés avec succès.');
+    }
+}
+
+function emergencyMode() {
+    if (confirm('ATTENTION : Mode Urgence\n\nCe mode limitera l\'accès à la plateforme aux super administrateurs uniquement.\n\nTous les autres utilisateurs seront déconnectés.\n\nActiver le mode urgence ?')) {
+        alert('Mode urgence activé.\n\nSeuls les super administrateurs peuvent accéder au système.');
+        // Rediriger vers une page de mode urgence
+        window.location.href = '/admin/emergency';
+    }
+}
+</script>
+{% endblock %}

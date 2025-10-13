@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.compose-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    min-height: 70vh;
+}
+
+.compose-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.compose-header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.compose-header p {
+    opacity: 0.9;
+    margin: 0;
+}
+
+.compose-form {
+    padding: 2.5rem;
+    background: white;
+}
+
+.form-floating {
+    margin-bottom: 1.5rem;
+}
+
+.form-floating > .form-control:focus,
+.form-floating > .form-control:not(:placeholder-shown) {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-floating > label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.priority-selector {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.priority-option {
+    flex: 1;
+    position: relative;
+}
+
+.priority-radio {
+    opacity: 0;
+    position: absolute;
+}
+
+.priority-label {
+    display: block;
+    padding: 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.priority-label:hover {
+    border-color: #0d6efd;
+    background: #f8f9ff;
+}
+
+.priority-radio:checked + .priority-label {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9ff 100%);
+    color: #0d6efd;
+}
+
+.priority-normal .priority-label {
+    color: #28a745;
+}
+
+.priority-important .priority-label {
+    color: #fd7e14;
+}
+
+.priority-urgent .priority-label {
+    color: #dc3545;
+}
+
+.priority-radio:checked + .priority-normal {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #f8fff9 100%);
+    color: #28a745;
+}
+
+.priority-radio:checked + .priority-important {
+    border-color: #fd7e14;
+    background: linear-gradient(135deg, #fef3e2 0%, #fffaf5 100%);
+    color: #fd7e14;
+}
+
+.priority-radio:checked + .priority-urgent {
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #fff5f5 100%);
+    color: #dc3545;
+}
+
+.btn-send {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    color: white;
+    padding: 0.875rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-send:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    background: transparent;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    padding: 0.875rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #6c757d;
+    color: white;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.character-count {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Styles pour la zone de texte moderne */
+.modern-textarea-wrapper {
+    margin-top: 1.5rem;
+}
+
+.textarea-container {
+    position: relative;
+    margin-top: 0.5rem;
+}
+
+.modern-textarea {
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 200px;
+    transition: all 0.3s ease;
+    background: #fafbfc;
+}
+
+.modern-textarea:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    background: white;
+    outline: none;
+}
+
+.char-counter {
+    position: absolute;
+    bottom: 1rem;
+    right: 1.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+}
+
+.modern-help {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border-radius: 12px;
+    border-left: 4px solid #2196f3;
+    color: #1565c0;
+    font-size: 0.9rem;
+}
+
+.modern-help i {
+    color: #ffc107;
+    margin-right: 0.5rem;
+}
+
+/* Styles pour les boutons d'action modernes */
+.action-buttons-wrapper {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.buttons-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.modern-btn-primary,
+.modern-btn-secondary,
+.modern-btn-ghost {
+    position: relative;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    min-width: 180px;
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+    color: white;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.modern-btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.modern-btn-ghost {
+    background: transparent;
+    color: #6c757d;
+    border: 2px solid #e9ecef;
+    box-shadow: none;
+    min-width: auto;
+    padding: 0.75rem 1.5rem;
+}
+
+.btn-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+}
+
+.btn-ripple {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modern-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.modern-btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+}
+
+.modern-btn-ghost:hover {
+    background: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.modern-btn-primary:hover .btn-ripple,
+.modern-btn-secondary:hover .btn-ripple {
+    opacity: 1;
+}
+
+.additional-actions {
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .buttons-container {
+        flex-direction: column;
+    }
+    
+    .modern-btn-primary,
+    .modern-btn-secondary {
+        width: 100%;
+        min-width: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            <div class="compose-container">
+                <!-- En-tête moderne -->
+                <div class="compose-header">
+                    <h1><i class="fas fa-paper-plane me-3"></i>{{ title }}</h1>
+                    <p>Communiquez efficacement avec les autres utilisateurs du système</p>
+                </div>
+
+                <!-- Formulaire moderne -->
+                <div class="compose-form">
+                    <form method="POST" id="composeForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Destinataire avec style moderne -->
+                        <div class="form-floating">
+                            {{ form.destinataire_id(class="form-select", id="destinataire") }}
+                            <label for="destinataire"><i class="fas fa-user me-2"></i>Destinataire</label>
+                            {% if form.destinataire_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.destinataire_id.errors %}
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sujet -->
+                        <div class="form-floating">
+                            {{ form.sujet(class="form-control", id="sujet", placeholder="Objet du message") }}
+                            <label for="sujet"><i class="fas fa-tag me-2"></i>Sujet du message</label>
+                            {% if form.sujet.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.sujet.errors %}
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sélecteur de priorité moderne -->
+                        <div class="mb-4">
+                            <label class="form-label mb-3">
+                                <i class="fas fa-flag me-2"></i>Niveau de priorité
+                            </label>
+                            <div class="priority-selector">
+                                <div class="priority-option priority-normal">
+                                    <input type="radio" name="priorite" value="1" id="priority_normal" class="priority-radio" {{ 'checked' if not form.priorite.data or form.priorite.data == 1 }}>
+                                    <label for="priority_normal" class="priority-label priority-normal">
+                                        <i class="fas fa-circle me-2"></i>
+                                        Normal
+                                    </label>
+                                </div>
+                                <div class="priority-option priority-important">
+                                    <input type="radio" name="priorite" value="2" id="priority_important" class="priority-radio" {{ 'checked' if form.priorite.data == 2 }}>
+                                    <label for="priority_important" class="priority-label priority-important">
+                                        <i class="fas fa-exclamation me-2"></i>
+                                        Important
+                                    </label>
+                                </div>
+                                <div class="priority-option priority-urgent">
+                                    <input type="radio" name="priorite" value="3" id="priority_urgent" class="priority-radio" {{ 'checked' if form.priorite.data == 3 }}>
+                                    <label for="priority_urgent" class="priority-label priority-urgent">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Urgent
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            {{ form.priorite.label(class="form-label") }}
+                            {{ form.priorite(class="form-select") }}
+                            {% if form.priorite.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.priorite.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="modern-textarea-wrapper">
+                                {{ form.contenu.label(class="form-label modern-label") }}
+                                <div class="textarea-container">
+                                    {{ form.contenu(class="form-control modern-textarea", rows="10", placeholder="Tapez votre message ici...", maxlength="2000") }}
+                                    <div class="char-counter">
+                                        <span id="charCount">0</span>/2000 caractères
+                                    </div>
+                                </div>
+                                {% if form.contenu.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.contenu.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-help modern-help">
+                                    <i class="fas fa-lightbulb"></i> 
+                                    Rédigez votre message de manière claire et professionnelle. Utilisez un langage respectueux et précis.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-buttons-wrapper">
+                                <div class="buttons-container">
+                                    <button type="submit" class="btn modern-btn-primary">
+                                        <div class="btn-content">
+                                            <i class="fas fa-paper-plane"></i>
+                                            <span>Envoyer le message</span>
+                                        </div>
+                                        <div class="btn-ripple"></div>
+                                    </button>
+                                    
+                                    <button type="button" class="btn modern-btn-secondary" onclick="history.back()">
+                                        <div class="btn-content">
+                                            <i class="fas fa-arrow-left"></i>
+                                            <span>Annuler</span>
+                                        </div>
+                                        <div class="btn-ripple"></div>
+                                    </button>
+                                </div>
+                                
+                                <div class="additional-actions">
+                                    <button type="button" class="btn modern-btn-ghost" onclick="saveDraft()">
+                                        <i class="fas fa-save"></i>
+                                        <span>Sauvegarder brouillon</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Compteur de caractères pour la zone de texte
+    const textarea = document.querySelector('.modern-textarea');
+    const charCounter = document.getElementById('charCount');
+    const maxLength = 2000;
+    
+    if (textarea && charCounter) {
+        // Fonction de mise à jour du compteur
+        function updateCharCounter() {
+            const currentLength = textarea.value.length;
+            charCounter.textContent = currentLength;
+            
+            // Changer la couleur en fonction du nombre de caractères
+            if (currentLength > maxLength * 0.9) {
+                charCounter.style.color = '#dc3545'; // Rouge
+            } else if (currentLength > maxLength * 0.7) {
+                charCounter.style.color = '#fd7e14'; // Orange
+            } else {
+                charCounter.style.color = '#6c757d'; // Gris par défaut
+            }
+        }
+        
+        // Mise à jour initiale et lors de la saisie
+        updateCharCounter();
+        textarea.addEventListener('input', updateCharCounter);
+        textarea.addEventListener('keyup', updateCharCounter);
+    }
+    
+    // Animation des boutons avec effet ripple
+    function createRipple(event) {
+        const button = event.currentTarget;
+        const ripple = button.querySelector('.btn-ripple');
+        
+        if (ripple) {
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            ripple.classList.add('ripple-animation');
+            
+            setTimeout(() => {
+                ripple.classList.remove('ripple-animation');
+            }, 600);
+        }
+    }
+    
+    // Ajouter l'effet ripple aux boutons
+    const modernButtons = document.querySelectorAll('.modern-btn-primary, .modern-btn-secondary');
+    modernButtons.forEach(button => {
+        button.addEventListener('click', createRipple);
+    });
+    
+    // Auto-resize de la textarea
+    if (textarea) {
+        function autoResize() {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.max(200, textarea.scrollHeight) + 'px';
+        }
+        
+        textarea.addEventListener('input', autoResize);
+        autoResize(); // Appel initial
+    }
+    
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const destinataire = document.querySelector('#destinataire_id');
+            const sujet = document.querySelector('#sujet');
+            const contenu = document.querySelector('.modern-textarea');
+            
+            let hasErrors = false;
+            
+            // Validation du destinataire
+            if (!destinataire.value) {
+                showFieldError(destinataire, 'Veuillez sélectionner un destinataire');
+                hasErrors = true;
+            }
+            
+            // Validation du sujet
+            if (!sujet.value.trim()) {
+                showFieldError(sujet, 'Le sujet est obligatoire');
+                hasErrors = true;
+            }
+            
+            // Validation du contenu
+            if (!contenu.value.trim()) {
+                showFieldError(contenu, 'Le message ne peut pas être vide');
+                hasErrors = true;
+            }
+            
+            if (hasErrors) {
+                e.preventDefault();
+                // Faire défiler vers le premier champ avec erreur
+                const firstError = document.querySelector('.field-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+    
+    // Fonction pour afficher les erreurs de champs
+    function showFieldError(field, message) {
+        // Supprimer les erreurs existantes
+        const existingError = field.parentNode.querySelector('.field-error');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Ajouter la nouvelle erreur
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-danger mt-2';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${message}`;
+        field.parentNode.appendChild(errorDiv);
+        
+        // Ajouter une bordure rouge au champ
+        field.style.borderColor = '#dc3545';
+        field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+        
+        // Supprimer l'erreur quand l'utilisateur corrige
+        const removeError = () => {
+            if (field.value.trim()) {
+                errorDiv.remove();
+                field.style.borderColor = '';
+                field.style.boxShadow = '';
+                field.removeEventListener('input', removeError);
+            }
+        };
+        field.addEventListener('input', removeError);
+    }
+});
+
+// Fonction pour sauvegarder un brouillon (à implémenter côté serveur)
+function saveDraft() {
+    const formData = new FormData(document.querySelector('form'));
+    
+    // Simulation d'une sauvegarde
+    const saveButton = document.querySelector('.modern-btn-ghost');
+    const originalText = saveButton.innerHTML;
+    
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Sauvegarde...</span>';
+    saveButton.disabled = true;
+    
+    setTimeout(() => {
+        saveButton.innerHTML = '<i class="fas fa-check"></i><span>Sauvegardé</span>';
+        
+        setTimeout(() => {
+            saveButton.innerHTML = originalText;
+            saveButton.disabled = false;
+        }, 2000);
+    }, 1000);
+    
+    console.log('Brouillon sauvegardé (fonctionnalité à implémenter)');
+}
+
+// CSS pour l'animation ripple
+const rippleCSS = `
+.ripple-animation {
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+    transform: scale(0);
+    animation: ripple-effect 0.6s linear;
+}
+
+@keyframes ripple-effect {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.field-error {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+`;
+
+// Ajouter le CSS dynamiquement
+const styleSheet = document.createElement('style');
+styleSheet.textContent = rippleCSS;
+document.head.appendChild(styleSheet);
+</script>
+{% endblock %}

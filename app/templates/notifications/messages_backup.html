@@ -1,0 +1,767 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Design moderne pour la messagerie */
+.messaging-container {
+    min-height: 80vh;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.message-sidebar {
+    background: white;
+    border-right: 1px solid #dee2e6;
+    min-height: 80vh;
+    padding: 0;
+}
+
+.message-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px 0 0 0;
+}
+
+.message-header h4 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.message-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.message-stat {
+    text-align: center;
+}
+
+.message-stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+}
+
+.message-stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.message-tabs {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.message-tab {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.message-tab.active {
+    border-bottom-color: #0d6efd;
+    color: #0d6efd;
+    background: #f8f9ff;
+}
+
+.message-tab:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.message-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.message-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.message-item:hover {
+    background: #f8f9ff;
+    transform: translateX(5px);
+}
+
+.message-item.unread {
+    background: linear-gradient(90deg, #e3f2fd 0%, white 100%);
+    border-left: 4px solid #2196f3;
+}
+
+.message-item.urgent {
+    border-left: 4px solid #dc3545;
+}
+
+.message-item.important {
+    border-left: 4px solid #fd7e14;
+}
+
+.message-sender {
+    font-weight: 600;
+    color: #212529;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.message-subject {
+    font-weight: 500;
+    color: #495057;
+    margin: 0.25rem 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.message-preview {
+    color: #6c757d;
+    font-size: 0.9rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.message-time {
+    font-size: 0.8rem;
+    color: #868e96;
+    margin-top: 0.5rem;
+}
+
+.message-badges {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.priority-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.priority-urgent {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.priority-important {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.unread-dot {
+    width: 8px;
+    height: 8px;
+    background: #2196f3;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+/* Zone de composition */
+.compose-area {
+    background: white;
+    padding: 2rem;
+    border-radius: 0 15px 15px 0;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.compose-header {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.compose-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #212529;
+    margin: 0;
+}
+
+.btn-compose {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-compose:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Scrollbar personnalisée */
+.message-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.message-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.message-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.message-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Animation pour les nouveaux messages */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.message-item.new {
+    animation: slideIn 0.5s ease;
+}
+}
+
+.stats-card {
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.message-preview {
+    color: #6c757d;
+    font-size: 0.9rem;
+    max-height: 2.4em;
+    overflow: hidden;
+    line-height: 1.2;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.clickable-message {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-message:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="messaging-container">
+        <div class="row g-0 h-100">
+            <!-- Sidebar des messages -->
+            <div class="col-md-4 message-sidebar">
+                <!-- Header avec statistiques -->
+                <div class="message-header">
+                    <h4><i class="fas fa-comments me-2"></i>Messagerie</h4>
+                    <div class="message-stats">
+                        <div class="message-stat">
+                            <span class="message-stat-number">{{ stats.recus or 0 }}</span>
+                            <span class="message-stat-label">Reçus</span>
+                        </div>
+                        <div class="message-stat">
+                            <span class="message-stat-number">{{ stats.non_lus or 0 }}</span>
+                            <span class="message-stat-label">Non lus</span>
+                        </div>
+                        <div class="message-stat">
+                            <span class="message-stat-number">{{ stats.envoyes or 0 }}</span>
+                            <span class="message-stat-label">Envoyés</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs de navigation -->
+                <div class="message-tabs">
+                    <button class="message-tab active" data-tab="recus">
+                        <i class="fas fa-inbox me-1"></i>Reçus
+                    </button>
+                    <button class="message-tab" data-tab="envoyes">
+                        <i class="fas fa-paper-plane me-1"></i>Envoyés
+                    </button>
+                </div>
+
+                <!-- Liste des messages -->
+                <div class="message-list" id="messageList">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="message-item {{ 'unread' if not message.lu else '' }} {{ 'urgent' if message.priorite == 3 else 'important' if message.priorite == 2 else '' }}" 
+                             data-message-id="{{ message.id }}">
+                            <div class="d-flex">
+                                <div class="message-avatar">
+                                    {{ (message.expediteur.nom_utilisateur or message.expediteur.nom)[0].upper() }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="message-sender">
+                                        {{ message.expediteur.nom_utilisateur or message.expediteur.nom }}
+                                        {% if not message.lu %}
+                                            <div class="unread-dot"></div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="message-subject">{{ message.sujet }}</div>
+                                    <div class="message-preview">{{ message.contenu[:80] }}...</div>
+                                    <div class="message-time">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ message.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="message-badges">
+                                {% if message.priorite == 3 %}
+                                    <span class="priority-badge priority-urgent">Urgent</span>
+                                {% elif message.priorite == 2 %}
+                                    <span class="priority-badge priority-important">Important</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5>Aucun message</h5>
+                            <p>Vous n'avez pas encore de messages dans cette boîte.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Zone principale -->
+            <div class="col-md-8">
+                <div class="compose-area">
+                    <div class="compose-header">
+                        <h3 class="compose-title">
+                            <i class="fas fa-envelope me-2"></i>Sélectionnez un message
+                        </h3>
+                        <a href="{{ url_for('notifications.nouveau_message') }}" class="btn btn-compose ms-auto">
+                            <i class="fas fa-plus me-2"></i>Nouveau Message
+                        </a>
+                    </div>
+                    
+                    <div class="empty-state flex-grow-1 d-flex align-items-center justify-content-center">
+                        <div>
+                            <i class="fas fa-comments"></i>
+                            <h4>Bienvenue dans votre messagerie</h4>
+                            <p>Sélectionnez un message dans la liste de gauche pour le lire,<br>ou composez un nouveau message.</p>
+                            <a href="{{ url_for('notifications.nouveau_message') }}" class="btn btn-compose mt-3">
+                                <i class="fas fa-edit me-2"></i>Rédiger un message
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des onglets
+    const tabs = document.querySelectorAll('.message-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Retirer la classe active de tous les onglets
+            tabs.forEach(t => t.classList.remove('active'));
+            // Ajouter la classe active à l'onglet cliqué
+            this.classList.add('active');
+            
+            // Charger les messages selon l'onglet
+            const tabType = this.dataset.tab;
+            loadMessages(tabType);
+        });
+    });
+    
+    // Gestion des clics sur les messages
+    const messageItems = document.querySelectorAll('.message-item');
+    messageItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const messageId = this.dataset.messageId;
+            openMessage(messageId);
+            
+            // Marquer comme lu visuellement
+            this.classList.remove('unread');
+            const unreadDot = this.querySelector('.unread-dot');
+            if (unreadDot) {
+                unreadDot.remove();
+            }
+        });
+    });
+});
+
+function loadMessages(type) {
+    // Simulation du chargement des messages selon le type
+    const messageList = document.getElementById('messageList');
+    messageList.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+    
+    // Ici, vous pourriez faire un appel AJAX pour charger les messages
+    setTimeout(() => {
+        window.location.href = `{{ url_for('notifications.messages') }}?vue=${type}`;
+    }, 500);
+}
+
+// Animation pour les nouveaux messages
+function addNewMessage(messageData) {
+    const messageList = document.getElementById('messageList');
+    const messageElement = createMessageElement(messageData);
+    messageElement.classList.add('new');
+    messageList.prepend(messageElement);
+}
+
+function createMessageElement(message) {
+    // Créer un élément de message dynamiquement
+    const div = document.createElement('div');
+    div.className = `message-item unread ${message.priority === 3 ? 'urgent' : message.priority === 2 ? 'important' : ''}`;
+    div.dataset.messageId = message.id;
+    // ... reste de la création de l'élément
+    return div;
+}
+</script>
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Messages reçus</h5>
+                            <div class="h3 text-primary">{{ stats.recus }}</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-inbox fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Non lus</h5>
+                            <div class="h3 text-warning">{{ stats.non_lus }}</div>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-envelope fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Messages envoyés</h5>
+                            <div class="h3 text-success">{{ stats.envoyes }}</div>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-paper-plane fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Archivés</h5>
+                            <div class="h3 text-secondary">{{ stats.archives }}</div>
+                        </div>
+                        <div class="text-secondary">
+                            <i class="fas fa-archive fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets de vue -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header p-0 vue-tabs">
+                    <div class="d-flex">
+                        <button class="vue-tab {{ 'active' if vue == 'recus' else '' }}" 
+                                onclick="changerVue('recus')">
+                            <i class="fas fa-inbox me-2"></i>Messages reçus ({{ stats.recus }})
+                        </button>
+                        <button class="vue-tab {{ 'active' if vue == 'envoyes' else '' }}" 
+                                onclick="changerVue('envoyes')">
+                            <i class="fas fa-paper-plane me-2"></i>Messages envoyés ({{ stats.envoyes }})
+                        </button>
+                        <button class="vue-tab {{ 'active' if vue == 'archives' else '' }}" 
+                                onclick="changerVue('archives')">
+                            <i class="fas fa-archive me-2"></i>Messages archivés ({{ stats.archives }})
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filtres -->
+                <div class="card-body border-bottom">
+                    <form method="GET" class="row g-3">
+                        <input type="hidden" name="vue" value="{{ vue }}">
+                        <div class="col-md-3">
+                            {{ filtre_form.priorite.label(class="form-label") }}
+                            {{ filtre_form.priorite(class="form-select") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filtre_form.statut.label(class="form-label") }}
+                            {{ filtre_form.statut(class="form-select") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ filtre_form.recherche.label(class="form-label") }}
+                            {{ filtre_form.recherche(class="form-control") }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{{ url_for('notifications.messages', vue=vue) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des messages -->
+    <div class="row">
+        <div class="col-12">
+            {% if messages.items %}
+            <div class="space-y-2">
+                {% for message in messages.items %}
+                <div class="card message-card {{ 'non-lu' if not message.lu and vue == 'recus' else '' }} {{ message.css_class }} clickable-message" 
+                     data-message-id="{{ message.id }}"
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <!-- Avatar -->
+                            <div class="avatar">
+                                {% if vue == 'recus' %}
+                                    {{ message.expediteur.prenom[0] if message.expediteur.prenom else message.expediteur.username[0] }}
+                                {% else %}
+                                    {{ message.destinataire.prenom[0] if message.destinataire.prenom else message.destinataire.username[0] }}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1 {{ 'fw-bold' if not message.lu and vue == 'recus' else '' }}">
+                                            {% if vue == 'recus' %}
+                                                {{ message.expediteur.prenom }} {{ message.expediteur.nom or message.expediteur.username }}
+                                            {% else %}
+                                                À: {{ message.destinataire.prenom }} {{ message.destinataire.nom or message.destinataire.username }}
+                                            {% endif %}
+                                        </h6>
+                                        <h6 class="mb-0 {{ 'fw-bold' if not message.lu and vue == 'recus' else 'text-muted' }}">
+                                            {{ message.sujet }}
+                                            {% if message.est_reponse %}
+                                            <i class="fas fa-reply text-muted ms-1" title="Réponse"></i>
+                                            {% endif %}
+                                        </h6>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        {% if message.priorite == 3 %}
+                                        <span class="badge bg-danger me-2">Urgent</span>
+                                        {% elif message.priorite == 2 %}
+                                        <span class="badge bg-warning me-2">Important</span>
+                                        {% endif %}
+                                        {% if not message.lu and vue == 'recus' %}
+                                        <span class="badge bg-primary me-2">Nouveau</span>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            {{ message.date_creation.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="message-preview">
+                                    {{ message.contenu[:150] }}{% if message.contenu|length > 150 %}...{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if messages.pages > 1 %}
+            <nav aria-label="Navigation des messages" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if messages.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications.messages', page=messages.prev_num, vue=vue, **request.args) }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in messages.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != messages.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('notifications.messages', page=page_num, vue=vue, **request.args) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if messages.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications.messages', page=messages.next_num, vue=vue, **request.args) }}">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-envelope-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">
+                        {% if vue == 'recus' %}
+                        Aucun message reçu
+                        {% elif vue == 'envoyes' %}
+                        Aucun message envoyé
+                        {% else %}
+                        Aucun message archivé
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted">
+                        {% if vue == 'recus' %}
+                        Vous n'avez reçu aucun message correspondant aux critères.
+                        {% elif vue == 'envoyes' %}
+                        Vous n'avez envoyé aucun message correspondant aux critères.
+                        {% else %}
+                        Vous n'avez aucun message archivé correspondant aux critères.
+                        {% endif %}
+                    </p>
+                    {% if vue == 'recus' %}
+                    <a href="{{ url_for('notifications.nouveau_message') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Envoyer votre premier message
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changerVue(vue) {
+    const url = new URL(window.location);
+    url.searchParams.set('vue', vue);
+    url.searchParams.delete('page'); // Reset pagination
+    window.location.href = url.toString();
+}
+
+function ouvrirMessage(messageId) {
+    window.location.href = `{{ url_for('notifications.voir_message', id=0) }}`.replace('0', messageId);
+}
+
+// Gestion des clics sur les messages
+document.addEventListener('DOMContentLoaded', function() {
+    const clickableMessages = document.querySelectorAll('.clickable-message');
+    clickableMessages.forEach(message => {
+        message.addEventListener('click', function() {
+            const messageId = this.dataset.messageId;
+            ouvrirMessage(messageId);
+        });
+    });
+});
+</script>
+{% endblock %}

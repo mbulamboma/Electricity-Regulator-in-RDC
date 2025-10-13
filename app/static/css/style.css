@@ -1,0 +1,160 @@
+/* Styles personnalisés */
+
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.jumbotron {
+    background-color: #f8f9fa;
+    padding: 3rem 2rem;
+    border-radius: 10px;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+/* Formulaires */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Tables */
+.table {
+    background-color: white;
+}
+
+.table thead {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Boutons */
+.btn {
+    border-radius: 5px;
+    padding: 0.5rem 1.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Messages Flash */
+.alert {
+    border-radius: 5px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Cartes de statistiques */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-warning,
+.card.bg-info,
+.card.bg-danger {
+    border: none;
+}
+
+.card-footer {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-top: none;
+}
+
+/* Menu utilisateur - Correction du débordement */
+.user-dropdown {
+    min-width: 250px;
+    max-width: 300px;
+}
+
+.user-operateur {
+    max-width: 250px;
+    padding: 0.5rem 1rem !important;
+}
+
+.user-operateur .text-truncate {
+    max-width: 180px;
+}
+
+/* S'assurer que le menu reste dans l'écran */
+.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 2rem 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .user-dropdown {
+        min-width: 200px;
+        max-width: 250px;
+    }
+    
+    .user-operateur .text-truncate {
+        max-width: 150px;
+    }
+}

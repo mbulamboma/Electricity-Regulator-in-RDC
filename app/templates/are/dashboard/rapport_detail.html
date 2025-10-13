@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport Annuel {{ rapport.annee }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rapport-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .rapport-header {
+        background: linear-gradient(45deg, #6f42c1, #8e7cc3);
+        color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #6f42c1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+    }
+    
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #6f42c1;
+    }
+    
+    .kpi-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #6f42c1;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #6f42c1;
+        padding-left: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+    }
+    
+    .print-section {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    @media print {
+        .no-print { display: none !important; }
+        .rapport-container { box-shadow: none; background: white; }
+        .stat-card, .chart-container { box-shadow: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Navigation et actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('are_dashboard.index') }}">Dashboard ARE</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('are_dashboard.rapports') }}">Rapports</a></li>
+                    <li class="breadcrumb-item active">Rapport {{ rapport.annee }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button onclick="window.print()" class="btn btn-outline-primary me-2">
+                <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button onclick="exporterPDF()" class="btn btn-outline-danger me-2">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </button>
+            <a href="{{ url_for('are_dashboard.modifier_rapport', rapport_id=rapport.id) }}" 
+               class="btn btn-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+        </div>
+    </div>
+
+    <div class="rapport-container">
+        <!-- En-tête du rapport -->
+        <div class="rapport-header">
+            <h1 class="mb-3">{{ rapport.titre }}</h1>
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <h3>{{ rapport.annee }}</h3>
+                    <p class="mb-0">Année de référence</p>
+                </div>
+                <div class="col-md-4">
+                    <span class="status-badge badge 
+                        {% if rapport.statut == 'finalise' %}bg-success
+                        {% elif rapport.statut == 'en_cours' %}bg-warning
+                        {% else %}bg-secondary{% endif %}">
+                        {{ rapport.statut.replace('_', ' ').title() }}
+                    </span>
+                    <p class="mb-0 mt-2">Statut du rapport</p>
+                </div>
+                <div class="col-md-4">
+                    <h3>{{ rapport.date_generation.strftime('%d/%m/%Y') if rapport.date_generation }}</h3>
+                    <p class="mb-0">Date de génération</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Résumé exécutif -->
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                Résumé Exécutif
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="stat-number">{{ rapport.nombre_operateurs or 0 }}</div>
+                        <div class="stat-label">Opérateurs Régulés</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="stat-number">
+                            {% if rapport.contenu_json and rapport.contenu_json.get('taux_acces') %}
+                                {{ "%.1f"|format(rapport.contenu_json.taux_acces) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Taux d'Accès</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="stat-number">
+                            {% if rapport.contenu_json and rapport.contenu_json.get('production_totale') %}
+                                {{ "{:,.0f}"|format(rapport.contenu_json.production_totale) }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Production (GWh)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="stat-number">
+                            {% if rapport.contenu_json and rapport.contenu_json.get('fiabilite_moyenne') %}
+                                {{ "%.1f"|format(rapport.contenu_json.fiabilite_moyenne) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Fiabilité Moyenne</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicateurs clés de performance -->
+        {% if rapport.contenu_json and rapport.contenu_json.get('kpis') %}
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Indicateurs Clés de Performance
+            </h2>
+            
+            <div class="row">
+                {% for kpi in rapport.contenu_json.kpis %}
+                <div class="col-md-6">
+                    <div class="kpi-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ kpi.nom }}</h6>
+                                <p class="text-muted mb-0">{{ kpi.description }}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="h4 text-primary">{{ kpi.valeur }}{{ kpi.unite }}</span>
+                                {% if kpi.evolution %}
+                                <br><small class="text-{% if kpi.evolution > 0 %}success{% else %}danger{% endif %}">
+                                    <i class="fas fa-arrow-{% if kpi.evolution > 0 %}up{% else %}down{% endif %}"></i>
+                                    {{ kpi.evolution }}%
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Analyse sectorielle -->
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-industry"></i>
+                Analyse Sectorielle
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h5 class="text-center mb-3">Production par Source</h5>
+                        <canvas id="productionChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h5 class="text-center mb-3">Répartition Géographique</h5>
+                        <canvas id="geographieChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h5 class="text-center mb-3">Évolution Annuelle</h5>
+                        <canvas id="evolutionChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Défis et recommandations -->
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-lightbulb"></i>
+                Défis et Recommandations
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Principaux Défis</h4>
+                    {% if rapport.contenu_json and rapport.contenu_json.get('defis') %}
+                        <ul class="list-group list-group-flush">
+                            {% for defi in rapport.contenu_json.defis %}
+                            <li class="list-group-item">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                {{ defi }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Aucun défi spécifique identifié pour cette période.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h4>Recommandations</h4>
+                    {% if rapport.contenu_json and rapport.contenu_json.get('recommandations') %}
+                        <ul class="list-group list-group-flush">
+                            {% for reco in rapport.contenu_json.recommandations %}
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {{ reco }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Recommandations en cours d'élaboration.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chronologie des événements -->
+        {% if rapport.contenu_json and rapport.contenu_json.get('chronologie') %}
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-calendar-alt"></i>
+                Chronologie des Événements Marquants
+            </h2>
+            
+            <div class="timeline">
+                {% for evenement in rapport.contenu_json.chronologie %}
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">{{ evenement.titre }}</h6>
+                            <p class="text-muted mb-2">{{ evenement.description }}</p>
+                            <small class="text-primary">
+                                <i class="fas fa-calendar"></i>
+                                {{ evenement.date }}
+                            </small>
+                        </div>
+                        <span class="badge bg-{{ evenement.type == 'positif' and 'success' or 'warning' }}">
+                            {{ evenement.type.title() }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Métadonnées du rapport -->
+        <div class="print-section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Informations sur le Rapport
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Auteur :</strong> {{ rapport.auteur.nom }} {{ rapport.auteur.prenom }}</p>
+                    <p><strong>Période couverte :</strong> 
+                        {% if rapport.periode_debut and rapport.periode_fin %}
+                            Du {{ rapport.periode_debut.strftime('%d/%m/%Y') }} 
+                            au {{ rapport.periode_fin.strftime('%d/%m/%Y') }}
+                        {% else %}
+                            Année complète {{ rapport.annee }}
+                        {% endif %}
+                    </p>
+                    <p><strong>Date de génération :</strong> 
+                        {{ rapport.date_generation.strftime('%d/%m/%Y à %H:%M') if rapport.date_generation }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Date de finalisation :</strong> 
+                        {% if rapport.date_finalisation %}
+                            {{ rapport.date_finalisation.strftime('%d/%m/%Y à %H:%M') }}
+                        {% else %}
+                            <span class="text-muted">Non finalisé</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Version :</strong> 
+                        {% if rapport.contenu_json and rapport.contenu_json.get('version') %}
+                            {{ rapport.contenu_json.version }}
+                        {% else %}
+                            1.0
+                        {% endif %}
+                    </p>
+                    <p><strong>Dernière modification :</strong> 
+                        {{ rapport.date_modification.strftime('%d/%m/%Y à %H:%M') if rapport.date_modification }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions flottantes -->
+<div class="no-print">
+    <div class="position-fixed bottom-0 end-0 p-3">
+        <div class="btn-group-vertical">
+            <button onclick="window.scrollTo(0,0)" class="btn btn-primary btn-sm mb-2" title="Haut de page">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <button onclick="window.print()" class="btn btn-secondary btn-sm mb-2" title="Imprimer">
+                <i class="fas fa-print"></i>
+            </button>
+            <button onclick="partagerRapport()" class="btn btn-info btn-sm" title="Partager">
+                <i class="fas fa-share"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données du rapport
+    const rapportData = {{ rapport.contenu_json|tojson|safe if rapport.contenu_json else '{}' }};
+    
+    // Graphique de production par source
+    const productionCtx = document.getElementById('productionChart');
+    if (productionCtx && rapportData.production_par_source) {
+        new Chart(productionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(rapportData.production_par_source),
+                datasets: [{
+                    data: Object.values(rapportData.production_par_source),
+                    backgroundColor: ['#6f42c1', '#20c997', '#fd7e14', '#e83e8c']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+    
+    // Graphique géographique
+    const geoCtx = document.getElementById('geographieChart');
+    if (geoCtx && rapportData.repartition_provinces) {
+        new Chart(geoCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(rapportData.repartition_provinces),
+                datasets: [{
+                    label: 'Accès (%)',
+                    data: Object.values(rapportData.repartition_provinces),
+                    backgroundColor: '#6f42c1'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    }
+    
+    // Graphique d'évolution
+    const evolutionCtx = document.getElementById('evolutionChart');
+    if (evolutionCtx && rapportData.evolution_annuelle) {
+        new Chart(evolutionCtx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(rapportData.evolution_annuelle),
+                datasets: [{
+                    label: 'Évolution',
+                    data: Object.values(rapportData.evolution_annuelle),
+                    borderColor: '#6f42c1',
+                    backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+});
+
+function exporterPDF() {
+    // Simulation de l'export PDF
+    alert('Export PDF en cours de développement.\nUtilisez l\'impression du navigateur en attendant.');
+}
+
+function partagerRapport() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ rapport.titre }}',
+            text: 'Rapport annuel {{ rapport.annee }} - Autorité de Régulation de l\'Électricité',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copier l'URL
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Lien du rapport copié dans le presse-papiers');
+        });
+    }
+}
+
+// Amélioration de l'impression
+window.addEventListener('beforeprint', function() {
+    // Masquer les éléments non imprimables
+    document.querySelectorAll('.no-print').forEach(el => {
+        el.style.display = 'none';
+    });
+});
+
+window.addEventListener('afterprint', function() {
+    // Restaurer les éléments
+    document.querySelectorAll('.no-print').forEach(el => {
+        el.style.display = '';
+    });
+});
+</script>
+{% endblock %}

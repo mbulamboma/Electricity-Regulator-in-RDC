@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Détail du Poste de Distribution{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-card {
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card .card-header {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+        font-weight: 600;
+    }
+    
+    .stat-box {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #28a745;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .badge-status {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .gauge-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+    }
+    
+    .gauge {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(from 180deg, #dc3545 0deg, #ffc107 90deg, #28a745 135deg, #28a745 180deg);
+        position: relative;
+    }
+    
+    .gauge::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        background: white;
+        border-radius: 50%;
+    }
+    
+    .gauge-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: bold;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-plug text-success"></i>
+                {{ poste.nom }}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('distribution.index') }}">Distribution</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('distribution.liste_postes') }}">Postes</a></li>
+                    <li class="breadcrumb-item active">{{ poste.nom }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            {# TODO: Implémenter la route distribution.modifier_poste
+            <a href="{{ url_for('distribution.modifier_poste', id=poste.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            #}
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </div>
+    </div>
+
+    <!-- Statut et informations principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box text-center">
+                <div class="stat-number">{{ poste.puissance_installee or 'N/A' }}</div>
+                <div class="text-muted">Puissance (kVA)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box text-center">
+                <div class="stat-number">{{ poste.tension_primaire or 'N/A' }}</div>
+                <div class="text-muted">Tension HT (V)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box text-center">
+                <div class="stat-number">{{ poste.tension_secondaire or 'N/A' }}</div>
+                <div class="text-muted">Tension BT (V)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box text-center">
+                <span class="badge badge-status {% if poste.actif %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if poste.actif %}Opérationnel{% else %}Hors service{% endif %}
+                </span>
+                <div class="text-muted mt-2">Statut</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations générales -->
+        <div class="col-lg-8">
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Informations Générales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Code :</strong> {{ poste.code or 'Non spécifié' }}</p>
+                            <p><strong>Réseau :</strong> 
+                                {% if poste.reseau %}
+                                    <a href="{{ url_for('distribution.detail_reseau', id=poste.reseau.id) }}">
+                                        {{ poste.reseau.nom }}
+                                    </a>
+                                {% else %}
+                                    Non assigné
+                                {% endif %}
+                            </p>
+                            <p><strong>Type de poste :</strong> 
+                                <span class="badge bg-info">
+                                    {{ poste.type_poste.title() if poste.type_poste else 'Non spécifié' }}
+                                </span>
+                            </p>
+                            <p><strong>Nombre de transformateurs :</strong> {{ poste.nombre_transformateurs or 'Non spécifié' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Date de mise en service :</strong> 
+                                {{ poste.date_mise_service.strftime('%d/%m/%Y') if poste.date_mise_service else 'Non spécifiée' }}
+                            </p>
+                            <p><strong>Dernière modification :</strong> 
+                                {{ poste.date_modification.strftime('%d/%m/%Y à %H:%M') if poste.date_modification else 'Jamais' }}
+                            </p>
+                            <p><strong>Localisation :</strong> {{ poste.localisation or 'Non spécifiée' }}</p>
+                            <p><strong>Coordonnées :</strong></p>
+                            <ul class="list-unstyled ms-3">
+                                {% if poste.latitude and poste.longitude %}
+                                    <li><i class="fas fa-map-marker-alt text-danger"></i> 
+                                        {{ "%.6f"|format(poste.latitude) }}, {{ "%.6f"|format(poste.longitude) }}
+                                    </li>
+                                {% else %}
+                                    <li class="text-muted">Non spécifiées</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    {% if poste.description %}
+                    <div class="mt-3">
+                        <h6>Description :</h6>
+                        <p class="text-muted">{{ poste.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Transformateurs associés -->
+            <div class="card info-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-microchip"></i>
+                        Transformateurs
+                        <span class="badge bg-light text-dark ms-2">{{ transformateurs|length }}</span>
+                    </h5>
+                    <a href="{{ url_for('distribution.nouveau_transformateur', poste_id=poste.id) }}" 
+                       class="btn btn-light btn-sm">
+                        <i class="fas fa-plus"></i> Ajouter Transformateur
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if transformateurs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Type</th>
+                                        <th>Puissance (kVA)</th>
+                                        <th>Rapport de transformation</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transformateur in transformateurs %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ transformateur.nom }}</strong>
+                                            {% if transformateur.numero_serie %}
+                                                <br><small class="text-muted">S/N: {{ transformateur.numero_serie }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ transformateur.type_transformateur.title() if transformateur.type_transformateur else 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ "{:,.0f}".format(transformateur.puissance_nominale) if transformateur.puissance_nominale else 'N/A' }}</td>
+                                        <td>{{ transformateur.tension_primaire }}/{{ transformateur.tension_secondaire }} kV</td>
+                                        <td>
+                                            {% if transformateur.statut == 'en_service' %}
+                                            <span class="badge bg-success">En Service</span>
+                                            {% elif transformateur.statut == 'hors_service' %}
+                                            <span class="badge bg-danger">Hors Service</span>
+                                            {% elif transformateur.statut == 'maintenance' %}
+                                            <span class="badge bg-warning text-dark">Maintenance</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ transformateur.statut }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('distribution.detail_transformateur', id=transformateur.id) }}" 
+                                                   class="btn btn-outline-primary" title="Voir les détails">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('distribution.modifier_transformateur', id=transformateur.id) }}" 
+                                                   class="btn btn-outline-secondary" title="Modifier">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucun transformateur associé à ce poste.</p>
+                            {# TODO: Implémenter la route distribution.nouveau_transformateur
+                            <a href="{{ url_for('distribution.nouveau_transformateur') }}?poste_id={{ poste.id }}" 
+                               class="btn btn-success">
+                                <i class="fas fa-plus"></i> Ajouter un transformateur
+                            </a>
+                            #}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau latéral -->
+        <div class="col-lg-4">
+            <!-- Indicateurs de performance -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Indicateurs
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Jauge de charge -->
+                    <div class="text-center mb-4">
+                        <h6>Taux de charge</h6>
+                        <div class="gauge-container">
+                            <div class="gauge">
+                                <div class="gauge-value">
+                                    <div style="color: #28a745;">75%</div>
+                                    <small>Charge</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Température</span>
+                            <span class="fw-bold text-warning">65°C</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-warning" style="width: 65%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Disponibilité</span>
+                            <span class="fw-bold text-success">99.2%</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-success" style="width: 99.2%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Facteur de puissance</span>
+                            <span class="fw-bold text-info">0.95</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-info" style="width: 95%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des événements -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Événements Récents
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Il y a 2 heures</small>
+                                <span class="badge bg-success">Normal</span>
+                            </div>
+                            <p class="mb-0">Maintenance préventive terminée</p>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Hier 14:30</small>
+                                <span class="badge bg-warning">Alerte</span>
+                            </div>
+                            <p class="mb-0">Température élevée détectée</p>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Il y a 3 jours</small>
+                                <span class="badge bg-info">Info</span>
+                            </div>
+                            <p class="mb-0">Mise à jour de la configuration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i>
+                        Actions Rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {# TODO: Implémenter la route distribution.nouveau_transformateur
+                        <a href="{{ url_for('distribution.nouveau_transformateur') }}?poste_id={{ poste.id }}" 
+                           class="btn btn-outline-success">
+                            <i class="fas fa-plus"></i> Ajouter transformateur
+                        </a>
+                        #}
+                        {# TODO: Implémenter la route distribution.modifier_poste
+                        <a href="{{ url_for('distribution.modifier_poste', id=poste.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-edit"></i> Modifier le poste
+                        </a>
+                        #}
+                        <button class="btn btn-outline-warning" onclick="programmerMaintenance()">
+                            <i class="fas fa-wrench"></i> Programmer maintenance
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exporterDonnees()">
+                            <i class="fas fa-download"></i> Exporter données
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer ce poste de distribution ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> Cette action supprimera également tous les transformateurs associés.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                {# TODO: Implémenter la route distribution.supprimer_poste
+                <form method="POST" action="{{ url_for('distribution.supprimer_poste', id=poste.id) }}" class="d-inline">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </form>
+                #}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function programmerMaintenance() {
+    alert('Module de programmation de maintenance en cours de développement');
+}
+
+function exporterDonnees() {
+    alert('Fonctionnalité d\'export en cours de développement');
+}
+
+// Actualisation automatique des indicateurs
+setInterval(function() {
+    // Simuler la mise à jour des indicateurs
+    const indicators = document.querySelectorAll('.progress-bar');
+    indicators.forEach(bar => {
+        const currentWidth = parseFloat(bar.style.width);
+        const variation = (Math.random() - 0.5) * 2; // Variation de -1% à +1%
+        const newWidth = Math.max(0, Math.min(100, currentWidth + variation));
+        bar.style.width = newWidth + '%';
+    });
+}, 30000); // Toutes les 30 secondes
+
+// Tooltip Bootstrap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}

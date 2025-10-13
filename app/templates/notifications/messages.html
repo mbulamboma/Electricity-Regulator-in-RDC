@@ -1,0 +1,901 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Reset Bootstrap conflicts and Design Inspinia pour la messagerie */
+.container-fluid.p-0 {
+    padding: 0 !important;
+}
+
+/* Design Inspinia pour la messagerie */
+.mailbox-wrapper {
+    background: #f3f3f4 !important;
+    min-height: calc(100vh - 120px);
+    margin: 0 !important;
+    padding: 20px !important;
+    width: 100% !important;
+}
+
+.container-fluid {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.mailbox-content {
+    background: white !important;
+    border-radius: 2px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15) !important;
+    overflow: hidden;
+    display: flex !important;
+    min-height: calc(100vh - 140px);
+    font-family: 'Open Sans', 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 13px !important;
+}
+
+/* Sidebar gauche */
+.mailbox-sidebar {
+    width: 220px !important;
+    background: white !important;
+    border-right: 1px solid #e7eaec !important;
+    flex-shrink: 0 !important;
+    min-height: 100% !important;
+}
+
+.sidebar-section {
+    margin-bottom: 20px;
+}
+
+.sidebar-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #676a6c;
+    text-transform: uppercase;
+    padding: 15px 15px 8px 15px;
+    margin: 0;
+    border-bottom: 1px solid #e7eaec;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-item {
+    border-bottom: 1px solid #e7eaec;
+}
+
+.sidebar-link {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 15px !important;
+    color: #676a6c !important;
+    text-decoration: none !important;
+    font-size: 13px !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+}
+
+.sidebar-link:hover {
+    background: #f3f3f4;
+    color: #1ab394;
+    text-decoration: none;
+}
+
+.sidebar-link.active {
+    background: #1ab394;
+    color: white;
+    border-left: 3px solid #179d7a;
+}
+
+.sidebar-link.active:hover {
+    background: #1ab394;
+    color: white;
+}
+
+.sidebar-icon {
+    width: 16px;
+    margin-right: 8px;
+}
+
+.sidebar-text {
+    flex: 1;
+}
+
+.sidebar-count {
+    background: #ed5565;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    min-width: 16px;
+    text-align: center;
+}
+
+.sidebar-count.draft {
+    background: #f8ac59;
+}
+
+.sidebar-count.work {
+    background: #1c84c6;
+}
+
+/* Zone principale */
+.mailbox-main {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: white !important;
+    min-height: 100% !important;
+}
+
+.mailbox-header {
+    background: #f9f9f9 !important;
+    border-bottom: 1px solid #e7eaec !important;
+    padding: 15px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
+}
+
+.mailbox-title {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0;
+    color: #676a6c;
+}
+
+.mailbox-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mailbox-btn {
+    background: white;
+    border: 1px solid #e7eaec;
+    padding: 6px 12px;
+    border-radius: 3px;
+    color: #676a6c;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.mailbox-btn:hover {
+    background: #f3f3f4;
+    border-color: #d1d1d1;
+    color: #676a6c;
+    text-decoration: none;
+}
+
+.mailbox-btn.primary {
+    background: #1ab394;
+    border-color: #1ab394;
+    color: white;
+}
+
+.mailbox-btn.primary:hover {
+    background: #179d7a;
+    border-color: #179d7a;
+    color: white;
+}
+
+/* Barre d'outils */
+.mailbox-toolbar {
+    background: #f9f9f9;
+    border-bottom: 1px solid #e7eaec;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    background: white;
+    border: 1px solid #e7eaec;
+    padding: 5px 10px;
+    border-radius: 3px;
+    color: #676a6c;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toolbar-btn:hover {
+    background: #f3f3f4;
+    border-color: #d1d1d1;
+}
+
+.toolbar-search {
+    flex: 1;
+    max-width: 300px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 6px 30px 6px 10px;
+    border: 1px solid #e7eaec;
+    border-radius: 3px;
+    font-size: 12px;
+    background: white;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1ab394;
+}
+
+.search-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #c4c4c4;
+    font-size: 12px;
+}
+
+/* Liste des messages */
+.message-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.message-table {
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+}
+
+.message-table tbody tr {
+    border-bottom: 1px solid #e7eaec;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.message-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.message-table tbody tr.unread {
+    background: #fff;
+    font-weight: 500;
+}
+
+.message-table tbody tr.unread td {
+    color: #676a6c;
+}
+
+.message-table td {
+    padding: 12px 8px;
+    vertical-align: middle;
+    color: #a7a7a7;
+    border: none;
+}
+
+.message-checkbox {
+    width: 30px;
+    text-align: center;
+}
+
+.message-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.message-star {
+    width: 30px;
+    text-align: center;
+    color: #c4c4c4;
+    cursor: pointer;
+}
+
+.message-star.starred {
+    color: #f8ac59;
+}
+
+.message-star:hover {
+    color: #f8ac59;
+}
+
+.message-sender {
+    width: 200px;
+    font-weight: 500;
+    color: #676a6c !important;
+}
+
+.message-subject {
+    color: #676a6c !important;
+    position: relative;
+}
+
+.message-snippet {
+    color: #a7a7a7 !important;
+    margin-left: 5px;
+    font-weight: normal;
+}
+
+.message-attachment {
+    width: 30px;
+    text-align: center;
+    color: #c4c4c4;
+}
+
+.message-date {
+    width: 80px;
+    text-align: right;
+    font-size: 11px;
+}
+
+.priority-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.priority-urgent {
+    background: #ed5565;
+}
+
+.priority-important {
+    background: #f8ac59;
+}
+
+/* Pagination et footer */
+.mailbox-footer {
+    background: #f9f9f9;
+    border-top: 1px solid #e7eaec;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #676a6c;
+}
+
+.footer-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.footer-pagination {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pagination-btn {
+    background: white;
+    border: 1px solid #e7eaec;
+    padding: 4px 8px;
+    border-radius: 3px;
+    color: #676a6c;
+    text-decoration: none;
+    font-size: 11px;
+}
+
+.pagination-btn:hover {
+    background: #f3f3f4;
+    text-decoration: none;
+    color: #676a6c;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Modal de composition */
+.compose-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.compose-modal.open {
+    display: flex;
+}
+
+.compose-window {
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.compose-header {
+    background: #f9f9f9;
+    border-bottom: 1px solid #e7eaec;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.compose-title {
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0;
+    color: #676a6c;
+}
+
+.compose-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #676a6c;
+    cursor: pointer;
+    padding: 0;
+}
+
+.compose-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.compose-field {
+    margin-bottom: 15px;
+}
+
+.compose-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #676a6c;
+    font-weight: 500;
+}
+
+.compose-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e7eaec;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.compose-input:focus {
+    outline: none;
+    border-color: #1ab394;
+}
+
+.compose-textarea {
+    width: 100%;
+    height: 200px;
+    padding: 12px;
+    border: 1px solid #e7eaec;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.compose-textarea:focus {
+    outline: none;
+    border-color: #1ab394;
+}
+
+.compose-footer {
+    background: #f9f9f9;
+    border-top: 1px solid #e7eaec;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-send {
+    background: #1ab394;
+    border: 1px solid #1ab394;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-send:hover {
+    background: #179d7a;
+    border-color: #179d7a;
+}
+
+.btn-draft {
+    background: white;
+    border: 1px solid #e7eaec;
+    color: #676a6c;
+    padding: 8px 15px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-draft:hover {
+    background: #f3f3f4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mailbox-sidebar {
+        width: 180px;
+    }
+    
+    .message-sender {
+        width: 150px;
+    }
+    
+    .compose-window {
+        width: 95%;
+        margin: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .mailbox-content {
+        flex-direction: column;
+    }
+    
+    .mailbox-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e7eaec;
+    }
+    
+    .message-table td.message-sender {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mailbox-wrapper">
+    <div class="mailbox-content">
+            <!-- Sidebar -->
+            <div class="mailbox-sidebar">
+                <!-- FOLDERS Section -->
+                <div class="sidebar-section">
+                    <h5 class="sidebar-title">Dossiers</h5>
+                    <ul class="sidebar-list">
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link active" data-folder="inbox">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-inbox sidebar-icon"></i>
+                                    Boîte de réception
+                                </div>
+                                <span class="sidebar-count">{{ stats.recus if stats else 0 }}</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-folder="sent">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-paper-plane sidebar-icon"></i>
+                                    Messages envoyés
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-folder="important">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-star sidebar-icon"></i>
+                                    Important
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-folder="drafts">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-file-alt sidebar-icon"></i>
+                                    Brouillons
+                                </div>
+                                <span class="sidebar-count draft">2</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-folder="trash">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-trash sidebar-icon"></i>
+                                    Corbeille
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- CATEGORIES Section -->
+                <div class="sidebar-section">
+                    <h5 class="sidebar-title">Catégories</h5>
+                    <ul class="sidebar-list">
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-category="work">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-briefcase sidebar-icon"></i>
+                                    Travail
+                                </div>
+                                <span class="sidebar-count work">5</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-category="documents">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-file-text sidebar-icon"></i>
+                                    Documents
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-category="reports">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-chart-bar sidebar-icon"></i>
+                                    Rapports
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-category="notifications">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-bell sidebar-icon"></i>
+                                    Notifications
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- LABELS Section -->
+                <div class="sidebar-section">
+                    <h5 class="sidebar-title">Étiquettes</h5>
+                    <ul class="sidebar-list">
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-label="urgent">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-circle sidebar-icon" style="color: #ed5565;"></i>
+                                    Urgent
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-label="maintenance">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-circle sidebar-icon" style="color: #f8ac59;"></i>
+                                    Maintenance
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-label="production">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-circle sidebar-icon" style="color: #1ab394;"></i>
+                                    Production
+                                </div>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" data-label="distribution">
+                                <div class="sidebar-text">
+                                    <i class="fas fa-circle sidebar-icon" style="color: #1c84c6;"></i>
+                                    Distribution
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Zone principale -->
+            <div class="mailbox-main">
+                <!-- En-tête -->
+                <div class="mailbox-header">
+                    <h2 class="mailbox-title">Boîte de réception ({{ stats.recus if stats else 0 }})</h2>
+                    <div class="mailbox-actions">
+                        <button class="mailbox-btn" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                        <a href="{{ url_for('notifications.nouveau_message') }}" class="mailbox-btn primary">
+                            <i class="fas fa-plus"></i> Nouveau message
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Barre d'outils -->
+                <div class="mailbox-toolbar">
+                    <div class="toolbar-section">
+                        <button class="toolbar-btn" title="Sélectionner tout">
+                            <input type="checkbox" id="selectAll"> Tout
+                        </button>
+                        <button class="toolbar-btn" title="Marquer comme lu">
+                            <i class="fas fa-envelope-open"></i>
+                        </button>
+                        <button class="toolbar-btn" title="Marquer comme important">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <button class="toolbar-btn" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+
+                    <div class="toolbar-search">
+                        <input type="text" class="search-input" placeholder="Rechercher dans les messages...">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+
+                <!-- Liste des messages -->
+                <div class="message-list">
+                    <table class="message-table">
+                        <tbody>
+                            {% if messages.items|length > 0 %}
+                                {% for message in messages.items %}
+                                <tr class="clickable-message {{ 'unread' if not message.lu else '' }}" 
+                                    data-message-id="{{ message.id }}">
+                                    <td class="message-checkbox">
+                                        <input type="checkbox" class="message-check">
+                                    </td>
+                                    <td class="message-star">
+                                        <i class="fas fa-star {{ 'starred' if message.priorite >= 2 else '' }}"></i>
+                                    </td>
+                                    <td class="message-sender">
+                                        {% if message.priorite >= 2 %}
+                                            <span class="priority-indicator {{ 'priority-urgent' if message.priorite == 3 else 'priority-important' }}"></span>
+                                        {% endif %}
+                                        {{ (message.expediteur.nom_utilisateur or message.expediteur.nom)[:20] }}
+                                    </td>
+                                    <td class="message-subject">
+                                        {{ message.sujet }}
+                                        <span class="message-snippet">- {{ message.contenu[:60] }}...</span>
+                                    </td>
+                                    <td class="message-attachment">
+                                        {% if message.priorite == 3 %}
+                                        <i class="fas fa-exclamation-triangle" title="Urgent" style="color: #ed5565;"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="message-date">
+                                        {% set delta = (now - message.date_creation).total_seconds() %}
+                                        {% if delta < 86400 %}
+                                            {{ message.date_creation.strftime('%H:%M') }}
+                                        {% elif delta < 31536000 %}
+                                            {{ message.date_creation.strftime('%d %b') }}
+                                        {% else %}
+                                            {{ message.date_creation.strftime('%d/%m/%y') }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: #a7a7a7;">
+                                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>
+                                        <div>Aucun message dans la boîte de réception</div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="mailbox-footer">
+                    <div class="footer-info">
+                        <span>{{ messages.total }} messages</span>
+                        <span>•</span>
+                        <span>Dernière mise à jour: {{ now.strftime('%H:%M') if now else '' }}</span>
+                    </div>
+                    <div class="footer-pagination">
+                        <a href="#" class="pagination-btn {% if not messages.has_prev %}disabled{% endif %}">‹ Précédent</a>
+                        <span style="margin: 0 10px;">{{ (messages.page - 1) * messages.per_page + 1 }} - {{ (messages.page - 1) * messages.per_page + messages.items|length }} sur {{ messages.total }}</span>
+                        <a href="#" class="pagination-btn {% if not messages.has_next %}disabled{% endif %}">Suivant ›</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Variables globales
+let currentFolder = 'inbox';
+
+// Gestion des événements
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des clics sur les messages
+    document.querySelectorAll('.clickable-message').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            // Ignorer le clic si c'est sur une checkbox ou une étoile
+            if (e.target.type === 'checkbox' || e.target.classList.contains('fa-star')) {
+                return;
+            }
+            
+            const messageId = this.getAttribute('data-message-id');
+            if (messageId) {
+                const baseUrl = "{{ url_for('notifications.messages') }}".replace('/messages', '/messages/');
+                const url = baseUrl + messageId;
+                window.location.href = url;
+            }
+        });
+    });
+
+    // Gestion de la navigation sidebar
+    document.querySelectorAll('.sidebar-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Retirer la classe active de tous les liens
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            
+            // Ajouter la classe active au lien cliqué
+            this.classList.add('active');
+            
+            // Mettre à jour le titre de la boîte
+            const folder = this.getAttribute('data-folder');
+            const category = this.getAttribute('data-category');
+            const label = this.getAttribute('data-label');
+            
+            let title = 'Messages';
+            if (folder) {
+                switch(folder) {
+                    case 'inbox': title = 'Boîte de réception'; break;
+                    case 'sent': title = 'Messages envoyés'; break;
+                    case 'important': title = 'Important'; break;
+                    case 'drafts': title = 'Brouillons'; break;
+                    case 'trash': title = 'Corbeille'; break;
+                }
+            } else if (category) {
+                title = 'Catégorie: ' + this.querySelector('.sidebar-text').textContent.trim();
+            } else if (label) {
+                title = 'Étiquette: ' + this.querySelector('.sidebar-text').textContent.trim();
+            }
+            
+            document.querySelector('.mailbox-title').textContent = title;
+        });
+    });
+
+    // Gestion des étoiles
+    document.querySelectorAll('.message-star i').forEach(function(star) {
+        star.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('starred');
+        });
+    });
+
+    // Gestion des checkboxes
+    document.querySelectorAll('.message-check').forEach(function(checkbox) {
+        checkbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Select all functionality
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.message-check');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Administration - Workflows{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-sitemap me-2"></i>Gestion des Workflows
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('workflow.admin_index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour Admin
+                    </a>
+                    <a href="{{ url_for('workflow.nouveau_workflow') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nouveau Workflow
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des workflows -->
+    <div class="row">
+        {% for workflow in workflows %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>{{ workflow.nom }}
+                    </h5>
+                    <span class="badge bg-primary">{{ workflow.type_rapport.value.replace('_', ' ').title() }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ workflow.description or 'Aucune description' }}</p>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-primary">{{ workflow.delai_validation }}h</h6>
+                                <small class="text-muted">Délai</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-success">{{ workflow.validateurs_requis }}</h6>
+                                <small class="text-muted">Validateurs</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="{% if workflow.rappel_automatique %}text-warning{% else %}text-secondary{% endif %}">
+                                <i class="fas fa-bell"></i>
+                            </h6>
+                            <small class="text-muted">Rappels</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <a href="{{ url_for('workflow.modifier_workflow', id=workflow.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit me-1"></i>Modifier
+                        </a>
+                        <button class="btn btn-outline-info btn-sm" 
+                                onclick="voirStatistiques({{ workflow.id }})">
+                            <i class="fas fa-chart-bar me-1"></i>Statistiques
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" 
+                                onclick="supprimerWorkflow({{ workflow.id }})">
+                            <i class="fas fa-trash me-1"></i>Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun workflow configuré</h5>
+                    <p class="text-muted">Créez votre premier workflow pour commencer.</p>
+                    <a href="{{ url_for('workflow.nouveau_workflow') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Créer un Workflow
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Types de rapports non configurés -->
+    {% set types_configures = workflows|map(attribute='type_rapport')|list %}
+    {% set tous_types = ['production', 'transport', 'distribution', 'maintenance', 'incident', 'financier', 'technique', 'environnemental'] %}
+    {% set types_manquants = [] %}
+    {% for type in tous_types %}
+        {% if type not in types_configures|map('value')|list %}
+            {% set _ = types_manquants.append(type) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if types_manquants %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Types de Rapports Non Configurés
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Les types de rapports suivants n'ont pas de workflow configuré :</p>
+                    <div class="row">
+                        {% for type in types_manquants %}
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                <span>{{ type.replace('_', ' ').title() }}</span>
+                                <a href="{{ url_for('workflow.nouveau_workflow', type_rapport=type) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Statistiques -->
+<div class="modal fade" id="statistiquesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Statistiques du Workflow</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="statistiques-content">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function voirStatistiques(workflowId) {
+    const modal = new bootstrap.Modal(document.getElementById('statistiquesModal'));
+    const content = document.getElementById('statistiques-content');
+    
+    // Afficher le loading
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Charger les statistiques via API
+    fetch(`/workflow/api/workflow/${workflowId}/statistiques`)
+    .then(response => response.json())
+    .then(data => {
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    <h4 class="text-primary">${data.total_validations || 0}</h4>
+                    <small class="text-muted">Total Validations</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h4 class="text-success">${data.validees || 0}</h4>
+                    <small class="text-muted">Validées</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h4 class="text-danger">${data.rejetees || 0}</h4>
+                    <small class="text-muted">Rejetées</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h4 class="text-warning">${data.en_attente || 0}</h4>
+                    <small class="text-muted">En Attente</small>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Délai Moyen de Validation</h6>
+                    <p class="h5 text-info">${data.delai_moyen || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Taux de Validation</h6>
+                    <p class="h5 text-success">${data.taux_validation || 'N/A'}%</p>
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        content.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Erreur lors du chargement des statistiques.
+            </div>
+        `;
+    });
+}
+
+function supprimerWorkflow(workflowId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce workflow ?\n\nCette action est irréversible et affectera toutes les validations en cours.')) {
+        fetch(`/workflow/admin/workflow/${workflowId}/supprimer`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression du workflow');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression du workflow');
+        });
+    }
+}
+</script>
+{% endblock %}

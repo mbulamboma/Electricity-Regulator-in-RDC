@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">⚙️ {{ title }}</h1>
+                    <p class="text-muted">Personnalisez vos préférences de notifications</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('notifications.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-bell"></i> Mes notifications
+                    </a>
+                </div>
+            </div>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <!-- Types de notifications -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Types de notifications
+                        </h5>
+                        <small class="text-muted">Choisissez les types de notifications que vous souhaitez recevoir</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.rappel_rapport(class="form-check-input") }}
+                                    {{ form.rappel_rapport.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Rappels pour soumettre vos rapports</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.validation_rapport(class="form-check-input") }}
+                                    {{ form.validation_rapport.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Quand vos rapports sont validés</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.rejet_rapport(class="form-check-input") }}
+                                    {{ form.rejet_rapport.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Quand vos rapports sont rejetés</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.alerte_donnees(class="form-check-input") }}
+                                    {{ form.alerte_donnees.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Détection de données anormales</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.message_systeme(class="form-check-input") }}
+                                    {{ form.message_systeme.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Messages importants du système</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.maintenance_planifiee(class="form-check-input") }}
+                                    {{ form.maintenance_planifiee.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Annonces de maintenance</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.incident_technique(class="form-check-input") }}
+                                    {{ form.incident_technique.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Incidents techniques importants</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.nouvelle_reglementation(class="form-check-input") }}
+                                    {{ form.nouvelle_reglementation.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Nouvelles réglementations</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canaux de notification -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-broadcast-tower me-2"></i>Canaux de notification
+                        </h5>
+                        <small class="text-muted">Comment souhaitez-vous recevoir vos notifications</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.notifications_browser(class="form-check-input") }}
+                                    {{ form.notifications_browser.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Notifications dans l'interface web</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.notifications_email(class="form-check-input") }}
+                                    {{ form.notifications_email.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Recevoir aussi par email (bientôt disponible)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Résumés -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>Résumés périodiques
+                        </h5>
+                        <small class="text-muted">Recevez des résumés de votre activité</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.digest_quotidien(class="form-check-input") }}
+                                    {{ form.digest_quotidien.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Résumé quotidien des notifications</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.digest_hebdomadaire(class="form-check-input") }}
+                                    {{ form.digest_hebdomadaire.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Résumé hebdomadaire de l'activité</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boutons -->
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Sauvegarder les préférences
+                    </button>
+                    
+                    <div>
+                        <button type="button" class="btn btn-outline-warning me-2" onclick="resetPreferences()">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function resetPreferences() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser toutes vos préférences ?')) {
+        // Cocher toutes les cases importantes
+        document.getElementById('rappel_rapport').checked = true;
+        document.getElementById('validation_rapport').checked = true;
+        document.getElementById('rejet_rapport').checked = true;
+        document.getElementById('alerte_donnees').checked = true;
+        document.getElementById('message_systeme').checked = true;
+        document.getElementById('maintenance_planifiee').checked = true;
+        document.getElementById('incident_technique').checked = true;
+        document.getElementById('nouvelle_reglementation').checked = true;
+        
+        // Activer les notifications navigateur
+        document.getElementById('notifications_browser').checked = true;
+        
+        // Désactiver les autres
+        document.getElementById('notifications_email').checked = false;
+        document.getElementById('digest_quotidien').checked = false;
+        document.getElementById('digest_hebdomadaire').checked = false;
+    }
+}
+</script>
+{% endblock %}

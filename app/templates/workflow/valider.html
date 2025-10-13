@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Validation de Rapport{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Informations du rapport -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Rapport #{{ validation.rapport_id }}
+                        <span class="badge bg-{% if validation.priorite == 3 %}danger{% elif validation.priorite == 2 %}warning{% else %}secondary{% endif %} ms-2">
+                            {% if validation.priorite == 3 %}Critique
+                            {% elif validation.priorite == 2 %}Urgente
+                            {% else %}Normale{% endif %}
+                        </span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Métadonnées du rapport -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Informations Générales</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>{{ validation.type_rapport.value.replace('_', ' ').title() }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{% if validation.statut.value == 'valide' %}success{% elif validation.statut.value == 'rejete' %}danger{% else %}warning{% endif %}">
+                                            {{ validation.statut.value.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Soumis le:</strong></td>
+                                    <td>{{ validation.date_soumission.strftime('%d/%m/%Y à %H:%M') if validation.date_soumission }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Expire le:</strong></td>
+                                    <td class="{% if validation.est_expire() %}text-danger{% endif %}">
+                                        {{ validation.date_expiration.strftime('%d/%m/%Y à %H:%M') if validation.date_expiration }}
+                                        {% if validation.est_expire() %}
+                                        <i class="fas fa-exclamation-triangle ms-1"></i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Validation</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Validateur:</strong></td>
+                                    <td>{{ validation.validateur.nom_complet if validation.validateur else 'Non assigné' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Temps restant:</strong></td>
+                                    <td class="{% if validation.est_expire() %}text-danger{% elif 'h' in (validation.temps_restant() or '') and validation.temps_restant().split('h')[0]|int < 24 %}text-warning{% else %}text-success{% endif %}">
+                                        {{ validation.temps_restant() or 'Non défini' }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rappels envoyés:</strong></td>
+                                    <td>{{ validation.rappels_envoyes }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Données du rapport à valider -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-database me-2"></i>Données du Rapport
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- TODO: Afficher les données spécifiques du rapport selon son type -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Les données détaillées du rapport seront affichées ici selon le type de rapport.
+                                Cette section sera intégrée avec les modules spécifiques (transport, distribution, etc.).
+                            </div>
+                            
+                            <!-- Simulation de données pour l'exemple -->
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Paramètre</th>
+                                            <th>Valeur</th>
+                                            <th>Unité</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Production totale</td>
+                                            <td>1,250</td>
+                                            <td>MWh</td>
+                                            <td><span class="badge bg-success">Conforme</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Taux de disponibilité</td>
+                                            <td>98.5</td>
+                                            <td>%</td>
+                                            <td><span class="badge bg-success">Conforme</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Incidents signalés</td>
+                                            <td>2</td>
+                                            <td>-</td>
+                                            <td><span class="badge bg-warning">À vérifier</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commentaires existants -->
+                    {% if validation.commentaires %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-comments me-2"></i>Commentaires Précédents
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-light">
+                                {{ validation.commentaires }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire de validation -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-gavel me-2"></i>Décision de Validation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if validation.statut.value in ['soumis', 'en_validation'] %}
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.action.label(class="form-label") }}
+                            {{ form.action(class="form-select", id="action-select") }}
+                            {% if form.action.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.action.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.commentaires.label(class="form-label") }}
+                            {{ form.commentaires(class="form-control", rows="5", id="commentaires-field") }}
+                            {% if form.commentaires.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.commentaires.errors[0] }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text" id="commentaire-help">
+                                Détaillez votre décision (obligatoire)
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="signature-group" style="display: none;">
+                            {{ form.signature_electronique.label(class="form-label") }}
+                            {{ form.signature_electronique(class="form-control") }}
+                            <div class="form-text">
+                                Votre signature électronique (optionnel)
+                            </div>
+                        </div>
+
+                        <!-- Aperçu de la décision -->
+                        <div class="alert d-none" id="decision-preview">
+                            <h6 class="alert-heading">Aperçu de votre décision:</h6>
+                            <p class="mb-0" id="decision-text"></p>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary", id="submit-btn") }}
+                            <a href="{{ url_for('workflow.detail_validation', id=validation.id) }}" class="btn btn-outline-secondary">
+                                Voir les détails
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <h6>Validation terminée</h6>
+                        <p class="mb-0">Ce rapport a déjà été traité.</p>
+                        {% if validation.date_validation %}
+                        <small class="text-muted">
+                            Validé le {{ validation.date_validation.strftime('%d/%m/%Y à %H:%M') }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Raccourcis d'actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Actions Rapides
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('workflow.historique_rapport', rapport_id=validation.rapport_id) }}" 
+                           class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-history me-2"></i>Voir l'historique
+                        </a>
+                        {% if current_user.is_admin() %}
+                        <form method="POST" action="{{ url_for('workflow.relancer_validation', validation_id=validation.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-bell me-2"></i>Envoyer une relance
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const actionSelect = document.getElementById('action-select');
+    const commentairesField = document.getElementById('commentaires-field');
+    const commentaireHelp = document.getElementById('commentaire-help');
+    const signatureGroup = document.getElementById('signature-group');
+    const decisionPreview = document.getElementById('decision-preview');
+    const decisionText = document.getElementById('decision-text');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Gestion des changements d'action
+    actionSelect.addEventListener('change', function() {
+        const action = this.value;
+        
+        // Réinitialiser les styles
+        submitBtn.className = 'btn btn-primary';
+        signatureGroup.style.display = 'none';
+        decisionPreview.classList.add('d-none');
+        
+        // Ajuster l'interface selon l'action
+        switch(action) {
+            case 'valider':
+                submitBtn.className = 'btn btn-success';
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Valider le rapport';
+                commentaireHelp.textContent = 'Commentaires de validation (obligatoire)';
+                signatureGroup.style.display = 'block';
+                
+                decisionPreview.className = 'alert alert-success';
+                decisionText.textContent = 'Le rapport sera validé et approuvé définitivement.';
+                decisionPreview.classList.remove('d-none');
+                break;
+                
+            case 'rejeter':
+                submitBtn.className = 'btn btn-danger';
+                submitBtn.innerHTML = '<i class="fas fa-times me-2"></i>Rejeter le rapport';
+                commentaireHelp.textContent = 'Motifs de rejet (obligatoire - soyez précis)';
+                
+                decisionPreview.className = 'alert alert-danger';
+                decisionText.textContent = 'Le rapport sera rejeté et renvoyé à l\'auteur pour corrections.';
+                decisionPreview.classList.remove('d-none');
+                break;
+                
+            case 'demander_modification':
+                submitBtn.className = 'btn btn-warning';
+                submitBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Demander des modifications';
+                commentaireHelp.textContent = 'Détaillez les modifications requises (obligatoire)';
+                
+                decisionPreview.className = 'alert alert-warning';
+                decisionText.textContent = 'Le rapport sera remis en brouillon pour modifications.';
+                decisionPreview.classList.remove('d-none');
+                break;
+                
+            default:
+                submitBtn.innerHTML = '<i class="fas fa-gavel me-2"></i>Confirmer la décision';
+                commentaireHelp.textContent = 'Détaillez votre décision (obligatoire)';
+        }
+    });
+
+    // Confirmation avant soumission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const action = actionSelect.value;
+        const commentaires = commentairesField.value.trim();
+        
+        if (!commentaires) {
+            alert('Veuillez ajouter des commentaires pour justifier votre décision.');
+            e.preventDefault();
+            return;
+        }
+        
+        let message = '';
+        switch(action) {
+            case 'valider':
+                message = 'Êtes-vous sûr de vouloir VALIDER ce rapport ?\n\nCette action est définitive.';
+                break;
+            case 'rejeter':
+                message = 'Êtes-vous sûr de vouloir REJETER ce rapport ?\n\nL\'auteur sera notifié et devra le corriger.';
+                break;
+            case 'demander_modification':
+                message = 'Êtes-vous sûr de vouloir demander des MODIFICATIONS ?\n\nLe rapport sera remis en brouillon.';
+                break;
+        }
+        
+        if (message && !confirm(message)) {
+            e.preventDefault();
+        }
+    });
+
+    // Auto-resize du textarea
+    commentairesField.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
+{% endblock %}

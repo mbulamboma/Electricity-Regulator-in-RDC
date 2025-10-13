@@ -1,0 +1,303 @@
+<!-- Exemple d'utilisation des composants graphiques -->
+<!-- Ce fichier montre comment utiliser les macros graphiques -->
+
+{% from 'components/graphiques.html' import graphique_ligne, graphique_barres, graphique_secteurs, graphique_jauge, mini_graphique %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemples de Graphiques</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <h1 class="mb-4">Exemples de Graphiques Réutilisables</h1>
+        
+        <div class="row">
+            <!-- Graphique linéaire -->
+            <div class="col-md-6 mb-4">
+                {{ graphique_ligne(
+                    id='evolution-production',
+                    titre='Évolution de la Production',
+                    donnees={
+                        'labels': ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+                        'datasets': [{
+                            'label': 'Production (MW)',
+                            'data': [120, 145, 165, 180, 195, 210],
+                            'color': 'rgb(75, 192, 192)',
+                            'background': 'rgba(75, 192, 192, 0.2)'
+                        }]
+                    },
+                    options={
+                        'height': 250,
+                        'x_title': 'Mois',
+                        'y_title': 'Production (MW)',
+                        'begin_at_zero': true
+                    }
+                ) }}
+            </div>
+            
+            <!-- Graphique en barres -->
+            <div class="col-md-6 mb-4">
+                {{ graphique_barres(
+                    id='repartition-operateurs',
+                    titre='Répartition par Opérateurs',
+                    donnees={
+                        'labels': ['SNEL', 'Opérateur A', 'Opérateur B', 'Opérateur C'],
+                        'datasets': [{
+                            'label': 'Capacité installée (MW)',
+                            'data': [2500, 400, 300, 200],
+                            'colors': ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                        }]
+                    },
+                    options={
+                        'height': 250,
+                        'y_title': 'Capacité (MW)'
+                    }
+                ) }}
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Graphique en secteurs -->
+            <div class="col-md-6 mb-4">
+                {{ graphique_secteurs(
+                    id='types-production',
+                    titre='Types de Production',
+                    donnees={
+                        'labels': ['Hydroélectrique', 'Thermique', 'Solaire', 'Autres'],
+                        'data': [65, 25, 8, 2],
+                        'colors': ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0']
+                    },
+                    options={
+                        'height': 300,
+                        'legend_position': 'right'
+                    }
+                ) }}
+            </div>
+            
+            <!-- Jauges -->
+            <div class="col-md-6 mb-4">
+                <div class="row">
+                    <div class="col-6">
+                        {{ graphique_jauge(
+                            id='disponibilite-reseau',
+                            titre='Disponibilité Réseau',
+                            valeur=94.5,
+                            max_value=100,
+                            options={
+                                'unite': '%',
+                                'color_ranges': [
+                                    {'min': 0, 'max': 70, 'color': '#dc3545'},
+                                    {'min': 70, 'max': 90, 'color': '#ffc107'},
+                                    {'min': 90, 'max': 100, 'color': '#28a745'}
+                                ]
+                            }
+                        ) }}
+                    </div>
+                    <div class="col-6">
+                        {{ graphique_jauge(
+                            id='charge-reseau',
+                            titre='Charge Réseau',
+                            valeur=76,
+                            max_value=100,
+                            options={'unite': '%'}
+                        ) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Mini graphiques -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Production Journalière</h6>
+                                <h4 class="text-primary mb-0">1,850 MW</h4>
+                                <small class="text-success">+5.2% vs hier</small>
+                            </div>
+                            <div>
+                                {{ mini_graphique(
+                                    id='mini-production',
+                                    donnees=[120, 145, 135, 160, 155, 180, 175, 185],
+                                    type='line',
+                                    couleur='#28a745'
+                                ) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Consommation</h6>
+                                <h4 class="text-warning mb-0">1,720 MW</h4>
+                                <small class="text-danger">-2.1% vs hier</small>
+                            </div>
+                            <div>
+                                {{ mini_graphique(
+                                    id='mini-consommation',
+                                    donnees=[150, 140, 145, 135, 130, 125, 140, 135],
+                                    type='line',
+                                    couleur='#ffc107'
+                                ) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Incidents</h6>
+                                <h4 class="text-danger mb-0">3</h4>
+                                <small class="text-success">-50% vs hier</small>
+                            </div>
+                            <div>
+                                {{ mini_graphique(
+                                    id='mini-incidents',
+                                    donnees=[8, 6, 4, 6, 5, 3, 6, 3],
+                                    type='bar',
+                                    couleur='#dc3545'
+                                ) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Clients Connectés</h6>
+                                <h4 class="text-info mb-0">2.1M</h4>
+                                <small class="text-success">+1.2% vs hier</small>
+                            </div>
+                            <div>
+                                {{ mini_graphique(
+                                    id='mini-clients',
+                                    donnees=[2.05, 2.06, 2.07, 2.08, 2.09, 2.10, 2.11, 2.12],
+                                    type='line',
+                                    couleur='#17a2b8'
+                                ) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Boutons de test -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Actions de Test</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary me-2" onclick="testerMiseAJour()">
+                            <i class="fas fa-sync-alt"></i> Mettre à jour les données
+                        </button>
+                        <button class="btn btn-success me-2" onclick="testerAnimation()">
+                            <i class="fas fa-play"></i> Animer la mise à jour
+                        </button>
+                        <button class="btn btn-info me-2" onclick="exporterDonnees()">
+                            <i class="fas fa-download"></i> Exporter CSV
+                        </button>
+                        <button class="btn btn-warning" onclick="redimensionnerGraphiques()">
+                            <i class="fas fa-expand-arrows-alt"></i> Redimensionner
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts JavaScript -->
+    <script src="{{ url_for('static', filename='js/graphiques.js') }}"></script>
+    
+    <script>
+        // Fonctions de test
+        function testerMiseAJour() {
+            const nouvellesDonnees = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul'],
+                datasets: [{
+                    label: 'Production (MW)',
+                    data: [120, 145, 165, 180, 195, 210, 225],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)'
+                }]
+            };
+            
+            mettreAJourGraphique('evolution-production', nouvellesDonnees);
+            
+            // Message de confirmation
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">Graphique mis à jour avec succès !</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        }
+        
+        function testerAnimation() {
+            const nouvellesDonnees = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+                datasets: [{
+                    label: 'Production (MW)',
+                    data: [Math.random() * 200 + 100, Math.random() * 200 + 100, Math.random() * 200 + 100, 
+                           Math.random() * 200 + 100, Math.random() * 200 + 100, Math.random() * 200 + 100],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)'
+                }]
+            };
+            
+            animerMiseAJourGraphique('evolution-production', nouvellesDonnees, 1500);
+        }
+        
+        function exporterDonnees() {
+            exporterGraphiqueCSV('evolution-production');
+        }
+        
+        function redimensionnerGraphiques() {
+            redimensionnerTousLesGraphiques();
+            
+            // Message de confirmation
+            alert('Tous les graphiques ont été redimensionnés !');
+        }
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.stat-card {
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 2rem;
+}
+.alert-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+}
+.activity-item {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--bs-primary);
+}
+.metric-change {
+    font-size: 0.9rem;
+}
+.metric-change.positive {
+    color: var(--bs-success);
+}
+.metric-change.negative {
+    color: var(--bs-danger);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🚀 Dashboard Super Administrateur</h1>
+                    <p class="text-muted">Vue d'ensemble du système de régulation électrique</p>
+                </div>
+                <div>
+                    <span class="badge bg-success">Système Opérationnel</span>
+                    <small class="text-muted ms-2">Dernière mise à jour: {{ current_time.strftime('%H:%M') }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes -->
+    {% if alerts %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for alert in alerts %}
+            <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                <i class="fas fa-{{ 'exclamation-triangle' if alert.type == 'warning' else 'info-circle' }}"></i>
+                {{ alert.message }}
+                {% if alert.count %}
+                    <span class="badge bg-light text-dark ms-2">{{ alert.count }}</span>
+                {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Métriques principales -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Production Totale</h5>
+                            <div class="metric-value text-primary">{{ stats.total_production_gwh or 0 }}</div>
+                            <small class="text-muted">GWh</small>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-bolt fa-2x"></i>
+                        </div>
+                    </div>
+                    {% if stats.variation_production %}
+                    <div class="metric-change {{ 'positive' if stats.variation_production > 0 else 'negative' }}">
+                        <i class="fas fa-arrow-{{ 'up' if stats.variation_production > 0 else 'down' }}"></i>
+                        {{ "+" if stats.variation_production > 0 }}{{ stats.variation_production }}% ce mois
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Opérateurs</h5>
+                            <div class="metric-value text-success">{{ stats.total_operateurs or 0 }}</div>
+                            <small class="text-muted">Actifs</small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-industry fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">{{ stats.total_centrales or 0 }} centrales</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Facteur de Charge</h5>
+                            <div class="metric-value text-info">{{ stats.facteur_charge_moyen or 0 }}%</div>
+                            <small class="text-muted">Moyen</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-tachometer-alt fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-info" style="width: {{ stats.facteur_charge_moyen or 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title text-muted mb-2">Rapports</h5>
+                            <div class="metric-value text-warning">{{ stats.rapports_ce_mois or 0 }}</div>
+                            <small class="text-muted">Ce mois</small>
+                        </div>
+                        <div class="text-warning position-relative">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                            {% if (stats.taux_remplissage or 0) < 80 %}
+                            <span class="alert-badge badge bg-danger rounded-pill">!</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">{{ stats.taux_remplissage or 0 }}% de remplissage</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📈 Production Mensuelle</h5>
+                    <small class="text-muted">Évolution sur les 12 derniers mois</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="productionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🏭 Répartition par Opérateur</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="operatorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">⚡ Actions Rapides</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.analytics') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-chart-bar"></i> Analyses Avancées
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('transport.index') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-road"></i> Transport
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('distribution.index') }}" class="btn btn-success w-100">
+                                <i class="fas fa-network-wired"></i> Distribution
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('operateurs.index') }}" class="btn btn-info w-100">
+                                <i class="fas fa-industry"></i> Opérateurs
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.backup') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-download"></i> Sauvegarde
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.config') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-cog"></i> Configuration
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.export_data', export_type='rapports_csv') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-file-export"></i> Export CSV
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('auth.users') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users"></i> Utilisateurs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Configuration des couleurs
+const colors = {
+    primary: '#0d6efd',
+    success: '#198754',
+    info: '#0dcaf0',
+    warning: '#ffc107',
+    danger: '#dc3545'
+};
+
+// Données des graphiques depuis le serveur
+const productionData = {{ production_data | tojson }};
+
+// Graphique de production mensuelle
+const productionCtx = document.getElementById('productionChart').getContext('2d');
+new Chart(productionCtx, {
+    type: 'line',
+    data: {
+        labels: productionData.monthly_labels || [],
+        datasets: [{
+            label: 'Production (MWh)',
+            data: productionData.monthly_production || [],
+            borderColor: colors.primary,
+            backgroundColor: colors.primary + '20',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toLocaleString() + ' MWh';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Graphique répartition par opérateur
+const operatorCtx = document.getElementById('operatorChart').getContext('2d');
+new Chart(operatorCtx, {
+    type: 'doughnut',
+    data: {
+        labels: productionData.operator_labels || [],
+        datasets: [{
+            data: productionData.operator_production || [],
+            backgroundColor: [
+                colors.primary,
+                colors.success,
+                colors.info,
+                colors.warning,
+                colors.danger
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
