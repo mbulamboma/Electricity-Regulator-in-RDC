@@ -433,6 +433,7 @@
 </div>
 
 <script>
+{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
     // Gestion des onglets
     const tabs = document.querySelectorAll('.message-tab');
@@ -473,7 +474,7 @@ function loadMessages(type) {
     
     // Ici, vous pourriez faire un appel AJAX pour charger les messages
     setTimeout(() => {
-        window.location.href = `{{ url_for('notifications.messages') }}?vue=${type}`;
+        window.location.href = `{ url_for('notifications.messages') }?vue=${type}`;
     }, 500);
 }
 
@@ -493,6 +494,7 @@ function createMessageElement(message) {
     // ... reste de la création de l'élément
     return div;
 }
+{% endraw %}
 </script>
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
@@ -742,6 +744,7 @@ function createMessageElement(message) {
 
 {% block extra_js %}
 <script>
+{% raw %}
 function changerVue(vue) {
     const url = new URL(window.location);
     url.searchParams.set('vue', vue);
@@ -750,7 +753,7 @@ function changerVue(vue) {
 }
 
 function ouvrirMessage(messageId) {
-    window.location.href = `{{ url_for('notifications.voir_message', id=0) }}`.replace('0', messageId);
+    window.location.href = `{ url_for('notifications.voir_message', id=0) }`.replace('0', messageId);
 }
 
 // Gestion des clics sur les messages
@@ -763,5 +766,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+{% endraw %}
 </script>
 {% endblock %}

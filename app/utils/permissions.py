@@ -49,6 +49,48 @@ def can_access_poste(poste):
     return current_user.operateur_id == poste.reseau.operateur_id
 
 
+def can_access_dashboard_are():
+    """Vérifier si l'utilisateur peut accéder au dashboard ARE"""
+    # Contact d'opérateur peut accéder au dashboard
+    if hasattr(current_user, 'operateur_id') and current_user.operateur_id:
+        return True
+    # User avec rôle admin peut accéder
+    if hasattr(current_user, 'is_admin') and current_user.is_admin():
+        return True
+    return False
+
+
+def get_dashboard_are_operateur_filter():
+    """Obtenir le filtre opérateur pour le dashboard ARE selon les permissions"""
+    # Super admin peut voir tous les opérateurs (pas de filtre)
+    if hasattr(current_user, 'is_super_admin') and current_user.is_super_admin():
+        return None
+    
+    # Contact ou utilisateur d'opérateur ne peut voir que son opérateur
+    if hasattr(current_user, 'operateur_id') and current_user.operateur_id:
+        return current_user.operateur_id
+    
+    # Par défaut, aucun accès
+    return -1  # Filtre qui ne retournera aucun résultat
+
+
+def get_dashboard_are_operateurs_choices():
+    """Obtenir les choix d'opérateurs pour les filtres du dashboard ARE"""
+    from app.models.operateurs import Operateur
+    
+    # Super admin peut choisir parmi tous les opérateurs
+    if hasattr(current_user, 'is_super_admin') and current_user.is_super_admin():
+        operateurs = Operateur.query.filter_by(actif=True).all()
+        choices = [('', 'Tous les opérateurs')] + [(op.id, op.nom) for op in operateurs]
+        return choices
+    
+    # Contact ou utilisateur d'opérateur ne voit que son opérateur
+    if hasattr(current_user, 'operateur_id') and current_user.operateur_id and current_user.operateur:
+        return [(current_user.operateur_id, current_user.operateur.nom)]
+    
+    return []
+
+
 def can_access_feeder(feeder):
     """Vérifier si l'utilisateur peut accéder à un feeder de distribution"""
     if current_user.is_admin():

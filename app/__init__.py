@@ -87,6 +87,10 @@ def create_app(config_name=None):
     from app.are.dashboard import dashboard_bp
     app.register_blueprint(dashboard_bp)
     
+    # Blueprint collecte de données (remplace les fake data)
+    from app.collecte import collecte_bp
+    app.register_blueprint(collecte_bp)
+    
     # Blueprint principal (à créer)
     from flask import Blueprint, render_template
     from flask_login import login_required

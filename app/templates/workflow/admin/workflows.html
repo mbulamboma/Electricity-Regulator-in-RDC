@@ -157,6 +157,7 @@
 
 {% block scripts %}
 <script>
+{% raw %}
 function voirStatistiques(workflowId) {
     const modal = new bootstrap.Modal(document.getElementById('statistiquesModal'));
     const content = document.getElementById('statistiques-content');
@@ -225,7 +226,7 @@ function supprimerWorkflow(workflowId) {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'X-CSRFToken': '{ csrf_token() }'
             }
         })
         .then(response => {
@@ -241,5 +242,6 @@ function supprimerWorkflow(workflowId) {
         });
     }
 }
+{% endraw %}
 </script>
 {% endblock %}

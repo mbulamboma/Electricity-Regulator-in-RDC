@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Collecte de Données Mensuelles{% endblock %}
+
+{% block content %}
+<div class="row wrapper border-bottom white-bg page-heading">
+    <div class="col-lg-10">
+        <h2>Collecte de Données Mensuelles</h2>
+        <ol class="breadcrumb">
+            <li><a href="{{ url_for('main.index') }}">Accueil</a></li>
+            <li class="active"><strong>Collecte de Données</strong></li>
+        </ol>
+    </div>
+</div>
+
+<div class="wrapper wrapper-content animated fadeInRight">
+    
+    <!-- Sélecteur d'opérateur pour super admin -->
+    {% if current_user.role == 'super_admin' and operateurs|length > 1 %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>Sélectionner un opérateur</h5>
+                </div>
+                <div class="ibox-content">
+                    <select class="form-control" onchange="window.location.href='{{ url_for('collecte.index') }}?operateur_id=' + this.value">
+                        {% for op in operateurs %}
+                        <option value="{{ op.id }}" {% if op.id == operateur_actuel.id %}selected{% endif %}>
+                            {{ op.nom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Statistiques de collecte -->
+    <div class="row">
+        <div class="col-lg-3 col-md-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <span class="label label-success pull-right">Validées</span>
+                    <h5>Collectes Validées</h5>
+                </div>
+                <div class="ibox-content">
+                    <h1 class="no-margins">{{ collectes_validees }}</h1>
+                    <div class="stat-percent font-bold text-success">
+                        {% if total_collectes > 0 %}
+                        {{ "%.1f"|format((collectes_validees / total_collectes) * 100) }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </div>
+                    <small>Données approuvées par l'ARE</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <span class="label label-warning pull-right">En attente</span>
+                    <h5>En Validation</h5>
+                </div>
+                <div class="ibox-content">
+                    <h1 class="no-margins">{{ collectes_en_attente }}</h1>
+                    <div class="stat-percent font-bold text-warning">
+                        {% if total_collectes > 0 %}
+                        {{ "%.1f"|format((collectes_en_attente / total_collectes) * 100) }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </div>
+                    <small>En cours d'évaluation</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <span class="label label-primary pull-right">Total</span>
+                    <h5>Total Collectes</h5>
+                </div>
+                <div class="ibox-content">
+                    <h1 class="no-margins">{{ total_collectes }}</h1>
+                    <div class="stat-percent font-bold text-primary">
+                        <i class="fa fa-database"></i>
+                    </div>
+                    <small>Toutes les soumissions</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <span class="label label-info pull-right">Projets</span>
+                    <h5>Nouveaux Projets</h5>
+                </div>
+                <div class="ibox-content">
+                    <h1 class="no-margins">{{ projets_recents|length }}</h1>
+                    <div class="stat-percent font-bold text-info">
+                        <i class="fa fa-lightbulb-o"></i>
+                    </div>
+                    <small>Projets récents soumis</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><i class="fa fa-plus-circle"></i> Actions Rapides</h5>
+                </div>
+                <div class="ibox-content">
+                    <div class="row">
+                        {% if current_user.role in ['operateur', 'admin_operateur'] %}
+                        <div class="col-sm-6">
+                            <a href="{{ url_for('collecte.nouvelle_collecte') }}" class="btn btn-primary btn-block btn-lg">
+                                <i class="fa fa-calendar"></i><br>
+                                Nouvelle Collecte<br>
+                                <small>Données mensuelles</small>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <a href="{{ url_for('collecte.nouveau_projet') }}" class="btn btn-success btn-block btn-lg">
+                                <i class="fa fa-lightbulb-o"></i><br>
+                                Nouveau Projet<br>
+                                <small>Soumission à l'ARE</small>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><i class="fa fa-info-circle"></i> Information</h5>
+                </div>
+                <div class="ibox-content">
+                    <div class="alert alert-info">
+                        <strong>💡 Collecte de données réelles</strong><br>
+                        Cette interface remplace les données fictives par vos vraies données opérationnelles. 
+                        Les informations collectées permettent à l'ARE de calculer les statistiques nationales 
+                        précises du secteur électrique en RDC.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Collectes récentes -->
+    {% if collectes_recentes %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>Collectes Récentes - {{ operateur_actuel.nom }}</h5>
+                    <div class="ibox-tools">
+                        <a href="{{ url_for('collecte.mes_collectes') }}" class="btn btn-primary btn-xs">
+                            Voir toutes les collectes
+                        </a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Période</th>
+                                    <th>Statut</th>
+                                    <th>Date Soumission</th>
+                                    <th>Chiffre d'Affaires</th>
+                                    <th>Nouveaux Clients</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for collecte in collectes_recentes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ "%02d"|format(collecte.mois) }}/{{ collecte.annee }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if collecte.statut == 'valide' %}
+                                            <span class="label label-primary">Validée</span>
+                                        {% elif collecte.statut == 'soumis' %}
+                                            <span class="label label-warning">Soumise</span>
+                                        {% elif collecte.statut == 'en_validation' %}
+                                            <span class="label label-info">En validation</span>
+                                        {% elif collecte.statut == 'rejete' %}
+                                            <span class="label label-danger">Rejetée</span>
+                                        {% else %}
+                                            <span class="label label-default">Brouillon</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if collecte.date_soumission %}
+                                            {{ collecte.date_soumission.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if collecte.chiffre_affaires_mois %}
+                                            {{ "${:,.0f}".format(collecte.chiffre_affaires_mois) }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set total_nouveaux = (collecte.nouveaux_clients_ht_mois or 0) + (collecte.nouveaux_clients_mt_mois or 0) + (collecte.nouveaux_clients_bt_mois or 0) %}
+                                        {{ total_nouveaux }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('collecte.voir_collecte', collecte_id=collecte.id) }}" 
+                                           class="btn btn-primary btn-xs">
+                                            <i class="fa fa-eye"></i> Voir
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Projets récents -->
+    {% if projets_recents %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>Projets Récents - {{ operateur_actuel.nom }}</h5>
+                    <div class="ibox-tools">
+                        <a href="{{ url_for('collecte.mes_projets') }}" class="btn btn-success btn-xs">
+                            Voir tous les projets
+                        </a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nom du Projet</th>
+                                    <th>Type</th>
+                                    <th>Province</th>
+                                    <th>Statut</th>
+                                    <th>Date Soumission</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for projet in projets_recents %}
+                                <tr>
+                                    <td><strong>{{ projet.nom_projet }}</strong></td>
+                                    <td>{{ projet.type_projet.replace('_', ' ').title() }}</td>
+                                    <td>{{ projet.province.replace('_', ' ').title() }}</td>
+                                    <td>
+                                        {% if projet.statut == 'approuve' %}
+                                            <span class="label label-success">Approuvé</span>
+                                        {% elif projet.statut == 'soumis' %}
+                                            <span class="label label-warning">Soumis</span>
+                                        {% elif projet.statut == 'en_evaluation' %}
+                                            <span class="label label-info">En évaluation</span>
+                                        {% elif projet.statut == 'rejete' %}
+                                            <span class="label label-danger">Rejeté</span>
+                                        {% else %}
+                                            <span class="label label-default">Brouillon</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if projet.date_soumission %}
+                                            {{ projet.date_soumission.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('collecte.voir_projet', projet_id=projet.id) }}" 
+                                           class="btn btn-success btn-xs">
+                                            <i class="fa fa-eye"></i> Voir
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Actualisation automatique des statistiques toutes les 30 secondes
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

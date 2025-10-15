@@ -29,6 +29,19 @@ def create_admin():
 
 
 @app.cli.command()
+def init_are_data():
+    """Initialiser les données d'exemple ARE"""
+    with app.app_context():
+        from ajouter_donnees_are import ajouter_donnees_simples
+        
+        print("🚀 Initialisation des données ARE...")
+        if ajouter_donnees_simples():
+            print("✅ Données ARE initialisées avec succès!")
+        else:
+            print("❌ Échec de l'initialisation des données ARE")
+
+
+@app.cli.command()
 def seed_data():
     """Ajouter des données d'exemple"""
     with app.app_context():

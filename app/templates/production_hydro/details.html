@@ -640,30 +640,31 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 // Données pour les graphiques
 const rapportData = {
-    energie_produite: {{ rapport.energie_produite or 0 }},
-    energie_disponible: {{ rapport.energie_disponible or 0 }},
-    facteur_charge: {{ rapport.facteur_charge or 0 }},
-    temps_fonctionnement: {{ rapport.temps_fonctionnement or 0 }},
+    energie_produite: { rapport.energie_produite or 0 },
+    energie_disponible: { rapport.energie_disponible or 0 },
+    facteur_charge: { rapport.facteur_charge or 0 },
+    temps_fonctionnement: { rapport.temps_fonctionnement or 0 },
     groupes: [
         {% for groupe in rapport.groupes_production %}
         {
-            nom: "{{ groupe.nom_groupe or groupe.numero_groupe }}",
-            energie: {{ groupe.energie_produite or 0 }},
-            heures: {{ groupe.heures_fonctionnement or 0 }},
-            puissance: {{ groupe.puissance_nominale or 0 }},
-            rendement: {{ groupe.rendement_moyen or 0 }}
+            nom: "{ groupe.nom_groupe or groupe.numero_groupe }",
+            energie: { groupe.energie_produite or 0 },
+            heures: { groupe.heures_fonctionnement or 0 },
+            puissance: { groupe.puissance_nominale or 0 },
+            rendement: { groupe.rendement_moyen or 0 }
         }{% if not loop.last %},{% endif %}
         {% endfor %}
     ],
     hydro: {
-        niveau_moyen: {{ rapport.niveau_retenue_moyen or 0 }},
-        niveau_min: {{ rapport.niveau_retenue_min or 0 }},
-        niveau_max: {{ rapport.niveau_retenue_max or 0 }},
-        debit_moyen: {{ rapport.debit_moyen or 0 }},
-        volume_turbine: {{ rapport.volume_turbiné or 0 }},
-        debit_reserve: {{ rapport.debit_reserve or 0 }}
+        niveau_moyen: { rapport.niveau_retenue_moyen or 0 },
+        niveau_min: { rapport.niveau_retenue_min or 0 },
+        niveau_max: { rapport.niveau_retenue_max or 0 },
+        debit_moyen: { rapport.debit_moyen or 0 },
+        volume_turbine: { rapport.volume_turbiné or 0 },
+        debit_reserve: { rapport.debit_reserve or 0 }
     }
 };
 
@@ -800,15 +801,15 @@ function initHydroChart() {
 
 // Fonctions d'export
 function exporterPDF() {
-    window.open(`/production-hydro/api/rapport/{{ rapport.id }}/export/pdf`, '_blank');
+    window.open(`/production-hydro/api/rapport/{ rapport.id }/export/pdf`, '_blank');
 }
 
 function exporterExcel() {
-    window.open(`/production-hydro/api/rapport/{{ rapport.id }}/export/excel`, '_blank');
+    window.open(`/production-hydro/api/rapport/{ rapport.id }/export/excel`, '_blank');
 }
 
 function exporterJSON() {
-    fetch(`/production-hydro/api/rapport/{{ rapport.id }}/export/json`)
+    fetch(`/production-hydro/api/rapport/{ rapport.id }/export/json`)
         .then(response => response.json())
         .then(data => {
             const dataStr = JSON.stringify(data, null, 2);
@@ -816,7 +817,7 @@ function exporterJSON() {
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `rapport_hydro_{{ rapport.id }}.json`;
+            link.download = `rapport_hydro_{ rapport.id }.json`;
             link.click();
         });
 }
@@ -854,5 +855,6 @@ document.head.appendChild(style);
 
 // Initialiser les animations
 animateOnScroll();
+{% endraw %}
 </script>
 {% endblock %}

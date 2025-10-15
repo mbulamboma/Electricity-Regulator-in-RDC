@@ -445,15 +445,16 @@ class FeederDistributionForm(FlaskForm):
         """Validation personnalisée pour vérifier l'unicité du code du feeder"""
         from app.models.distribution import FeederDistribution
         
-        # Vérifier s'il s'agit d'une modification d'un feeder existant
-        existing_feeder = None
-        if hasattr(self, '_obj') and self._obj:
-            existing_feeder = self._obj
-        
         # Rechercher un feeder avec le même code
-        feeder_existant = FeederDistribution.query.filter_by(code=field.data, actif=True).first()
+        query = FeederDistribution.query.filter_by(code=field.data, actif=True)
         
-        if feeder_existant and (not existing_feeder or feeder_existant.id != existing_feeder.id):
+        # Si nous modifions un feeder existant, l'exclure de la vérification
+        if hasattr(self, 'feeder_id') and self.feeder_id:
+            query = query.filter(FeederDistribution.id != self.feeder_id)
+        
+        feeder_existant = query.first()
+        
+        if feeder_existant:
             raise ValidationError('Ce code est déjà utilisé par un autre feeder. Veuillez choisir un code unique.')
 
 
@@ -639,3 +640,212 @@ class FiltreDistributionForm(FlaskForm):
         super().__init__(*args, **kwargs)
         # Les choix pour l'opérateur seront remplis dynamiquement
         # depuis la vue avec les opérateurs disponibles
+
+
+class DonneesDistributionMensuellesForm(FlaskForm):
+    """
+    Formulaire pour collecter les données mensuelles de distribution
+    Clients connectés, énergie distribuée, revenus, etc.
+    """
+    
+    # Période
+    annee = SelectField('Année', 
+                       choices=[(str(y), str(y)) for y in range(2020, 2030)],
+                       validators=[DataRequired()])
+    mois = SelectField('Mois', choices=[
+        ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'),
+        ('4', 'Avril'), ('5', 'Mai'), ('6', 'Juin'),
+        ('7', 'Juillet'), ('8', 'Août'), ('9', 'Septembre'),
+        ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
+    ], validators=[DataRequired()])
+    
+    # Réseau concerné
+    reseau_id = SelectField('Réseau de Distribution', 
+                           coerce=safe_int_coerce, 
+                           validators=[DataRequired()])
+    
+    # === CLIENTÈLE ===
+    clients_ht_debut_mois = IntegerField(
+        'Clients HT en début de mois',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre de clients haute tension au 1er du mois"
+    )
+    clients_mt_debut_mois = IntegerField(
+        'Clients MT en début de mois', 
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre de clients moyenne tension au 1er du mois"
+    )
+    clients_bt_debut_mois = IntegerField(
+        'Clients BT en début de mois',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre de clients basse tension au 1er du mois"
+    )
+    
+    nouveaux_raccordements_ht = IntegerField(
+        'Nouveaux raccordements HT',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nouveaux clients HT raccordés ce mois"
+    )
+    nouveaux_raccordements_mt = IntegerField(
+        'Nouveaux raccordements MT',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    nouveaux_raccordements_bt = IntegerField(
+        'Nouveaux raccordements BT',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    
+    deconnexions_ht = IntegerField(
+        'Déconnexions HT',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Clients HT déconnectés (impayés, résiliation, etc.)"
+    )
+    deconnexions_mt = IntegerField(
+        'Déconnexions MT',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    deconnexions_bt = IntegerField(
+        'Déconnexions BT',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    
+    # === ÉNERGIE DISTRIBUÉE ===
+    energie_distribuee_ht_mwh = FloatField(
+        'Énergie distribuée HT (MWh)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Énergie totale distribuée aux clients HT en MWh"
+    )
+    energie_distribuee_mt_mwh = FloatField(
+        'Énergie distribuée MT (MWh)',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    energie_distribuee_bt_mwh = FloatField(
+        'Énergie distribuée BT (MWh)',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    
+    energie_achetee_mwh = FloatField(
+        'Énergie achetée (MWh)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Énergie achetée auprès des producteurs"
+    )
+    
+    pertes_techniques_mwh = FloatField(
+        'Pertes techniques (MWh)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Pertes dues aux transformateurs, lignes, etc."
+    )
+    
+    pertes_commerciales_mwh = FloatField(
+        'Pertes commerciales (MWh)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Fraudes, compteurs défaillants, etc."
+    )
+    
+    # === REVENUS ET FACTURES ===
+    revenus_ht_usd = FloatField(
+        'Revenus HT (USD)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Revenus facturés aux clients HT"
+    )
+    revenus_mt_usd = FloatField(
+        'Revenus MT (USD)',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    revenus_bt_usd = FloatField(
+        'Revenus BT (USD)',
+        validators=[Optional(), NumberRange(min=0)]
+    )
+    
+    factures_emises = IntegerField(
+        'Factures émises',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre total de factures émises ce mois"
+    )
+    
+    factures_payees = IntegerField(
+        'Factures payées',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre de factures effectivement payées"
+    )
+    
+    impayes_usd = FloatField(
+        'Impayés (USD)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Montant des factures impayées"
+    )
+    
+    # === QUALITÉ DE SERVICE ===
+    duree_coupures_heures = FloatField(
+        'Durée totale des coupures (heures)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Temps total d'interruption de service"
+    )
+    
+    nombre_pannes = IntegerField(
+        'Nombre de pannes',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Incidents ayant causé des coupures"
+    )
+    
+    temps_retablissement_moyen_heures = FloatField(
+        'Temps de rétablissement moyen (heures)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Temps moyen pour réparer une panne"
+    )
+    
+    plaintes_clients = IntegerField(
+        'Plaintes clients',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre de plaintes reçues ce mois"
+    )
+    
+    # === MAINTENANCE ===
+    cout_maintenance_usd = FloatField(
+        'Coût maintenance (USD)',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Dépenses de maintenance préventive et curative"
+    )
+    
+    interventions_maintenance = IntegerField(
+        'Interventions de maintenance',
+        validators=[Optional(), NumberRange(min=0)],
+        description="Nombre d'interventions de maintenance effectuées"
+    )
+    
+    # === OBSERVATIONS ===
+    observations = TextAreaField(
+        'Observations du mois',
+        validators=[Optional(), Length(max=1000)],
+        description="Événements marquants, difficultés rencontrées, projets en cours",
+        render_kw={'rows': 4}
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Remplir les réseaux disponibles selon l'opérateur connecté
+        from app.models.distribution import ReseauDistribution
+        from flask_login import current_user
+        
+        if current_user.is_authenticated:
+            if hasattr(current_user, 'operateur_id') and current_user.operateur_id:
+                # Utilisateur associé à un opérateur - voir ses réseaux
+                reseaux = ReseauDistribution.query.filter_by(
+                    operateur_id=current_user.operateur_id,
+                    actif=True
+                ).all()
+            elif current_user.role == 'super_admin':
+                # Super admin peut voir tous les réseaux
+                reseaux = ReseauDistribution.query.filter_by(actif=True).all()
+            else:
+                reseaux = []
+            
+            self.reseau_id.choices = [(0, 'Sélectionner un réseau')] + [
+                (r.id, f"{r.nom} ({r.code})") for r in reseaux
+            ]
+        
+        # Année par défaut : année courante
+        from datetime import datetime
+        if not self.annee.data:
+            self.annee.data = str(datetime.now().year)

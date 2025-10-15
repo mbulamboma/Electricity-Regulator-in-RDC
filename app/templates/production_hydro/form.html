@@ -364,8 +364,14 @@
             <div id="groupes-container">
                 {% for groupe in form.groupes_production %}
                 <div class="formset-item" id="groupe-{{ loop.index0 }}">
-                    {{ groupe.id }}
-                    {{ groupe.delete }}
+                    <!-- Champs cachés pour gestion formset -->
+                    {% if groupe.id and groupe.id.__class__.__name__ == 'HiddenField' %}
+                        {{ groupe.id() }}
+                        {{ groupe.delete() }}
+                    {% else %}
+                        <input type="hidden" name="groupes_production-{{ loop.index0 }}-id" value="{{ groupe.id if groupe.id else '' }}">
+                        <input type="hidden" name="groupes_production-{{ loop.index0 }}-delete" value="{{ groupe.delete if groupe.delete else '' }}">
+                    {% endif %}
                     <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
                             onclick="supprimerGroupe({{ loop.index0 }})">
                         <i class="fas fa-trash"></i>
@@ -440,8 +446,13 @@
             <div id="transformateurs-container">
                 {% for transfo in form.transformateurs %}
                 <div class="formset-item" id="transformateur-{{ loop.index0 }}">
-                    {{ transfo.id }}
-                    {{ transfo.delete }}
+                    {% if transfo.id and transfo.id.__class__.__name__ == 'HiddenField' %}
+                        {{ transfo.id() }}
+                        {{ transfo.delete() }}
+                    {% else %}
+                        <input type="hidden" name="transformateurs-{{ loop.index0 }}-id" value="{{ transfo.id if transfo.id else '' }}">
+                        <input type="hidden" name="transformateurs-{{ loop.index0 }}-delete" value="{{ transfo.delete if transfo.delete else '' }}">
+                    {% endif %}
                     <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
                             onclick="supprimerTransformateur({{ loop.index0 }})">
                         <i class="fas fa-trash"></i>
@@ -562,9 +573,10 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
 
 <script>
+{% raw %}
 // Variables globales
-let groupeIndex = {{ form.groupes_production|length }};
-let transformateurIndex = {{ form.transformateurs|length }};
+let groupeIndex = { form.groupes_production|length };
+let transformateurIndex = { form.transformateurs|length };
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
@@ -962,5 +974,6 @@ function sauvegardeAutomatique() {
 
 // Démarrer la sauvegarde automatique toutes les 5 minutes
 setInterval(sauvegardeAutomatique, 5 * 60 * 1000);
+{% endraw %}
 </script>
 {% endblock %}

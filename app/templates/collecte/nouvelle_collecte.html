@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Collecte Mensuelle{% endblock %}
+
+{% block content %}
+<div class="row wrapper border-bottom white-bg page-heading">
+    <div class="col-lg-10">
+        <h2>Nouvelle Collecte Mensuelle</h2>
+        <ol class="breadcrumb">
+            <li><a href="{{ url_for('main.index') }}">Accueil</a></li>
+            <li><a href="{{ url_for('collecte.index') }}">Collecte de Données</a></li>
+            <li class="active"><strong>Nouvelle Collecte</strong></li>
+        </ol>
+    </div>
+</div>
+
+<div class="wrapper wrapper-content animated fadeInRight">
+    
+    <!-- Information sur l'opérateur -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title bg-primary">
+                    <h5><i class="fa fa-building"></i> Opérateur: {{ operateur.nom }}</h5>
+                </div>
+                <div class="ibox-content">
+                    <p><strong>Licence:</strong> {{ operateur.numero_licence }} | 
+                       <strong>Type:</strong> {{ operateur.type_operateur.replace('_', ' ').title() }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Formulaire de collecte -->
+    <form method="POST" action="{{ url_for('collecte.soumettre_collecte') }}">
+        {{ form.hidden_tag() }}
+        
+        <!-- Période de reporting -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-calendar"></i> Période de Reporting</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.annee.label(class="control-label") }}
+                                    {{ form.annee(class="form-control") }}
+                                    {% if form.annee.errors %}
+                                        {% for error in form.annee.errors %}
+                                            <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.mois.label(class="control-label") }}
+                                    {{ form.mois(class="form-control") }}
+                                    {% if form.mois.errors %}
+                                        {% for error in form.mois.errors %}
+                                            <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Données financières -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-usd"></i> Données Financières</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.chiffre_affaires_mois.label(class="control-label") }}
+                                    {{ form.chiffre_affaires_mois(class="form-control", step="0.01") }}
+                                    <small class="help-block">{{ form.chiffre_affaires_mois.description }}</small>
+                                    {% if form.chiffre_affaires_mois.errors %}
+                                        {% for error in form.chiffre_affaires_mois.errors %}
+                                            <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.investissements_realises_mois.label(class="control-label") }}
+                                    {{ form.investissements_realises_mois(class="form-control", step="0.01") }}
+                                    <small class="help-block">{{ form.investissements_realises_mois.description }}</small>
+                                    {% if form.investissements_realises_mois.errors %}
+                                        {% for error in form.investissements_realises_mois.errors %}
+                                            <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.cout_combustible_mois.label(class="control-label") }}
+                                    {{ form.cout_combustible_mois(class="form-control", step="0.01") }}
+                                    <small class="help-block">{{ form.cout_combustible_mois.description }}</small>
+                                    {% if form.cout_combustible_mois.errors %}
+                                        {% for error in form.cout_combustible_mois.errors %}
+                                            <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.tarifs_moyens_ht.label(class="control-label") }}
+                                    {{ form.tarifs_moyens_ht(class="form-control", step="0.0001") }}
+                                    <small class="help-block">{{ form.tarifs_moyens_ht.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.tarifs_moyens_mt.label(class="control-label") }}
+                                    {{ form.tarifs_moyens_mt(class="form-control", step="0.0001") }}
+                                    <small class="help-block">{{ form.tarifs_moyens_mt.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.tarifs_moyens_bt.label(class="control-label") }}
+                                    {{ form.tarifs_moyens_bt(class="form-control", step="0.0001") }}
+                                    <small class="help-block">{{ form.tarifs_moyens_bt.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Évolution de la clientèle -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-users"></i> Évolution de la Clientèle</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Nouveaux Clients</h4>
+                                <div class="form-group">
+                                    {{ form.nouveaux_clients_ht_mois.label(class="control-label") }}
+                                    {{ form.nouveaux_clients_ht_mois(class="form-control") }}
+                                    <small class="help-block">{{ form.nouveaux_clients_ht_mois.description }}</small>
+                                </div>
+                                <div class="form-group">
+                                    {{ form.nouveaux_clients_mt_mois.label(class="control-label") }}
+                                    {{ form.nouveaux_clients_mt_mois(class="form-control") }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.nouveaux_clients_bt_mois.label(class="control-label") }}
+                                    {{ form.nouveaux_clients_bt_mois(class="form-control") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Clients Déconnectés</h4>
+                                <div class="form-group">
+                                    {{ form.clients_deconnectes_ht_mois.label(class="control-label") }}
+                                    {{ form.clients_deconnectes_ht_mois(class="form-control") }}
+                                    <small class="help-block">{{ form.clients_deconnectes_ht_mois.description }}</small>
+                                </div>
+                                <div class="form-group">
+                                    {{ form.clients_deconnectes_mt_mois.label(class="control-label") }}
+                                    {{ form.clients_deconnectes_mt_mois(class="form-control") }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.clients_deconnectes_bt_mois.label(class="control-label") }}
+                                    {{ form.clients_deconnectes_bt_mois(class="form-control") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expansion géographique -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-map-marker"></i> Expansion Géographique</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.nouvelles_localites_desservies.label(class="control-label") }}
+                                    {{ form.nouvelles_localites_desservies(class="form-control") }}
+                                    <small class="help-block">{{ form.nouvelles_localites_desservies.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.longueur_nouveaux_reseaux_km.label(class="control-label") }}
+                                    {{ form.longueur_nouveaux_reseaux_km(class="form-control", step="0.1") }}
+                                    <small class="help-block">{{ form.longueur_nouveaux_reseaux_km.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.population_nouvelle_couverte.label(class="control-label") }}
+                                    {{ form.population_nouvelle_couverte(class="form-control") }}
+                                    <small class="help-block">{{ form.population_nouvelle_couverte.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Qualité de service -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-tachometer"></i> Qualité de Service</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.duree_moyenne_coupures_heures.label(class="control-label") }}
+                                    {{ form.duree_moyenne_coupures_heures(class="form-control", step="0.1") }}
+                                    <small class="help-block">{{ form.duree_moyenne_coupures_heures.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.nombre_incidents_techniques.label(class="control-label") }}
+                                    {{ form.nombre_incidents_techniques(class="form-control") }}
+                                    <small class="help-block">{{ form.nombre_incidents_techniques.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.taux_disponibilite_reseau.label(class="control-label") }}
+                                    {{ form.taux_disponibilite_reseau(class="form-control", step="0.1") }}
+                                    <small class="help-block">{{ form.taux_disponibilite_reseau.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Impact environnemental -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-leaf"></i> Impact Environnemental</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.emissions_co2_tonnes.label(class="control-label") }}
+                                    {{ form.emissions_co2_tonnes(class="form-control", step="0.1") }}
+                                    <small class="help-block">{{ form.emissions_co2_tonnes.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.consommation_eau_m3.label(class="control-label") }}
+                                    {{ form.consommation_eau_m3(class="form-control", step="0.1") }}
+                                    <small class="help-block">{{ form.consommation_eau_m3.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Observations -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5><i class="fa fa-comment"></i> Observations et Commentaires</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.observations_mois.label(class="control-label") }}
+                                    {{ form.observations_mois(class="form-control", rows="4") }}
+                                    <small class="help-block">{{ form.observations_mois.description }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.difficultees_rencontrees.label(class="control-label") }}
+                                    {{ form.difficultees_rencontrees(class="form-control", rows="4") }}
+                                    <small class="help-block">{{ form.difficultees_rencontrees.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-content text-center">
+                        <button type="submit" name="submit" class="btn btn-primary btn-lg">
+                            <i class="fa fa-check"></i> Soumettre les Données
+                        </button>
+                        <button type="submit" name="save_draft" class="btn btn-warning btn-lg">
+                            <i class="fa fa-save"></i> Enregistrer en Brouillon
+                        </button>
+                        <a href="{{ url_for('collecte.index') }}" class="btn btn-default btn-lg">
+                            <i class="fa fa-times"></i> Annuler
+                        </a>
+                        
+                        <div class="m-t-sm">
+                            <small class="text-muted">
+                                💡 <strong>Astuce:</strong> Vous pouvez enregistrer en brouillon et terminer plus tard. 
+                                Seules les données soumises sont transmises à l'ARE pour validation.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Confirmation avant soumission
+    $('button[name="submit"]').click(function(e) {
+        if (!confirm('Confirmer la soumission des données à l\'ARE ? Une fois soumises, elles ne pourront plus être modifiées.')) {
+            e.preventDefault();
+        }
+    });
+    
+    // Auto-collapse des sections
+    $('.collapse-link').click(function () {
+        var ibox = $(this).closest('div.ibox');
+        var button = $(this).find('i');
+        var content = ibox.children('.ibox-content');
+        content.slideToggle(200);
+        button.toggleClass('fa-chevron-up').toggleClass('fa-chevron-down');
+        ibox.toggleClass('').toggleClass('border-bottom');
+        setTimeout(function () {
+            ibox.resize();
+            ibox.find('[id^=map-]').resize();
+        }, 50);
+    });
+});
+</script>
+{% endblock %}

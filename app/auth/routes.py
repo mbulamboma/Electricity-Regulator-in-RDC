@@ -17,7 +17,7 @@ auth = Blueprint('auth', __name__, url_prefix='/auth')
 def login():
     """Page de connexion"""
     if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('are_dashboard.index'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -49,7 +49,7 @@ def login():
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('are_dashboard.index'))
         else:
             flash('Nom d\'utilisateur ou mot de passe invalide.', 'danger')
     

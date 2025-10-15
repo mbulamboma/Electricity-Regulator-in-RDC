@@ -234,9 +234,10 @@
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <script>
+{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
     // Initialiser la carte
-    const map = L.map('map').setView([{{ centrale.latitude }}, {{ centrale.longitude }}], 12);
+    const map = L.map('map').setView([{ centrale.latitude }, { centrale.longitude }], 12);
     
     // Ajouter les tuiles de la carte
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -244,11 +245,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }).addTo(map);
     
     // Ajouter un marqueur pour la centrale
-    L.marker([{{ centrale.latitude }}, {{ centrale.longitude }}])
+    L.marker([{ centrale.latitude }, { centrale.longitude }])
         .addTo(map)
-        .bindPopup('<strong>{{ centrale.nom }}</strong><br>{{ centrale.localisation }}')
+        .bindPopup('<strong>{ centrale.nom }</strong><br>{ centrale.localisation }')
         .openPopup();
 });
+{% endraw %}
 </script>
 {% endif %}
 {% endblock %}

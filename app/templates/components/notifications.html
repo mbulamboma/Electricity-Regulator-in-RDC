@@ -105,6 +105,7 @@
 </style>
 
 <script>
+{% raw %}
 let notificationsInterval;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -126,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function chargerNotifications() {
-    fetch('{{ url_for("notifications.api_recentes") }}?limit=8')
+    fetch('{ url_for("notifications.api_recentes") }?limit=8')
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('notifications-list');
@@ -184,7 +185,7 @@ function chargerNotifications() {
 
 function ouvrirNotification(notificationId, urlAction) {
     // Marquer comme lue
-    fetch(`{{ url_for('notifications.marquer_lu', id=0) }}`.replace('0', notificationId), {
+    fetch(`{ url_for('notifications.marquer_lu', id=0) }`.replace('0', notificationId), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -198,13 +199,13 @@ function ouvrirNotification(notificationId, urlAction) {
         if (urlAction && urlAction !== 'None' && urlAction !== '') {
             window.location.href = urlAction;
         } else {
-            window.location.href = '{{ url_for("notifications.index") }}';
+            window.location.href = '{ url_for("notifications.index") }';
         }
     });
 }
 
 function marquerToutesLues() {
-    fetch('{{ url_for("notifications.marquer_toutes_lues") }}', {
+    fetch('{ url_for("notifications.marquer_toutes_lues") }', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -261,5 +262,6 @@ function getCSRFToken() {
     const token = document.querySelector('meta[name=csrf-token]');
     return token ? token.getAttribute('content') : '';
 }
+{% endraw %}
 </script>
 {% endmacro %}

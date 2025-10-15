@@ -243,13 +243,14 @@
 
 {% block scripts %}
 <script>
+{% raw %}
 function relancerValidation(validationId) {
     if (confirm('Êtes-vous sûr de vouloir envoyer une relance pour cette validation ?')) {
-        fetch(`{{ url_for('workflow.relancer_validation', validation_id=0) }}`.replace('0', validationId), {
+        fetch(`{ url_for('workflow.relancer_validation', validation_id=0) }`.replace('0', validationId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'X-CSRFToken': '{ csrf_token() }'
             }
         })
         .then(response => {
@@ -309,5 +310,6 @@ setInterval(function() {
     })
     .catch(error => console.error('Erreur lors du rafraîchissement:', error));
 }, 60000);
+{% endraw %}
 </script>
 {% endblock %}

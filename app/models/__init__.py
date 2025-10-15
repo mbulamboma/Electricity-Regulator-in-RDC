@@ -25,6 +25,12 @@ from app.models.dashboard_are import (
     DonneesProvince, RapportAnnuel
 )
 
+# Import des modèles statistiques ARE
+from app.models.statistiques_are import (
+    PortfolioProjet, CapaciteInstallee, ProductionSolaire,
+    ClienteleElectricite, StatistiqueNationale
+)
+
 # Import des modèles de notifications
 from app.models.notifications import (
     Notification, MessageInterne, TemplateNotification, PreferenceNotification,
@@ -35,6 +41,12 @@ from app.models.notifications import (
 from app.models.workflow import (
     Workflow, ValidationRapport, HistoriqueValidation, ValidateurDesigne,
     TypeRapport, StatutWorkflow, TypeAction
+)
+
+# Import des modèles de collecte de données
+from app.models.collecte_donnees import (
+    CollecteDonneesMensuelles, CollecteProjetNouveau, 
+    TypeSource, TypeTension, StatutCollecte
 )
 
 __all__ = [

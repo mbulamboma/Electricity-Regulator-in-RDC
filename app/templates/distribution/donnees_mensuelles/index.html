@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Données Mensuelles - Distribution{% endblock %}
+
+{% block content %}
+<div class="wrapper wrapper-content animated fadeInRight">
+    <!-- En-tête avec titre et actions -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header bg-white p-4 rounded shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-2 text-dark">
+                            <i class="fas fa-chart-bar text-primary me-2"></i> 
+                            Données Mensuelles de Distribution
+                        </h1>
+                        <p class="text-muted mb-0">Suivi des indicateurs mensuels de performance électrique</p>
+                    </div>
+                    {% if current_user.role in ['operateur', 'admin_operateur'] %}
+                    <a href="{{ url_for('distribution.nouvelle_donnee_mensuelle') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Nouvelle Saisie
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques en cartes -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white shadow-sm border-0">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-sitemap fa-3x opacity-75"></i>
+                    </div>
+                    <h2 class="h1 mb-1">{{ stats.reseaux if stats else 0 }}</h2>
+                    <p class="mb-0">Réseaux avec données {{ annee }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white shadow-sm border-0">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-3x opacity-75"></i>
+                    </div>
+                    <h2 class="h1 mb-1">{{ '{:,}'.format(stats.clients_connectes) if stats else '0' }}</h2>
+                    <p class="mb-0">Clients connectés</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-dark shadow-sm border-0">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-bolt fa-3x opacity-75"></i>
+                    </div>
+                    <h2 class="h1 mb-1">{{ stats.energie_distribuee_gwh if stats else '0' }}</h2>
+                    <p class="mb-0">GWh distribuée {{ annee }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white shadow-sm border-0">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-dollar-sign fa-3x opacity-75"></i>
+                    </div>
+                    <h2 class="h1 mb-1">${{ '{:,.0f}'.format(stats.revenus_usd) if stats else '0' }}</h2>
+                    <p class="mb-0">Revenus {{ annee }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i> Filtres et Recherche
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="annee" class="form-label">Année</label>
+                            <select name="annee" id="annee" class="form-select">
+                                {% for a in range(2020, 2030) %}
+                                <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="mois" class="form-label">Mois</label>
+                            <select name="mois" id="mois" class="form-select">
+                                <option value="">Tous les mois</option>
+                                {% for m, nom in [(1, 'Janvier'), (2, 'Février'), (3, 'Mars'), (4, 'Avril'), (5, 'Mai'), (6, 'Juin'), (7, 'Juillet'), (8, 'Août'), (9, 'Septembre'), (10, 'Octobre'), (11, 'Novembre'), (12, 'Décembre')] %}
+                                <option value="{{ m }}" {% if m == mois %}selected{% endif %}>{{ nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="reseau" class="form-label">Réseau</label>
+                            <select name="reseau" id="reseau" class="form-select">
+                                <option value="">Tous les réseaux</option>
+                                <!-- Options dynamiques ici -->
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-1"></i> Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des données -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i> Données Mensuelles Enregistrées
+                    </h5>
+                    <span class="badge bg-secondary">{{ donnees.total if donnees and donnees.total else 0 }} enregistrement(s)</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if donnees and donnees.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Période</th>
+                                    <th>Réseau</th>
+                                    <th class="text-end">Clients Total</th>
+                                    <th class="text-end">Énergie (MWh)</th>
+                                    <th class="text-end">Revenus (USD)</th>
+                                    <th class="text-center">Qualité</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for donnee in donnees.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="fas fa-calendar text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ donnee.mois|month_name }} {{ donnee.annee }}</div>
+                                                <small class="text-muted">{{ donnee.date_creation|time_ago }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold">{{ donnee.reseau.nom }}</div>
+                                            <small class="text-muted">{{ donnee.reseau.code if donnee.reseau.code else donnee.reseau.type_reseau }}</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="fw-bold">{{ "{:,}".format(donnee.total_clients_fin_mois or 0) }}</div>
+                                        <small class="text-muted">
+                                            HT: {{ donnee.clients_ht_fin_mois or 0 }} | 
+                                            MT: {{ donnee.clients_mt_fin_mois or 0 }} | 
+                                            BT: {{ donnee.clients_bt_fin_mois or 0 }}
+                                        </small>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="fw-bold">{{ "{:,.1f}".format(donnee.energie_totale_distribuee_mwh or 0) }}</div>
+                                        <div class="progress mt-1" style="height: 4px;">
+                                            {% set total_energie = donnee.energie_totale_distribuee_mwh or 0 %}
+                                            {% if total_energie > 0 %}
+                                            <div class="progress-bar bg-warning" style="width: {{ ((donnee.energie_distribuee_ht_mwh or 0) / total_energie * 100) }}%"></div>
+                                            <div class="progress-bar bg-info" style="width: {{ ((donnee.energie_distribuee_mt_mwh or 0) / total_energie * 100) }}%"></div>
+                                            <div class="progress-bar bg-primary" style="width: {{ ((donnee.energie_distribuee_bt_mwh or 0) / total_energie * 100) }}%"></div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="fw-bold">${{ "{:,.0f}".format(donnee.revenus_totaux_usd or 0) }}</div>
+                                        {% set taux_paiement = (donnee.factures_payees / donnee.factures_emises * 100) if donnee.factures_emises and donnee.factures_emises > 0 else 0 %}
+                                        <small class="text-{{ 'success' if taux_paiement >= 80 else 'warning' if taux_paiement >= 60 else 'danger' }}">
+                                            {{ "{:.1f}%".format(taux_paiement) }} payé
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        {% set duree_coupures = donnee.duree_coupures_heures or 0 %}
+                                        {% if duree_coupures <= 5 %}
+                                            <span class="badge bg-success">Excellent</span>
+                                        {% elif duree_coupures <= 20 %}
+                                            <span class="badge bg-warning">Moyen</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Médiocre</span>
+                                        {% endif %}
+                                        <div class="small text-muted">{{ duree_coupures }}h coupures</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('distribution.voir_donnee_mensuelle', id=donnee.id) }}" 
+                                               class="btn btn-outline-info" title="Voir détails">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.role in ['operateur', 'admin_operateur'] %}
+                                            <a href="{{ url_for('distribution.modifier_donnee_mensuelle', id=donnee.id) }}" 
+                                               class="btn btn-outline-warning" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if current_user.role in ['super_admin', 'admin_operateur'] %}
+                                            <button type="button" class="btn btn-outline-danger" title="Supprimer"
+                                                    onclick="confirmerSuppression({{ donnee.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if donnees.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Navigation des pages">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if donnees.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('distribution.donnees_mensuelles', page=donnees.prev_num, annee=annee, mois=mois) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% for page_num in donnees.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != donnees.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('distribution.donnees_mensuelles', page=page_num, annee=annee, mois=mois) }}">{{ page_num }}</a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if donnees.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('distribution.donnees_mensuelles', page=donnees.next_num, annee=annee, mois=mois) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <!-- État vide -->
+                    <div class="text-center p-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Aucune donnée trouvée</h4>
+                        <p class="text-muted">Aucune donnée mensuelle n'a été enregistrée pour les critères sélectionnés.</p>
+                        {% if current_user.role in ['operateur', 'admin_operateur'] %}
+                        <a href="{{ url_for('distribution.nouvelle_donnee_mensuelle') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> Ajouter la première saisie
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette donnée mensuelle ?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let deleteId = null;
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    
+    // Fonction pour confirmer la suppression
+    window.confirmerSuppression = function(id) {
+        deleteId = id;
+        confirmModal.show();
+    };
+    
+    // Gérer la confirmation de suppression
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (deleteId) {
+            // Créer un formulaire de suppression
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/distribution/donnees-mensuelles/${deleteId}/supprimer`;
+            
+            // Ajouter token CSRF
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+    
+    // Auto-submit du formulaire de filtre
+    const anneeSelect = document.getElementById('annee');
+    const moisSelect = document.getElementById('mois');
+    const reseauSelect = document.getElementById('reseau');
+    
+    if (anneeSelect) {
+        anneeSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+    
+    if (moisSelect) {
+        moisSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+    
+    if (reseauSelect) {
+        reseauSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+
+{% endblock %}

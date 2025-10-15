@@ -47,6 +47,14 @@
                 </div>
                 
                 <div class="card-body">
+                    <!-- DEBUG: Ajouté pour diagnostiquer le problème -->
+                    <div class="alert alert-info">
+                        <strong>DEBUG:</strong> centrales_stats = {{ centrales_stats|length if centrales_stats else 'None' }}
+                        {% if centrales_stats %}
+                            <br>Centrales trouvées: {% for stats in centrales_stats %}{{ stats.centrale.nom }}{% if not loop.last %}, {% endif %}{% endfor %}
+                        {% endif %}
+                    </div>
+                    
                     {% if "Liste des centrales de production hydraulique" %}
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
@@ -54,10 +62,7 @@
                     </div>
                     {% endif %}
                     
-                    <!-- Interface utilisateur -->
-                                        # Interface utilisateur
-                    {% if "liste" in "production_hydro/centrales.html" or "index" in "production_hydro/centrales.html" %}
-                    <!-- Interface de liste -->
+                    <!-- Interface de liste des centrales -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <!-- Filtres et recherche -->
@@ -68,9 +73,9 @@
                         </div>
                         <div class="col-md-6 text-end">
                             {% if current_user.role in ['super_admin', 'admin_operateur'] %}
-                            <button type="button" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Nouveau
-                            </button>
+                            <a href="{{ url_for('production_hydro.nouvelle_centrale') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Nouvelle centrale
+                            </a>
                             {% endif %}
                         </div>
                     </div>
@@ -82,19 +87,80 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Localisation</th>
+                                    <th>Province</th>
+                                    <th>Puissance (MW)</th>
                                     <th>Statut</th>
-                                    <th>Date création</th>
+                                    <th>Nb Rapports</th>
+                                    <th>Dernière période</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Les données seront chargées ici -->
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">
-                                        <i class="fas fa-database fa-2x mb-2"></i><br>
-                                        Aucune donnée disponible
-                                    </td>
-                                </tr>
+                                {% if centrales_stats %}
+                                    {% for stats in centrales_stats %}
+                                        <tr>
+                                            <td>{{ stats.centrale.id }}</td>
+                                            <td>
+                                                <strong>{{ stats.centrale.nom }}</strong>
+                                                {% if stats.centrale.cours_eau %}
+                                                    <br><small class="text-muted">{{ stats.centrale.cours_eau }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ stats.centrale.code or 'N/A' }}</span>
+                                            </td>
+                                            <td>{{ stats.centrale.localisation or 'N/A' }}</td>
+                                            <td>{{ stats.centrale.province or 'N/A' }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ stats.centrale.puissance_installee or 0 }} MW</span>
+                                            </td>
+                                            <td>
+                                                {% if stats.centrale.statut == 'active' %}
+                                                    <span class="badge bg-success">Actif</span>
+                                                {% elif stats.centrale.statut == 'maintenance' %}
+                                                    <span class="badge bg-warning">Maintenance</span>
+                                                {% elif stats.centrale.statut == 'arret' %}
+                                                    <span class="badge bg-danger">Arrêt</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ stats.centrale.statut or 'Inconnu' }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ stats.nb_rapports }}</span>
+                                            </td>
+                                            <td>
+                                                {% if stats.derniere_periode %}
+                                                    {{ stats.derniere_periode }}
+                                                {% else %}
+                                                    <small class="text-muted">Aucun rapport</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-outline-primary" title="Voir détails" 
+                                                            onclick="alert('ID: {{ stats.centrale.id }}\nNom: {{ stats.centrale.nom }}\nLocalisation: {{ stats.centrale.localisation }}\nPuissance: {{ stats.centrale.puissance_installee }} MW')">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    {% if current_user.role in ['super_admin', 'admin_operateur'] %}
+                                                        <a href="{{ url_for('production_hydro.nouvelle_centrale') }}" 
+                                                           class="btn btn-outline-success" title="Nouvelle centrale">
+                                                            <i class="fas fa-plus"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted py-4">
+                                            <i class="fas fa-database fa-2x mb-2"></i><br>
+                                            Aucune centrale disponible
+                                        </td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -113,132 +179,10 @@
                             </li>
                         </ul>
                     </nav>
-                    
-                    {% elif "formulaire" in "production_hydro/centrales.html" or "form" in "production_hydro/centrales.html" %}
-                    <!-- Interface de formulaire -->
-                    <form method="POST" class="needs-validation" novalidate>
-                        {{ csrf_token() }}
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="nom" name="nom" required>
-                                    <div class="invalid-feedback">
-                                        Veuillez saisir un nom.
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="statut" class="form-label">Statut</label>
-                                    <select class="form-select" id="statut" name="statut">
-                                        <option value="">Sélectionner...</option>
-                                        <option value="actif">Actif</option>
-                                        <option value="inactif">Inactif</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
-                                <i class="fas fa-arrow-left me-1"></i>Retour
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Enregistrer
-                            </button>
-                        </div>
-                    </form>
-                    
-                    {% elif "detail" in "production_hydro/centrales.html" %}
-                    <!-- Interface de détail -->
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Informations générales</h6>
-                                </div>
-                                <div class="card-body">
-                                    <dl class="row">
-                                        <dt class="col-sm-3">Nom:</dt>
-                                        <dd class="col-sm-9">Nom de l'élément</dd>
-                                        
-                                        <dt class="col-sm-3">Statut:</dt>
-                                        <dd class="col-sm-9">
-                                            <span class="badge bg-success">Actif</span>
-                                        </dd>
-                                        
-                                        <dt class="col-sm-3">Date création:</dt>
-                                        <dd class="col-sm-9">{{ "{{" }} moment().format('DD/MM/YYYY HH:mm') {{ "}}" }}</dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Actions</h6>
-                                </div>
-                                <div class="card-body">
-                                    {% if current_user.role in ['super_admin', 'admin_operateur'] %}
-                                    <div class="d-grid gap-2">
-                                        <button type="button" class="btn btn-outline-primary">
-                                            <i class="fas fa-edit me-1"></i>Modifier
-                                        </button>
-                                        <button type="button" class="btn btn-outline-danger">
-                                            <i class="fas fa-trash me-1"></i>Supprimer
-                                        </button>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% else %}
-                    <!-- Interface générique -->
-                    <div class="text-center py-5">
-                        <i class="fas fa-wrench fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">Template en cours de développement</h4>
-                        <p class="text-muted">Cette section sera bientôt disponible.</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Scripts spécifiques -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {{
-    // Validation des formulaires Bootstrap
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {{
-        form.addEventListener('submit', function(event) {{
-            if (!form.checkValidity()) {{
-                event.preventDefault();
-                event.stopPropagation();
-            }}
-            form.classList.add('was-validated');
-        }}, false);
-    }});
-    
-    // Recherche en temps réel
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {{
-        searchInput.addEventListener('input', function() {{
-            // Implémentation de la recherche
-            console.log('Recherche:', this.value);
-        }});
-    }}
-}});
-</script>
 {% endblock %}

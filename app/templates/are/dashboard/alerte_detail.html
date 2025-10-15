@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Détails de l'alerte - Dashboard ARE{% endblock %}
+
+{% block extra_css %}
+<style>
+.alerte-critique {
+    border-left: 5px solid #dc3545;
+    background-color: #f8d7da;
+}
+
+.alerte-elevee {
+    border-left: 5px solid #fd7e14;
+    background-color: #fff3cd;
+}
+
+.alerte-moyenne {
+    border-left: 5px solid #ffc107;
+    background-color: #fff3d4;
+}
+
+.alerte-faible {
+    border-left: 5px solid #17a2b8;
+    background-color: #d1ecf1;
+}
+
+.badge-priorite-1 { background-color: #dc3545; }
+.badge-priorite-2 { background-color: #ffc107; }
+.badge-priorite-3 { background-color: #6c757d; }
+
+.detail-row {
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
+}
+.detail-row:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Détails de l'alerte</h1>
+                    <p class="text-muted">{{ alerte.titre }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('are_dashboard.alertes') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    {% if alerte.statut == 'active' %}
+                    <form method="POST" action="{{ url_for('are_dashboard.resoudre_alerte', alerte_id=alerte.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success me-2" 
+                                onclick="return confirm('Marquer cette alerte comme résolue ?')">
+                            <i class="fas fa-check"></i> Résoudre
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('are_dashboard.supprimer_alerte', alerte_id=alerte.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette alerte ?')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails de l'alerte -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card {% if alerte.severite.value == 'critique' %}alerte-critique{% elif alerte.severite.value == 'elevee' %}alerte-elevee{% elif alerte.severite.value == 'moyenne' %}alerte-moyenne{% else %}alerte-faible{% endif %}">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ alerte.titre }}</h5>
+                        <div>
+                            <span class="badge bg-{% if alerte.severite.value == 'critique' %}danger{% elif alerte.severite.value == 'elevee' %}warning{% elif alerte.severite.value == 'moyenne' %}primary{% else %}info{% endif %}">
+                                {{ alerte.severite.value.title() }}
+                            </span>
+                            <span class="badge badge-priorite-{{ alerte.priorite }} ms-2">
+                                Priorité {{ alerte.priorite }}
+                            </span>
+                            <span class="badge bg-primary ms-2">
+                                {{ alerte.type.value.title() }}
+                            </span>
+                            {% if alerte.statut == 'resolue' %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle"></i> Résolue
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="detail-row">
+                        <div class="row">
+                            <div class="col-md-3"><strong>Description:</strong></div>
+                            <div class="col-md-9">{{ alerte.description }}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="row">
+                            <div class="col-md-3"><strong>Entité concernée:</strong></div>
+                            <div class="col-md-9">
+                                <i class="fas fa-building"></i> {{ alerte.entite_concernee }}
+                                {% if alerte.operateur %}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-user-tie"></i> {{ alerte.operateur.nom_commercial }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="row">
+                            <div class="col-md-3"><strong>Dates:</strong></div>
+                            <div class="col-md-9">
+                                <i class="fas fa-calendar-plus"></i> Créée le {{ alerte.date_creation.strftime('%d/%m/%Y') }}
+                                ({{ alerte.date_creation|time_ago }})
+                                
+                                {% if alerte.date_echeance %}
+                                <br><i class="fas fa-clock"></i> 
+                                {% if alerte.is_expired %}
+                                    <span class="text-danger">Expirée le {{ alerte.date_echeance.strftime('%d/%m/%Y') }}</span>
+                                {% else %}
+                                    Échéance: {{ alerte.date_echeance.strftime('%d/%m/%Y') }}
+                                    {% if alerte.jours_restants is not none %}
+                                        <span class="text-warning">({{ alerte.jours_restants }} jours restants)</span>
+                                    {% endif %}
+                                {% endif %}
+                                {% endif %}
+
+                                {% if alerte.date_resolution %}
+                                <br><i class="fas fa-check-circle text-success"></i> 
+                                Résolue le {{ alerte.date_resolution.strftime('%d/%m/%Y') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if alerte.actions_recommandees %}
+                    <div class="detail-row">
+                        <div class="row">
+                            <div class="col-md-3"><strong>Actions recommandées:</strong></div>
+                            <div class="col-md-9">{{ alerte.actions_recommandees }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if alerte.commentaires %}
+                    <div class="detail-row">
+                        <div class="row">
+                            <div class="col-md-3"><strong>Commentaires:</strong></div>
+                            <div class="col-md-9">{{ alerte.commentaires }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Actions disponibles -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Actions disponibles</h6>
+                </div>
+                <div class="card-body">
+                    {% if alerte.statut == 'active' %}
+                    <form method="POST" action="{{ url_for('are_dashboard.resoudre_alerte', alerte_id=alerte.id) }}" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success w-100" 
+                                onclick="return confirm('Marquer cette alerte comme résolue ?')">
+                            <i class="fas fa-check"></i> Marquer comme résolue
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('are_dashboard.supprimer_alerte', alerte_id=alerte.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger w-100" 
+                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette alerte ?')">
+                            <i class="fas fa-trash"></i> Supprimer l'alerte
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informations système -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Informations système</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>ID:</strong> {{ alerte.id }}<br>
+                        <strong>Statut:</strong> {{ alerte.statut }}<br>
+                        <strong>Type:</strong> {{ alerte.type.value }}<br>
+                        <strong>Sévérité:</strong> {{ alerte.severite.value }}<br>
+                        <strong>Priorité:</strong> {{ alerte.priorite }}<br>
+                        {% if alerte.operateur_id %}
+                        <strong>Opérateur ID:</strong> {{ alerte.operateur_id }}<br>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

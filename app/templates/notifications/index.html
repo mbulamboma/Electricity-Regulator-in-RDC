@@ -295,8 +295,9 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 function marquerCommeLue(notificationId) {
-    fetch(`{{ url_for('notifications.marquer_lu', id=0) }}`.replace('0', notificationId), {
+    fetch(`{ url_for('notifications.marquer_lu', id=0) }`.replace('0', notificationId), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -325,7 +326,7 @@ function marquerCommeLue(notificationId) {
 
 function archiverNotification(notificationId) {
     if (confirm('Êtes-vous sûr de vouloir archiver cette notification ?')) {
-        fetch(`{{ url_for('notifications.archiver', id=0) }}`.replace('0', notificationId), {
+        fetch(`{ url_for('notifications.archiver', id=0) }`.replace('0', notificationId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -352,7 +353,7 @@ function archiverNotification(notificationId) {
 
 function marquerToutesLues() {
     if (confirm('Marquer toutes les notifications comme lues ?')) {
-        fetch('{{ url_for("notifications.marquer_toutes_lues") }}', {
+        fetch('{ url_for("notifications.marquer_toutes_lues") }', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -400,5 +401,6 @@ function getCSRFToken() {
     const token = document.querySelector('meta[name=csrf-token]');
     return token ? token.getAttribute('content') : '';
 }
+{% endraw %}
 </script>
 {% endblock %}

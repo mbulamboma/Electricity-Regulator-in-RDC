@@ -49,6 +49,24 @@ def admin_required(f):
     return role_required('super_admin', 'admin_operateur')(f)
 
 
+def dashboard_are_required(f):
+    """Décorateur pour l'accès au dashboard ARE (admins et contacts d'opérateurs)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Veuillez vous connecter pour accéder à cette page.', 'warning')
+            return redirect(url_for('auth.login', next=request.url))
+        
+        # Vérifier si l'utilisateur peut accéder au dashboard ARE
+        from app.utils.permissions import can_access_dashboard_are
+        if not can_access_dashboard_are():
+            flash('Vous n\'avez pas les permissions nécessaires pour accéder au dashboard ARE.', 'danger')
+            abort(403)
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def permission_required(permission):
     """Décorateur pour exiger une permission spécifique"""
     def decorator(f):

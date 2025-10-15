@@ -259,6 +259,7 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 // Configuration des couleurs
 const colors = {
     primary: '#0d6efd',
@@ -269,7 +270,7 @@ const colors = {
 };
 
 // Données des graphiques depuis le serveur
-const productionData = {{ production_data | tojson }};
+const productionData = { production_data | tojson };
 
 // Graphique de production mensuelle
 const productionCtx = document.getElementById('productionChart').getContext('2d');
@@ -334,5 +335,6 @@ new Chart(operatorCtx, {
         }
     }
 });
+{% endraw %}
 </script>
 {% endblock %}

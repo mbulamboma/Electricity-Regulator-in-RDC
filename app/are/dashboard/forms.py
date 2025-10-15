@@ -1,15 +1,16 @@
 """
-Formulaires pour le dashboard ARE
+Formulaires pour le dashboard ARE et la collecte de données
 """
 from flask_wtf import FlaskForm
 from wtforms import (
     SelectField, IntegerField, FloatField, StringField, 
-    TextAreaField, DateField, HiddenField, SubmitField
+    TextAreaField, DateField, HiddenField, SubmitField, BooleanField
 )
-from wtforms.validators import DataRequired, Optional, NumberRange, Length
+from wtforms.validators import DataRequired, Optional, NumberRange, Length, Email
 from datetime import datetime, date
 from app.models.dashboard_are import TypeAlerte, SeveriteAlerte, CategorieIndicateur
-from app.utils.permissions import get_operateur_choices
+from app.models.statistiques_are import TypeProjet
+from app.utils.permissions import get_operateur_choices, get_dashboard_are_operateurs_choices
 from app.utils.helpers import safe_int_coerce
 
 
@@ -45,7 +46,8 @@ class FiltreTableauBordForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.operateur_id.choices.extend(get_operateur_choices())
+        # Utiliser les choix d'opérateurs adaptés aux permissions du dashboard ARE
+        self.operateur_id.choices = get_dashboard_are_operateurs_choices()
 
 
 class AlerteForm(FlaskForm):
@@ -358,6 +360,449 @@ class ExportForm(FlaskForm):
     
     submit = SubmitField('Exporter')
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.operateur_id.choices.extend(get_operateur_choices())
+
+
+# ===== FORMULAIRES DE COLLECTE DE DONNÉES MENSUELLES =====
+
+class CollecteCapaciteForm(FlaskForm):
+    """Formulaire de collecte des données de capacité installée mensuelle"""
+    
+    # Période de rapport
+    annee = SelectField('Année', 
+                       choices=[(str(y), str(y)) for y in range(2020, datetime.now().year + 2)],
+                       default=str(datetime.now().year),
+                       coerce=int,
+                       validators=[DataRequired()])
+    
+    mois = SelectField('Mois',
+                      choices=[
+                          ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'),
+                          ('4', 'Avril'), ('5', 'Mai'), ('6', 'Juin'),
+                          ('7', 'Juillet'), ('8', 'Août'), ('9', 'Septembre'),
+                          ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
+                      ],
+                      coerce=int,
+                      validators=[DataRequired()])
+    
+    # Capacités par source d'énergie
+    capacite_hydro_mw = FloatField('Capacité Hydroélectrique Installée (MW)',
+                                  validators=[DataRequired(), NumberRange(min=0)],
+                                  render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    capacite_hydro_disponible_mw = FloatField('Capacité Hydroélectrique Disponible (MW)',
+                                            validators=[Optional(), NumberRange(min=0)],
+                                            render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    production_hydro_gwh = FloatField('Production Hydroélectrique (GWh)',
+                                     validators=[Optional(), NumberRange(min=0)],
+                                     render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    capacite_thermique_mw = FloatField('Capacité Thermique Installée (MW)',
+                                      validators=[DataRequired(), NumberRange(min=0)],
+                                      render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    capacite_thermique_disponible_mw = FloatField('Capacité Thermique Disponible (MW)',
+                                                 validators=[Optional(), NumberRange(min=0)],
+                                                 render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    production_thermique_gwh = FloatField('Production Thermique (GWh)',
+                                         validators=[Optional(), NumberRange(min=0)],
+                                         render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    capacite_solaire_mw = FloatField('Capacité Solaire Installée (MW)',
+                                    validators=[DataRequired(), NumberRange(min=0)],
+                                    render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    capacite_solaire_disponible_mw = FloatField('Capacité Solaire Disponible (MW)',
+                                               validators=[Optional(), NumberRange(min=0)],
+                                               render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    production_solaire_gwh = FloatField('Production Solaire (GWh)',
+                                       validators=[Optional(), NumberRange(min=0)],
+                                       render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    # Informations géographiques
+    province = SelectField('Province',
+                          choices=[
+                              ('Kinshasa', 'Kinshasa'),
+                              ('Kongo-Central', 'Kongo-Central'),
+                              ('Kwango', 'Kwango'),
+                              ('Kwilu', 'Kwilu'),
+                              ('Mai-Ndombe', 'Mai-Ndombe'),
+                              ('Équateur', 'Équateur'),
+                              ('Mongala', 'Mongala'),
+                              ('Nord-Ubangi', 'Nord-Ubangi'),
+                              ('Sud-Ubangi', 'Sud-Ubangi'),
+                              ('Tshuapa', 'Tshuapa'),
+                              ('Bas-Uele', 'Bas-Uele'),
+                              ('Haut-Uele', 'Haut-Uele'),
+                              ('Ituri', 'Ituri'),
+                              ('Tshopo', 'Tshopo'),
+                              ('Nord-Kivu', 'Nord-Kivu'),
+                              ('Sud-Kivu', 'Sud-Kivu'),
+                              ('Maniema', 'Maniema'),
+                              ('Haut-Katanga', 'Haut-Katanga'),
+                              ('Lualaba', 'Lualaba'),
+                              ('Haut-Lomami', 'Haut-Lomami'),
+                              ('Tanganyika', 'Tanganyika'),
+                              ('Lomami', 'Lomami'),
+                              ('Kasaï', 'Kasaï'),
+                              ('Kasaï-Central', 'Kasaï-Central'),
+                              ('Kasaï-Oriental', 'Kasaï-Oriental'),
+                              ('Sankuru', 'Sankuru')
+                          ],
+                          validators=[DataRequired()])
+    
+    # Notes et observations
+    observations = TextAreaField('Observations et Notes',
+                               validators=[Optional(), Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Notes sur les données saisies...'})
+    
+    submit = SubmitField('Enregistrer les Données de Capacité')
+
+
+class CollecteClienteleForm(FlaskForm):
+    """Formulaire de collecte des données de clientèle mensuelle"""
+    
+    # Période
+    annee = SelectField('Année', 
+                       choices=[(str(y), str(y)) for y in range(2020, datetime.now().year + 2)],
+                       default=str(datetime.now().year),
+                       coerce=int,
+                       validators=[DataRequired()])
+    
+    mois = SelectField('Mois',
+                      choices=[
+                          ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'),
+                          ('4', 'Avril'), ('5', 'Mai'), ('6', 'Juin'),
+                          ('7', 'Juillet'), ('8', 'Août'), ('9', 'Septembre'),
+                          ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
+                      ],
+                      coerce=int,
+                      validators=[DataRequired()])
+    
+    # Clients par type de tension
+    clients_haute_tension = IntegerField('Nombre de Clients Haute Tension (HT)',
+                                       validators=[DataRequired(), NumberRange(min=0)],
+                                       render_kw={'placeholder': '0'})
+    
+    clients_moyenne_tension = IntegerField('Nombre de Clients Moyenne Tension (MT)',
+                                         validators=[DataRequired(), NumberRange(min=0)],
+                                         render_kw={'placeholder': '0'})
+    
+    clients_basse_tension = IntegerField('Nombre de Clients Basse Tension (BT)',
+                                       validators=[DataRequired(), NumberRange(min=0)],
+                                       render_kw={'placeholder': '0'})
+    
+    # Clients facturés et desservis
+    clients_factures = IntegerField('Nombre de Clients Facturés',
+                                   validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'placeholder': '0'})
+    
+    menages_factures = IntegerField('Nombre de Ménages Facturés',
+                                   validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'placeholder': '0'})
+    
+    menages_desservis = IntegerField('Nombre de Ménages Desservis',
+                                    validators=[Optional(), NumberRange(min=0)],
+                                    render_kw={'placeholder': '0'})
+    
+    # Données géographiques et de couverture
+    population_zone = IntegerField('Population de la Zone de Desserte',
+                                  validators=[Optional(), NumberRange(min=0)],
+                                  render_kw={'placeholder': '0'})
+    
+    superficie_couverte_km2 = FloatField('Superficie Couverte (km²)',
+                                        validators=[Optional(), NumberRange(min=0)],
+                                        render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    province = SelectField('Province',
+                          choices=[
+                              ('Kinshasa', 'Kinshasa'),
+                              ('Kongo-Central', 'Kongo-Central'),
+                              ('Kwango', 'Kwango'),
+                              ('Kwilu', 'Kwilu'),
+                              ('Mai-Ndombe', 'Mai-Ndombe'),
+                              ('Équateur', 'Équateur'),
+                              ('Mongala', 'Mongala'),
+                              ('Nord-Ubangi', 'Nord-Ubangi'),
+                              ('Sud-Ubangi', 'Sud-Ubangi'),
+                              ('Tshuapa', 'Tshuapa'),
+                              ('Bas-Uele', 'Bas-Uele'),
+                              ('Haut-Uele', 'Haut-Uele'),
+                              ('Ituri', 'Ituri'),
+                              ('Tshopo', 'Tshopo'),
+                              ('Nord-Kivu', 'Nord-Kivu'),
+                              ('Sud-Kivu', 'Sud-Kivu'),
+                              ('Maniema', 'Maniema'),
+                              ('Haut-Katanga', 'Haut-Katanga'),
+                              ('Lualaba', 'Lualaba'),
+                              ('Haut-Lomami', 'Haut-Lomami'),
+                              ('Tanganyika', 'Tanganyika'),
+                              ('Lomami', 'Lomami'),
+                              ('Kasaï', 'Kasaï'),
+                              ('Kasaï-Central', 'Kasaï-Central'),
+                              ('Kasaï-Oriental', 'Kasaï-Oriental'),
+                              ('Sankuru', 'Sankuru')
+                          ],
+                          validators=[DataRequired()])
+    
+    # Observations
+    observations = TextAreaField('Observations',
+                               validators=[Optional(), Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Notes sur la clientèle...'})
+    
+    submit = SubmitField('Enregistrer les Données de Clientèle')
+
+
+class CollecteProjetForm(FlaskForm):
+    """Formulaire de collecte des données de nouveaux projets"""
+    
+    # Informations du projet
+    nom_projet = StringField('Nom du Projet',
+                           validators=[DataRequired(), Length(max=200)],
+                           render_kw={'placeholder': 'Ex: Centrale Hydroélectrique de Katende'})
+    
+    type_projet = SelectField('Type de Projet',
+                            choices=[
+                                ('production_hydro', 'Production Hydroélectrique'),
+                                ('production_thermique', 'Production Thermique'),
+                                ('production_solaire', 'Production Solaire'),
+                                ('transport', 'Transport/Transmission'),
+                                ('distribution', 'Distribution'),
+                                ('mini_grid', 'Mini-Grid')
+                            ],
+                            validators=[DataRequired()])
+    
+    capacite_prevue_mw = FloatField('Capacité Prévue (MW)',
+                                   validators=[DataRequired(), NumberRange(min=0)],
+                                   render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    investissement_prevu_usd = FloatField('Investissement Prévu (Millions USD)',
+                                         validators=[Optional(), NumberRange(min=0)],
+                                         render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    # Dates importantes
+    date_depot_demande = DateField('Date de Dépôt de la Demande',
+                                  validators=[DataRequired()],
+                                  default=datetime.now().date)
+    
+    date_prevue_mise_service = DateField('Date Prévue de Mise en Service',
+                                        validators=[Optional()])
+    
+    # Localisation
+    province = SelectField('Province',
+                          choices=[
+                              ('Kinshasa', 'Kinshasa'),
+                              ('Kongo-Central', 'Kongo-Central'),
+                              ('Kwango', 'Kwango'),
+                              ('Kwilu', 'Kwilu'),
+                              ('Mai-Ndombe', 'Mai-Ndombe'),
+                              ('Équateur', 'Équateur'),
+                              ('Mongala', 'Mongala'),
+                              ('Nord-Ubangi', 'Nord-Ubangi'),
+                              ('Sud-Ubangi', 'Sud-Ubangi'),
+                              ('Tshuapa', 'Tshuapa'),
+                              ('Bas-Uele', 'Bas-Uele'),
+                              ('Haut-Uele', 'Haut-Uele'),
+                              ('Ituri', 'Ituri'),
+                              ('Tshopo', 'Tshopo'),
+                              ('Nord-Kivu', 'Nord-Kivu'),
+                              ('Sud-Kivu', 'Sud-Kivu'),
+                              ('Maniema', 'Maniema'),
+                              ('Haut-Katanga', 'Haut-Katanga'),
+                              ('Lualaba', 'Lualaba'),
+                              ('Haut-Lomami', 'Haut-Lomami'),
+                              ('Tanganyika', 'Tanganyika'),
+                              ('Lomami', 'Lomami'),
+                              ('Kasaï', 'Kasaï'),
+                              ('Kasaï-Central', 'Kasaï-Central'),
+                              ('Kasaï-Oriental', 'Kasaï-Oriental'),
+                              ('Sankuru', 'Sankuru')
+                          ],
+                          validators=[DataRequired()])
+    
+    localisation_precise = StringField('Localisation Précise',
+                                     validators=[Optional(), Length(max=200)],
+                                     render_kw={'placeholder': 'Ville, commune, quartier...'})
+    
+    # Description du projet
+    description_technique = TextAreaField('Description Technique',
+                                        validators=[Optional(), Length(max=1000)],
+                                        render_kw={'rows': 4, 'placeholder': 'Description technique du projet...'})
+    
+    population_beneficiaire = IntegerField('Population Bénéficiaire Estimée',
+                                         validators=[Optional(), NumberRange(min=0)],
+                                         render_kw={'placeholder': '0'})
+    
+    # Statut actuel
+    statut_evaluation = SelectField('Statut d\'Évaluation ARE',
+                                   choices=[
+                                       ('en_etude', 'En Étude'),
+                                       ('evaluation_technique', 'Évaluation Technique'),
+                                       ('evaluation_environnementale', 'Évaluation Environnementale'),
+                                       ('consultation_publique', 'Consultation Publique'),
+                                       ('avis_favorable', 'Avis Favorable'),
+                                       ('avis_conditionnel', 'Avis Favorable Conditionnel'),
+                                       ('avis_defavorable', 'Avis Défavorable'),
+                                       ('en_attente_complements', 'En Attente de Compléments')
+                                   ],
+                                   validators=[DataRequired()])
+    
+    # Informations complémentaires
+    contact_projet = StringField('Responsable du Projet',
+                               validators=[Optional(), Length(max=100)],
+                               render_kw={'placeholder': 'Nom du responsable'})
+    
+    email_contact = StringField('Email de Contact',
+                              validators=[Optional(), Email(), Length(max=100)],
+                              render_kw={'placeholder': 'email@exemple.com'})
+    
+    telephone_contact = StringField('Téléphone de Contact',
+                                  validators=[Optional(), Length(max=20)],
+                                  render_kw={'placeholder': '+243...'})
+    
+    observations = TextAreaField('Observations',
+                               validators=[Optional(), Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Notes additionnelles...'})
+    
+    submit = SubmitField('Enregistrer le Projet')
+
+
+class CollecteSolaireForm(FlaskForm):
+    """Formulaire spécialisé pour les données solaires détaillées"""
+    
+    # Période
+    annee = SelectField('Année', 
+                       choices=[(str(y), str(y)) for y in range(2020, datetime.now().year + 2)],
+                       default=str(datetime.now().year),
+                       coerce=int,
+                       validators=[DataRequired()])
+    
+    mois = SelectField('Mois',
+                      choices=[
+                          ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'),
+                          ('4', 'Avril'), ('5', 'Mai'), ('6', 'Juin'),
+                          ('7', 'Juillet'), ('8', 'Août'), ('9', 'Septembre'),
+                          ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
+                      ],
+                      coerce=int,
+                      validators=[DataRequired()])
+    
+    # Type d'installation
+    type_installation = SelectField('Type d\'Installation Solaire',
+                                   choices=[
+                                       ('champs_solaires', 'Champs Solaires (Centralisée)'),
+                                       ('toitures_commerciales', 'Toitures Commerciales'),
+                                       ('toitures_residentielles', 'Toitures Résidentielles'),
+                                       ('kits_solaires', 'Kits Solaires Domestiques'),
+                                       ('mini_grids', 'Mini-Grids Solaires'),
+                                       ('pompage_solaire', 'Systèmes de Pompage Solaire'),
+                                       ('eclairage_public', 'Éclairage Public Solaire')
+                                   ],
+                                   validators=[DataRequired()])
+    
+    # Données techniques
+    puissance_installee_kw = FloatField('Puissance Installée (kW)',
+                                       validators=[DataRequired(), NumberRange(min=0)],
+                                       render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    nombre_installations = IntegerField('Nombre d\'Installations',
+                                      validators=[DataRequired(), NumberRange(min=1)],
+                                      render_kw={'placeholder': '1'})
+    
+    production_mensuelle_kwh = FloatField('Production Mensuelle (kWh)',
+                                         validators=[Optional(), NumberRange(min=0)],
+                                         render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    # Données de performance
+    irradiance_moyenne = FloatField('Irradiance Moyenne Mensuelle (kWh/m²)',
+                                   validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    facteur_charge = FloatField('Facteur de Charge Moyen (%)',
+                               validators=[Optional(), NumberRange(min=0, max=100)],
+                               render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    # Données de clientèle
+    nombre_clients_desservis = IntegerField('Nombre de Clients Desservis',
+                                          validators=[Optional(), NumberRange(min=0)],
+                                          render_kw={'placeholder': '0'})
+    
+    population_beneficiaire = IntegerField('Population Bénéficiaire',
+                                         validators=[Optional(), NumberRange(min=0)],
+                                         render_kw={'placeholder': '0'})
+    
+    # Localisation
+    province = SelectField('Province',
+                          choices=[
+                              ('Kinshasa', 'Kinshasa'),
+                              ('Kongo-Central', 'Kongo-Central'),
+                              ('Nord-Kivu', 'Nord-Kivu'),
+                              ('Sud-Kivu', 'Sud-Kivu'),
+                              ('Haut-Katanga', 'Haut-Katanga'),
+                              ('Lualaba', 'Lualaba'),
+                              ('Équateur', 'Équateur'),
+                              ('Kasaï', 'Kasaï'),
+                              ('Kasaï-Central', 'Kasaï-Central'),
+                              ('Maniema', 'Maniema'),
+                              ('Tshopo', 'Tshopo'),
+                              ('Ituri', 'Ituri')
+                          ],
+                          validators=[DataRequired()])
+    
+    zone_climatique = SelectField('Zone Climatique',
+                                 choices=[
+                                     ('equatoriale', 'Équatoriale'),
+                                     ('tropicale_humide', 'Tropicale Humide'),
+                                     ('tropicale_seche', 'Tropicale Sèche'),
+                                     ('subtropicale', 'Subtropicale')
+                                 ],
+                                 validators=[Optional()])
+    
+    # Informations techniques complémentaires
+    technologie_panneaux = SelectField('Technologie des Panneaux',
+                                      choices=[
+                                          ('monocristallin', 'Silicium Monocristallin'),
+                                          ('polycristallin', 'Silicium Polycristallin'),
+                                          ('couche_mince', 'Couche Mince'),
+                                          ('bifacial', 'Panneaux Bifaciaux'),
+                                          ('autre', 'Autre Technologie')
+                                      ],
+                                      validators=[Optional()])
+    
+    systeme_stockage = BooleanField('Système de Stockage (Batteries)')
+    
+    capacite_stockage_kwh = FloatField('Capacité de Stockage (kWh)',
+                                      validators=[Optional(), NumberRange(min=0)],
+                                      render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    # Coûts et financement
+    cout_installation_usd = FloatField('Coût d\'Installation (USD)',
+                                      validators=[Optional(), NumberRange(min=0)],
+                                      render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    tarif_kwh_usd = FloatField('Tarif de Vente (USD/kWh)',
+                              validators=[Optional(), NumberRange(min=0)],
+                              render_kw={'step': '0.001', 'placeholder': '0.000'})
+    
+    # Maintenance et performance
+    pannes_mensuelles = IntegerField('Nombre de Pannes ce Mois',
+                                   validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'placeholder': '0'})
+    
+    taux_disponibilite = FloatField('Taux de Disponibilité (%)',
+                                   validators=[Optional(), NumberRange(min=0, max=100)],
+                                   render_kw={'step': '0.01', 'placeholder': '0.00'})
+    
+    observations = TextAreaField('Observations Techniques',
+                               validators=[Optional(), Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Notes techniques, problèmes rencontrés...'})
+    
+    submit = SubmitField('Enregistrer les Données Solaires')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.operateur_id.choices.extend(get_operateur_choices())

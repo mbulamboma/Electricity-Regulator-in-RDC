@@ -112,6 +112,37 @@
                     </small>
                 </div>
             </div>
+            
+            <!-- Export Excel -->
+            <div class="card backup-card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-excel"></i> Export Base de Données
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Téléchargez toute la base de données au format Excel (.xlsx) pour analyse ou archivage.
+                    </p>
+                    <ul class="text-muted small mb-3">
+                        <li>Toutes les tables principales exportées</li>
+                        <li>Format Excel compatible avec tous les outils</li>
+                        <li>Données sensibles filtrées (mots de passe exclus)</li>
+                        <li>Un onglet par type de données</li>
+                    </ul>
+                    <div class="d-grid">
+                        <a href="{{ url_for('admin.export_database_excel') }}" class="btn btn-success btn-lg">
+                            <i class="fas fa-download"></i> Télécharger Base de Données Excel
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i>
+                        L'export peut prendre quelques minutes selon la taille de la base de données.
+                    </small>
+                </div>
+            </div>
         </div>
 
         <!-- Informations et conseils -->
@@ -309,6 +340,7 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 function downloadBackup(filename) {
     // Rediriger vers l'URL de téléchargement
     window.location.href = `/admin/backup/download/${filename}`;
@@ -321,7 +353,7 @@ function confirmDelete(filename) {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'X-CSRFToken': '{ csrf_token() }'
             }
         })
         .then(response => {
@@ -344,7 +376,7 @@ function confirmCleanup() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'X-CSRFToken': '{ csrf_token() }'
             }
         })
         .then(response => {
@@ -380,5 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+{% endraw %}
 </script>
 {% endblock %}

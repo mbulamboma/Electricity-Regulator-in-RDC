@@ -322,9 +322,10 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 function confirmerSuppression(rapportId, centraleName, periode) {
     document.getElementById('deleteInfo').textContent = centraleName + ' - ' + periode;
-    document.getElementById('deleteForm').action = '{{ url_for("production_solaire.supprimer_rapport", id=0) }}'.replace('0', rapportId);
+    document.getElementById('deleteForm').action = '{ url_for("production_solaire.supprimer_rapport", id=0) }'.replace('0', rapportId);
     
     var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
@@ -340,5 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+{% endraw %}
 </script>
 {% endblock %}

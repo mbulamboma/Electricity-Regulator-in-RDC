@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Saisie Mensuelle - Distribution{% endblock %}
+
+{% block content %}
+<div class="wrapper wrapper-content animated fadeInRight">
+    <!-- En-tête moderne -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header bg-white p-4 rounded shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-2 text-dark">
+                            <i class="fas fa-chart-bar text-primary me-2"></i> 
+                            Nouvelle Saisie de Données Mensuelles
+                        </h1>
+                        <p class="text-muted mb-0">Enregistrement des indicateurs mensuels de distribution électrique</p>
+                    </div>
+                    <a href="{{ url_for('distribution.donnees_mensuelles') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire principal -->
+    <div class="row">
+        <div class="col-xl-10 col-lg-12 mx-auto">
+            <form action="{{ url_for('distribution.creer_donnee_mensuelle') }}" method="post" class="needs-validation" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <!-- Section: Identification -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i> Identification de la Période
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Réseau -->
+                            <div class="col-12">
+                                <label for="{{ form.reseau_id.id }}" class="form-label">{{ form.reseau_id.label.text }}</label>
+                                {{ form.reseau_id(class="form-select" + (" is-invalid" if form.reseau_id.errors else "")) }}
+                                {% if form.reseau_id.errors %}
+                                    {% for error in form.reseau_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Année et Mois -->
+                            <div class="col-md-6">
+                                <label for="{{ form.annee.id }}" class="form-label">{{ form.annee.label.text }}</label>
+                                {{ form.annee(class="form-select" + (" is-invalid" if form.annee.errors else "")) }}
+                                {% if form.annee.errors %}
+                                    {% for error in form.annee.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.mois.id }}" class="form-label">{{ form.mois.label.text }}</label>
+                                {{ form.mois(class="form-select" + (" is-invalid" if form.mois.errors else "")) }}
+                                {% if form.mois.errors %}
+                                    {% for error in form.mois.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Clientèle -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i> Évolution de la Clientèle
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Clients HT -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <h6 class="text-danger mb-3">
+                                        <i class="fas fa-bolt me-1"></i> Clients Haute Tension (HT)
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="{{ form.clients_ht_debut_mois.id }}" class="form-label">{{ form.clients_ht_debut_mois.label.text }}</label>
+                                            {{ form.clients_ht_debut_mois(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.nouveaux_raccordements_ht.id }}" class="form-label">{{ form.nouveaux_raccordements_ht.label.text }}</label>
+                                            {{ form.nouveaux_raccordements_ht(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.deconnexions_ht.id }}" class="form-label">{{ form.deconnexions_ht.label.text }}</label>
+                                            {{ form.deconnexions_ht(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clients MT -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <h6 class="text-warning mb-3">
+                                        <i class="fas fa-flash me-1"></i> Clients Moyenne Tension (MT)
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="{{ form.clients_mt_debut_mois.id }}" class="form-label">{{ form.clients_mt_debut_mois.label.text }}</label>
+                                            {{ form.clients_mt_debut_mois(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.nouveaux_raccordements_mt.id }}" class="form-label">{{ form.nouveaux_raccordements_mt.label.text }}</label>
+                                            {{ form.nouveaux_raccordements_mt(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.deconnexions_mt.id }}" class="form-label">{{ form.deconnexions_mt.label.text }}</label>
+                                            {{ form.deconnexions_mt(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clients BT -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-home me-1"></i> Clients Basse Tension (BT)
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="{{ form.clients_bt_debut_mois.id }}" class="form-label">{{ form.clients_bt_debut_mois.label.text }}</label>
+                                            {{ form.clients_bt_debut_mois(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.nouveaux_raccordements_bt.id }}" class="form-label">{{ form.nouveaux_raccordements_bt.label.text }}</label>
+                                            {{ form.nouveaux_raccordements_bt(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.deconnexions_bt.id }}" class="form-label">{{ form.deconnexions_bt.label.text }}</label>
+                                            {{ form.deconnexions_bt(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Énergie Distribuée -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2"></i> Énergie Distribuée
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="{{ form.energie_distribuee_ht_mwh.id }}" class="form-label">{{ form.energie_distribuee_ht_mwh.label.text }}</label>
+                                {{ form.energie_distribuee_ht_mwh(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.energie_distribuee_mt_mwh.id }}" class="form-label">{{ form.energie_distribuee_mt_mwh.label.text }}</label>
+                                {{ form.energie_distribuee_mt_mwh(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.energie_distribuee_bt_mwh.id }}" class="form-label">{{ form.energie_distribuee_bt_mwh.label.text }}</label>
+                                {{ form.energie_distribuee_bt_mwh(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.energie_achetee_mwh.id }}" class="form-label">{{ form.energie_achetee_mwh.label.text }}</label>
+                                {{ form.energie_achetee_mwh(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="{{ form.pertes_techniques_mwh.id }}" class="form-label">{{ form.pertes_techniques_mwh.label.text }}</label>
+                                {{ form.pertes_techniques_mwh(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.pertes_commerciales_mwh.id }}" class="form-label">{{ form.pertes_commerciales_mwh.label.text }}</label>
+                                {{ form.pertes_commerciales_mwh(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Revenus et Facturation -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-dollar-sign me-2"></i> Revenus et Facturation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.revenus_ht_usd.id }}" class="form-label">{{ form.revenus_ht_usd.label.text }}</label>
+                                {{ form.revenus_ht_usd(class="form-control") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.revenus_mt_usd.id }}" class="form-label">{{ form.revenus_mt_usd.label.text }}</label>
+                                {{ form.revenus_mt_usd(class="form-control") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.revenus_bt_usd.id }}" class="form-label">{{ form.revenus_bt_usd.label.text }}</label>
+                                {{ form.revenus_bt_usd(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-4">
+                                <label for="{{ form.factures_emises.id }}" class="form-label">{{ form.factures_emises.label.text }}</label>
+                                {{ form.factures_emises(class="form-control") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.factures_payees.id }}" class="form-label">{{ form.factures_payees.label.text }}</label>
+                                {{ form.factures_payees(class="form-control") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.impayes_usd.id }}" class="form-label">{{ form.impayes_usd.label.text }}</label>
+                                {{ form.impayes_usd(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Qualité de Service -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i> Qualité de Service
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="{{ form.duree_coupures_heures.id }}" class="form-label">{{ form.duree_coupures_heures.label.text }}</label>
+                                {{ form.duree_coupures_heures(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.nombre_pannes.id }}" class="form-label">{{ form.nombre_pannes.label.text }}</label>
+                                {{ form.nombre_pannes(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.temps_retablissement_moyen_heures.id }}" class="form-label">{{ form.temps_retablissement_moyen_heures.label.text }}</label>
+                                {{ form.temps_retablissement_moyen_heures(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.plaintes_clients.id }}" class="form-label">{{ form.plaintes_clients.label.text }}</label>
+                                {{ form.plaintes_clients(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Maintenance -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-wrench me-2"></i> Maintenance
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.cout_maintenance_usd.id }}" class="form-label">{{ form.cout_maintenance_usd.label.text }}</label>
+                                {{ form.cout_maintenance_usd(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.interventions_maintenance.id }}" class="form-label">{{ form.interventions_maintenance.label.text }}</label>
+                                {{ form.interventions_maintenance(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Observations -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-light text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comment me-2"></i> Observations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <label for="{{ form.observations.id }}" class="form-label">{{ form.observations.label.text }}</label>
+                                {{ form.observations(class="form-control", rows="4", placeholder="Observations particulières, incidents majeurs, projets en cours, etc.") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                            <a href="{{ url_for('distribution.donnees_mensuelles') }}" class="btn btn-outline-secondary btn-lg px-5">
+                                <i class="fas fa-times me-2"></i> Annuler
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour calculs automatiques -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculs automatiques des clients en fin de mois
+    function calculateEndOfMonth(type) {
+        const debut = document.getElementById(`clients_${type}_debut_mois`);
+        const nouveaux = document.getElementById(`nouveaux_raccordements_${type}`);
+        const deconnexions = document.getElementById(`deconnexions_${type}`);
+        
+        if (debut && nouveaux && deconnexions) {
+            const calculate = () => {
+                const debutVal = parseInt(debut.value) || 0;
+                const nouveauxVal = parseInt(nouveaux.value) || 0;
+                const deconnexionsVal = parseInt(deconnexions.value) || 0;
+                return debutVal + nouveauxVal - deconnexionsVal;
+            };
+            
+            [debut, nouveaux, deconnexions].forEach(el => {
+                el.addEventListener('input', calculate);
+            });
+        }
+    }
+    
+    calculateEndOfMonth('ht');
+    calculateEndOfMonth('mt');
+    calculateEndOfMonth('bt');
+    
+    // Validation Bootstrap
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+
+{% endblock %}

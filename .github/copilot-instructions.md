@@ -7,7 +7,7 @@ This is a modular Flask application for managing electricity operators in the De
 ### Core Components
 - **Factory Pattern**: `app/__init__.py` creates the Flask app using `create_app()` function
 - **Extensions**: Centralized in `app/extensions.py` (SQLAlchemy, Flask-Login, Migrate, Bcrypt, CSRF)
-- **Domain Modules**: Production (hydro/thermal/solar), transport, distribution, workflow, notifications, contacts, admin
+- **Domain Modules**: Production (hydro/thermal/solar), transport, distribution, workflow, notifications, contacts, admin, **collecte** (new)
 - **Base Model**: `app/models/base.py` provides common functionality (timestamps, soft delete, CRUD methods)
 
 ## Key Patterns & Conventions
@@ -46,7 +46,15 @@ Each domain has consistent structure:
 - `models/` - Domain-specific SQLAlchemy models
 - `templates/` - Domain templates
 
-Current domains: `auth`, `operateurs`, `production_hydro`, `production_thermique`, `production_solaire`, `transport`, `distribution`, `workflow`, `notifications`, `contacts`, `admin`, `are`
+Current domains: `auth`, `operateurs`, `production_hydro`, `production_thermique`, `production_solaire`, `transport`, `distribution`, `workflow`, `notifications`, `contacts`, `admin`, `are`, **`collecte`** (new real data collection system)
+
+### COLLECTE Module - Real Data Collection System (NEW)
+- **Purpose**: Replaces fake data generation with real operator submissions
+- **Key Models**: `CollecteDonneesMensuelles`, `CollecteProjetNouveau` in `app/models/collecte_donnees.py`
+- **Data Types**: Financial (revenues, costs), clientele (new connections, disconnections), technical projects
+- **Validation Workflow**: `BROUILLON → SOUMIS → VALIDE/REJETE` pattern consistent with other modules
+- **Service Integration**: `CalculStatistiquesReellesService` in `app/are/services_reel.py` computes ARE statistics from real data
+- **Access Control**: Role-based access for operators, with super_admin oversight
 
 ### ARE Dashboard Module (NEW)
 - **Strategic Dashboard**: `app/are/dashboard/` provides executive-level KPIs and analytics
@@ -74,8 +82,29 @@ flask --app run create-admin
 # Add sample data
 flask --app run seed-data
 
+# Initialize ARE dashboard data (after basic setup)
+flask --app run init-are-data
+
+# Initialize real data collection system (replaces fake data)
+python init_collecte_reelle.py
+
 # Complete reset (with confirmation)
 flask --app run reset-db
+```
+
+### Testing & Validation
+```powershell
+# Comprehensive automated testing suite
+python tests/run_all_tests.py --full-report
+
+# Quick tests for major routes
+python tests/run_all_tests.py --quick
+
+# PowerShell test runner with color output
+.\run_tests.ps1
+
+# Setup test environment dependencies
+python tests/setup_test_env.py
 ```
 
 ### Development Setup
@@ -91,6 +120,9 @@ flask --app run shell
 
 # Initialize ARE dashboard data (after basic setup)
 python init_are_dashboard.py
+
+# Initialize real data collection system (replaces fake data)
+python init_collecte_reelle.py
 ```
 
 ### Permission System Usage

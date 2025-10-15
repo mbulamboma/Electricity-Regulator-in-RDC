@@ -300,13 +300,15 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 function confirmerSuppression(nom, id) {
     document.getElementById('nomTransformateur').textContent = nom;
     document.getElementById('formSuppression').action = 
-        "{{ url_for('distribution.supprimer_transformateur', id=0) }}".replace('0', id);
+        "{ url_for('distribution.supprimer_transformateur', id=0) }".replace('0', id);
     
     const modal = new bootstrap.Modal(document.getElementById('modalSuppression'));
     modal.show();
 }
+{% endraw %}
 </script>
 {% endblock %}

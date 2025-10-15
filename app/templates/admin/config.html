@@ -361,12 +361,13 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 // Messages Flash automatiques
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
             // Afficher les messages
-            console.log('{{ category }}: {{ message }}');
+            console.log('{ category }: { message }');
         {% endfor %}
     {% endif %}
 {% endwith %}
@@ -524,5 +525,6 @@ function emergencyMode() {
         window.location.href = '/admin/emergency';
     }
 }
+{% endraw %}
 </script>
 {% endblock %}

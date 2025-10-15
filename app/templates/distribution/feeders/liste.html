@@ -31,7 +31,7 @@
                     {% for category, message in messages  %}
                         <div class="alert alert-{{'success' if category == 'success' else 'danger' if category == 'error' else 'warning' if category == 'warning' else 'info'}} alert-dismissible fade show" role="alert">
                             <i class="fas fa-{{'check-circle' if category == 'success' else 'exclamation-triangle' if category in ['error', 'warning'] else 'info-circle'}} me-2"></i>
-                            {{ { message  }}}
+                            {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     {% endfor  %}
@@ -117,7 +117,7 @@
                     {% elif "formulaire" in "distribution/feeders/liste.html" or "form" in "distribution/feeders/liste.html" %}
                     <!-- Interface de formulaire -->
                     <form method="POST" class="needs-validation" novalidate>
-                        {{ { csrf_token()  }}}
+                        {{ csrf_token() }}
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -218,27 +218,27 @@
 
 <!-- Scripts spécifiques -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {{
+document.addEventListener('DOMContentLoaded', function() {
     // Validation des formulaires Bootstrap
     var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {{
-        form.addEventListener('submit', function(event) {{
-            if (!form.checkValidity()) {{
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-            }}
+            }
             form.classList.add('was-validated');
-        }}, false);
-    }});
+        }, false);
+    });
     
     // Recherche en temps réel
     const searchInput = document.getElementById('searchInput');
-    if (searchInput) {{
-        searchInput.addEventListener('input', function() {{
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
             // Implémentation de la recherche
             console.log('Recherche:', this.value);
-        }});
-    }}
-}});
+        });
+    }
+});
 </script>
 {% endblock %}

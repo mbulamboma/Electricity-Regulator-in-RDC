@@ -33,12 +33,17 @@
                 </div>
                 {% if current_user.is_admin() %}
                 <div>
+                    <a href="{{ url_for('distribution.donnees_mensuelles') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-chart-bar"></i> Données Mensuelles
+                    </a>
+                    {% if current_user.is_admin() %}
                     <a href="{{ url_for('distribution.nouveau_reseau') }}" class="btn btn-success me-2">
                         <i class="fas fa-plus"></i> Nouveau Réseau
                     </a>
                     <a href="{{ url_for('distribution.nouveau_feeder') }}" class="btn btn-outline-success">
                         <i class="fas fa-plus"></i> Nouveau Feeder
                     </a>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

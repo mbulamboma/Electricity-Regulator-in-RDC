@@ -1,0 +1,1360 @@
+{% extends "base.html" %}
+
+{% block title %}Données {{ donnee.get_periode_str() }} - Distribution{% endblock %}
+
+{% block content %}
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5><i class="fa fa-eye"></i> Données Mensuelles - {{ donnee.get_periode_str() }}</h5>
+                    <div class="ibox-tools">
+                        {% if current_user.operateur_id == donnee.operateur_id %}
+                        <a href="{{ url_for('distribution.modifier_donnee_mensuelle', id=donnee.id) }}" class="btn btn-primary btn-xs">
+                            <i class="fa fa-pencil"></i> Modifier
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('distribution.donnees_mensuelles') }}" class="btn btn-white btn-xs">
+                            <i class="fa fa-arrow-left"></i> Retour à la liste
+                        </a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <!-- En-tête avec infos générales -->
+                    <div class="row m-b-lg">
+                        <div class="col-lg-4">
+                            <dl class="dl-horizontal">
+                                <dt>Période:</dt>
+                                <dd><span class="label label-primary">{{ donnee.get_periode_str() }}</span></dd>
+                                <dt>Réseau:</dt>
+                                <dd><strong>{{ donnee.reseau.nom }}</strong></dd>
+                                <dt>Type:</dt>
+                                <dd>{{ donnee.reseau.type_reseau }}</dd>
+                                <dt>Opérateur:</dt>
+                                <dd>{{ donnee.operateur.nom }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-lg-8">
+                            <!-- Indicateurs clés - Cards modernes -->
+                             <style>
+                                #statsGil { 
+                                    background: green;
+                                    border-radius: 10px; 
+                                    padding: 10px;
+                                    color: white;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+                                    transition: transform 0.3s, box-shadow 0.3s;
+                                }
+                             </style>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-6 mb-4" >
+                                    <div class="stats-card clients-card" id="statsGil">
+                                        <div class="stats-card-icon">
+                                            <i class="fa fa-users"></i>
+                                        </div>
+                                        <div class="stats-card-body">
+                                            <div class="stats-number">{{ '{:,}'.format(donnee.total_clients_fin_mois or 0) }}</div>
+                                            <div class="stats-label">Clients Total</div>
+                                            <div class="stats-progress">
+                                                <div class="progress-bar clients-progress"></div>
+                                            </div>
+                                        </div>
+                                        <div class="stats-card-overlay"></div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-4">
+                                    <div class="stats-card energy-card" id="statsGil" style="background-color: orange;">
+                                        <div class="stats-card-icon">
+                                            <i class="fa fa-bolt"></i>
+                                        </div>
+                                        <div class="stats-card-body">
+                                            <div class="stats-number">{{ '{:,.1f}'.format(donnee.energie_totale_distribuee_mwh or 0) }}</div>
+                                            <div class="stats-label">MWh Distribuée</div>
+                                            <div class="stats-progress">
+                                                <div class="progress-bar energy-progress"></div>
+                                            </div>
+                                        </div>
+                                        <div class="stats-card-overlay"></div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-4">
+                                    <div class="stats-card losses-card" id="statsGil" style="background-color: purple;">
+                                        <div class="stats-card-icon">
+                                            <i class="fa fa-exclamation-triangle"></i>
+                                        </div>
+                                        <div class="stats-card-body">
+                                            <div class="stats-number">{{ '{:,.1f}'.format((donnee.pertes_techniques_mwh or 0) + (donnee.pertes_commerciales_mwh or 0)) }}</div>
+                                            <div class="stats-label">MWh Pertes Totales</div>
+                                            <div class="stats-progress">
+                                                <div class="progress-bar losses-progress"></div>
+                                            </div>
+                                        </div>
+                                        <div class="stats-card-overlay"></div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-4">
+                                    <div class="stats-card connections-card" id="statsGil" style="background-color: blue;">
+                                        <div class="stats-card-icon">
+                                            <i class="fa fa-plus-circle"></i>
+                                        </div>
+                                        <div class="stats-card-body">
+                                            <div class="stats-number">{{ '{:,}'.format(donnee.nouveaux_raccordements_bt or 0) }}</div>
+                                            <div class="stats-label">Nouv. Raccordements</div>
+                                            <div class="stats-progress">
+                                                <div class="progress-bar connections-progress"></div>
+                                            </div>
+                                        </div>
+                                        <div class="stats-card-overlay"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Onglets de données -->
+                    <div class="tabs-container">
+                        <ul class="nav nav-tabs" id="dataTabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" id="energy-tab" data-bs-toggle="tab" data-bs-target="#energy" type="button" role="tab">
+                                    <i class="fa fa-bolt" style="color: #ffd54f; margin-right: 8px;"></i> Énergie
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances" type="button" role="tab">
+                                    <i class="fa fa-money" style="color: #66bb6a; margin-right: 8px;"></i> Finances
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" id="quality-tab" data-bs-toggle="tab" data-bs-target="#quality" type="button" role="tab">
+                                    <i class="fa fa-line-chart" style="color: #42a5f5; margin-right: 8px;"></i> Qualité
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button" role="tab">
+                                    <i class="fa fa-wrench" style="color: #ff7043; margin-right: 8px;"></i> Maintenance
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="dataTabsContent">
+                            <!-- Onglet Énergie -->
+                            <div class="tab-pane fade show active" id="energy" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-pie-chart" style="color: #ffd54f; margin-right: 10px;"></i>Répartition des Clients</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Niveau de Tension</th>
+                                                            <th class="text-right">Nombre de Clients</th>
+                                                            <th class="text-right">Pourcentage</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% set total_clients = (donnee.clients_ht_fin_mois or 0) + (donnee.clients_mt_fin_mois or 0) + (donnee.clients_bt_fin_mois or 0) %}
+                                                        <tr>
+                                                            <td><strong>Haute Tension (HT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.clients_ht_fin_mois or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_clients > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.clients_ht_fin_mois or 0) / total_clients) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Moyenne Tension (MT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.clients_mt_fin_mois or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_clients > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.clients_mt_fin_mois or 0) / total_clients) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Basse Tension (BT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.clients_bt_fin_mois or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_clients > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.clients_bt_fin_mois or 0) / total_clients) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>TOTAL</strong></td>
+                                                            <td class="text-right"><strong>{{ '{:,.0f}'.format(total_clients) }}</strong></td>
+                                                            <td class="text-right"><strong>100.0%</strong></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-area-chart" style="color: #66bb6a; margin-right: 10px;"></i>Évolution Mensuelle</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Période</th>
+                                                            <th class="text-right">Clients BT</th>
+                                                            <th class="text-right">Variation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td><strong>Début du mois</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.clients_bt_debut_mois or 0) }}</td>
+                                                            <td class="text-right">-</td>
+                                                        </tr>
+                                                        <tr class="table-success">
+                                                            <td><strong>Nouveaux raccordements</strong></td>
+                                                            <td class="text-right">+{{ '{:,.0f}'.format(donnee.nouveaux_raccordements_bt or 0) }}</td>
+                                                            <td class="text-right">
+                                                                <span class="badge bg-success">
+                                                                    <i class="fa fa-plus"></i> {{ '{:,.0f}'.format(donnee.nouveaux_raccordements_bt or 0) }}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-danger">
+                                                            <td><strong>Déconnexions</strong></td>
+                                                            <td class="text-right">-{{ '{:,.0f}'.format(donnee.deconnexions_bt or 0) }}</td>
+                                                            <td class="text-right">
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fa fa-minus"></i> {{ '{:,.0f}'.format(donnee.deconnexions_bt or 0) }}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>Fin du mois</strong></td>
+                                                            <td class="text-right"><strong>{{ '{:,.0f}'.format(donnee.clients_bt_fin_mois or 0) }}</strong></td>
+                                                            <td class="text-right">
+                                                                {% set variation = (donnee.clients_bt_fin_mois or 0) - (donnee.clients_bt_debut_mois or 0) %}
+                                                                {% if variation > 0 %}
+                                                                    <span class="badge bg-success">+{{ '{:,.0f}'.format(variation) }}</span>
+                                                                {% elif variation < 0 %}
+                                                                    <span class="badge bg-danger">{{ '{:,.0f}'.format(variation) }}</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-secondary">0</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-bar-chart" style="color: #42a5f5; margin-right: 10px;"></i>Énergie par Tension</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Niveau de Tension</th>
+                                                            <th class="text-right">Énergie Distribuée (MWh)</th>
+                                                            <th class="text-right">Pourcentage</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% set total_energie = (donnee.energie_distribuee_ht_mwh or 0) + (donnee.energie_distribuee_mt_mwh or 0) + (donnee.energie_distribuee_bt_mwh or 0) %}
+                                                        <tr class="table-danger">
+                                                            <td><strong>Haute Tension (HT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.1f}'.format(donnee.energie_distribuee_ht_mwh or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_energie > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.energie_distribuee_ht_mwh or 0) / total_energie) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-warning">
+                                                            <td><strong>Moyenne Tension (MT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.1f}'.format(donnee.energie_distribuee_mt_mwh or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_energie > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.energie_distribuee_mt_mwh or 0) / total_energie) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-success">
+                                                            <td><strong>Basse Tension (BT)</strong></td>
+                                                            <td class="text-right">{{ '{:,.1f}'.format(donnee.energie_distribuee_bt_mwh or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_energie > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.energie_distribuee_bt_mwh or 0) / total_energie) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>TOTAL</strong></td>
+                                                            <td class="text-right"><strong>{{ '{:,.1f}'.format(total_energie) }}</strong></td>
+                                                            <td class="text-right"><strong>100.0%</strong></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-exclamation-triangle" style="color: #ff7043; margin-right: 10px;"></i>Analyse des Pertes</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Type de Pertes</th>
+                                                            <th class="text-right">Quantité (MWh)</th>
+                                                            <th class="text-right">Pourcentage</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% set total_pertes = (donnee.pertes_techniques_mwh or 0) + (donnee.pertes_commerciales_mwh or 0) %}
+                                                        <tr class="table-warning">
+                                                            <td><strong>Pertes Techniques</strong></td>
+                                                            <td class="text-right">{{ '{:,.1f}'.format(donnee.pertes_techniques_mwh or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_pertes > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.pertes_techniques_mwh or 0) / total_pertes) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-danger">
+                                                            <td><strong>Pertes Commerciales</strong></td>
+                                                            <td class="text-right">{{ '{:,.1f}'.format(donnee.pertes_commerciales_mwh or 0) }}</td>
+                                                            <td class="text-right">
+                                                                {% if total_pertes > 0 %}
+                                                                    {{ '{:.1f}%'.format(((donnee.pertes_commerciales_mwh or 0) / total_pertes) * 100) }}
+                                                                {% else %}
+                                                                    0.0%
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>TOTAL DES PERTES</strong></td>
+                                                            <td class="text-right"><strong>{{ '{:,.1f}'.format(total_pertes) }}</strong></td>
+                                                            <td class="text-right"><strong>100.0%</strong></td>
+                                                        </tr>
+                                                        <tr class="table-light">
+                                                            <td><strong>Taux de Pertes Global</strong></td>
+                                                            <td class="text-right">
+                                                                {% set total_energie_distribuee = (donnee.energie_distribuee_ht_mwh or 0) + (donnee.energie_distribuee_mt_mwh or 0) + (donnee.energie_distribuee_bt_mwh or 0) %}
+                                                                {% if total_energie_distribuee > 0 %}
+                                                                    {{ '{:.2f}%'.format((total_pertes / total_energie_distribuee) * 100) }}
+                                                                {% else %}
+                                                                    0.00%
+                                                                {% endif %}
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <span class="badge bg-primary">
+                                                                    {% if total_energie_distribuee > 0 %}
+                                                                        {{ '{:.1f}%'.format((total_pertes / total_energie_distribuee) * 100) }}
+                                                                    {% else %}
+                                                                        0.0%
+                                                                    {% endif %}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Onglet Finances -->
+                            <div class="tab-pane fade" id="finances" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-money" style="color: #66bb6a; margin-right: 10px;"></i>Revenus</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Type de Revenus</th>
+                                                            <th class="text-right">Montant (USD)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td><strong>Revenus HT</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.revenus_ht_usd or 0) }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Revenus MT</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.revenus_mt_usd or 0) }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Revenus BT</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.revenus_bt_usd or 0) }}</td>
+                                                        </tr>
+                                                        <tr class="table-success">
+                                                            <td><strong>TOTAL REVENUS</strong></td>
+                                                            <td class="text-right">
+                                                                <strong>{{ '{:,.0f}'.format(donnee.revenus_totaux_usd or 0) }}</strong>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-credit-card" style="color: #ff7043; margin-right: 10px;"></i>Facturation</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Indicateur Facturation</th>
+                                                            <th class="text-right">Valeur</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td><strong>Factures émises</strong></td>
+                                                            <td class="text-right">{{ '{:,}'.format(donnee.factures_emises or 0) }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Factures payées</strong></td>
+                                                            <td class="text-right">{{ '{:,}'.format(donnee.factures_payees or 0) }}</td>
+                                                        </tr>
+                                                        <tr class="table-warning">
+                                                            <td><strong>Impayés</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.impayes_usd or 0) }} USD</td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>Taux de paiement</strong></td>
+                                                            <td class="text-right">
+                                                                <span class="badge bg-primary">{{ donnee.taux_paiement or 0 }}%</span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Onglet Qualité -->
+                            <div class="tab-pane fade" id="quality" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-line-chart" style="color: #42a5f5; margin-right: 10px;"></i>Indicateurs de Qualité</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Indicateur de Qualité</th>
+                                                            <th class="text-right">Valeur</th>
+                                                            <th class="text-right">Unité</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr class="table-danger">
+                                                            <td><strong>Durée des coupures</strong></td>
+                                                            <td class="text-right">{{ '{:.1f}'.format(donnee.duree_coupures_heures or 0) }}</td>
+                                                            <td class="text-right">heures</td>
+                                                        </tr>
+                                                        <tr class="table-warning">
+                                                            <td><strong>Temps de rétablissement moyen</strong></td>
+                                                            <td class="text-right">{{ '{:.1f}'.format(donnee.temps_retablissement_moyen_heures or 0) }}</td>
+                                                            <td class="text-right">heures</td>
+                                                        </tr>
+                                                        <tr class="table-danger">
+                                                            <td><strong>Nombre de pannes</strong></td>
+                                                            <td class="text-right">{{ donnee.nombre_pannes or 0 }}</td>
+                                                            <td class="text-right">pannes</td>
+                                                        </tr>
+                                                        <tr class="table-warning">
+                                                            <td><strong>Plaintes clients</strong></td>
+                                                            <td class="text-right">{{ donnee.plaintes_clients or 0 }}</td>
+                                                            <td class="text-right">plaintes</td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>Taux de pertes total</strong></td>
+                                                            <td class="text-right">
+                                                                <span class="badge bg-primary">{{ '{:.1f}'.format(donnee.taux_pertes_totales or 0) }}%</span>
+                                                            </td>
+                                                            <td class="text-right">pourcentage</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Onglet Maintenance -->
+                            <div class="tab-pane fade" id="maintenance" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="ibox float-e-margins">
+                                            <div class="ibox-title">
+                                                <h5><i class="fa fa-wrench" style="color: #ff7043; margin-right: 10px;"></i>Activités de Maintenance</h5>
+                                            </div>
+                                            <div class="ibox-content">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Type d'Activité</th>
+                                                            <th class="text-right">Valeur</th>
+                                                            <th class="text-right">Détails</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr class="table-warning">
+                                                            <td><strong>Coût de maintenance</strong></td>
+                                                            <td class="text-right">{{ '{:,.0f}'.format(donnee.cout_maintenance_usd or 0) }}</td>
+                                                            <td class="text-right">USD</td>
+                                                        </tr>
+                                                        <tr class="table-info">
+                                                            <td><strong>Interventions maintenance</strong></td>
+                                                            <td class="text-right">{{ donnee.interventions_maintenance or 0 }}</td>
+                                                            <td class="text-right">interventions</td>
+                                                        </tr>
+                                                        <tr class="table-light">
+                                                            <td><strong>Observations</strong></td>
+                                                            <td colspan="2" class="text-left">
+                                                                {% if donnee.observations %}
+                                                                    {{ donnee.observations }}
+                                                                {% else %}
+                                                                    <em class="text-muted">Aucune observation</em>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations de création/modification -->
+                    <div class="row m-t-lg">
+                        <div class="col-lg-12">
+                            <div class="ibox float-e-margins">
+                                <div class="ibox-title">
+                                    <h5><i class="fa fa-info-circle" style="color: #ab47bc; margin-right: 10px;"></i>Informations</h5>
+                                </div>
+                                <div class="ibox-content">
+                                    <dl>
+                                        <dt>Saisie créée le:</dt>
+                                        <dd>{{ donnee.date_creation.strftime('%d/%m/%Y à %H:%M') }}</dd>
+                                        <dt>Dernière modification:</dt>
+                                        <dd>{{ donnee.date_modification.strftime('%d/%m/%Y à %H:%M') }}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+<script>
+$(document).ready(function(){
+    // Activation des onglets Bootstrap
+    $('button[data-bs-toggle="tab"]').on('click', function (e) {
+        e.preventDefault();
+        var target = $(this).attr('data-bs-target');
+        $('.tab-pane').removeClass('show active');
+        $(target).addClass('show active');
+        $('.nav-link').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Activer l'onglet basé sur l'ancre dans l'URL
+    var hash = window.location.hash;
+    if (hash) {
+        $('button[data-bs-target="' + hash + '"]').click();
+    }
+
+    // Mettre à jour l'URL quand on change d'onglet
+    $('button[data-bs-toggle="tab"]').on('click', function (e) {
+        var target = $(this).attr('data-bs-target');
+        if (history.pushState) {
+            history.pushState(null, null, target);
+        } else {
+            window.location.hash = target;
+        }
+    });
+
+    // Animation des stats cards
+    $('.stats-card').each(function(index) {
+        $(this).delay(index * 200).animate({
+            opacity: 1
+        }, 800);
+    });
+
+    // Effet de compteur animé pour les chiffres
+    $('.stats-number').each(function() {
+        var $this = $(this);
+        var countTo = $this.text().replace(/,/g, '');
+        
+        // Ne faire l'animation que pour les nombres entiers
+        if (!isNaN(countTo) && countTo.indexOf('.') === -1) {
+            countTo = parseInt(countTo);
+            $this.text('0');
+            
+            $({ countNum: 0 }).animate({
+                countNum: countTo
+            }, {
+                duration: 2000,
+                easing: 'swing',
+                step: function() {
+                    $this.text(Math.floor(this.countNum).toLocaleString());
+                },
+                complete: function() {
+                    $this.text(countTo.toLocaleString());
+                }
+            });
+        }
+    });
+
+    // Effet de brillance sur les cards au scroll
+    $(window).scroll(function() {
+        $('.stats-card').each(function() {
+            var elementTop = $(this).offset().top;
+            var elementBottom = elementTop + $(this).outerHeight();
+            var viewportTop = $(window).scrollTop();
+            var viewportBottom = viewportTop + $(window).height();
+            
+            if (elementBottom > viewportTop && elementTop < viewportBottom) {
+                $(this).addClass('in-viewport');
+            }
+        });
+    });
+});
+</script>
+
+<!-- CSS pour améliorer le design et ajouter des couleurs -->
+<style>
+/* Animation générale de la page */
+.wrapper-content {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* NOUVELLES STATS CARDS SPECTACULAIRES */
+.stats-card {
+    position: relative;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    cursor: pointer;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: white;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.stats-card:hover {
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+}
+
+.stats-card-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover .stats-card-icon {
+    transform: rotate(360deg) scale(1.1);
+}
+
+.stats-card-body {
+    z-index: 2;
+    position: relative;
+}
+
+.stats-number {
+    font-size: 2.8em;
+    font-weight: 900;
+    margin-bottom: 10px;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.stats-label {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 15px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.stats-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: auto;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.8);
+    animation: fillProgress 2s ease-out;
+}
+
+@keyframes fillProgress {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+.stats-card-overlay {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s ease;
+}
+
+.stats-card:hover .stats-card-overlay {
+    left: 100%;
+}
+
+/* Couleurs spécifiques pour chaque card - Style de votre image */
+.clients-card {
+    background: green;
+    color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 128, 0, 0.3);
+}
+
+.energy-card {
+    background: green;
+    color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 128, 0, 0.3);
+}
+
+.losses-card {
+    background: green;
+    color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 128, 0, 0.3);
+}
+
+.connections-card {
+    background: green;
+    color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 128, 0, 0.3);
+}
+
+/* Effet d'apparition au scroll */
+.stats-card {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease;
+}
+
+.stats-card.in-viewport {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Animation des icônes au chargement */
+.stats-card-icon {
+    animation: bounceIn 1s ease-out 0.5s both;
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) rotate(-180deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05) rotate(0deg);
+    }
+    70% {
+        transform: scale(0.9) rotate(0deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Responsive pour les stats cards */
+@media (max-width: 768px) {
+    .stats-card {
+        height: 160px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-number {
+        font-size: 2.2em;
+    }
+    
+    .stats-card-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        top: 15px;
+        right: 15px;
+    }
+    
+    .stats-label {
+        font-size: 12px;
+    }
+}
+
+/* Widgets super colorés avec effets */
+.widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.widget::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.widget:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.widget:hover::before {
+    left: 100%;
+}
+
+.lazur-bg {
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3) !important;
+}
+
+.yellow-bg {
+    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%) !important;
+    box-shadow: 0 10px 30px rgba(255, 167, 38, 0.3) !important;
+}
+
+.red-bg {
+    background: linear-gradient(135deg, #ff5722 0%, #d32f2f 100%) !important;
+    box-shadow: 0 10px 30px rgba(255, 87, 34, 0.3) !important;
+}
+
+.navy-bg {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3) !important;
+}
+
+/* Amélioration spectaculaire des onglets */
+.tabs-container {
+    margin-top: 30px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+.tabs-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+}
+
+.nav-tabs {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    border: none;
+    margin: 0;
+    padding: 10px;
+    position: relative;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.8) !important;
+    border: none !important;
+    padding: 18px 25px;
+    margin: 0 5px;
+    border-radius: 12px !important;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: rgba(255,255,255,0.1) !important;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+}
+
+.nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    color: #2575fc !important;
+    box-shadow: 0 8px 25px rgba(37, 117, 252, 0.3);
+    transform: translateY(-2px);
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.2) !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.tab-content {
+    padding: 40px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    min-height: 500px;
+    position: relative;
+}
+
+/* Amélioration spectaculaire des graphiques */
+.chart-container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.chart-container:hover::before {
+    opacity: 1;
+}
+
+/* Amélioration drastique des ibox */
+.ibox {
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+    border: none;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.ibox:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+.ibox-title {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    border: none;
+    padding: 20px 25px;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.ibox-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s;
+}
+
+.ibox:hover .ibox-title::before {
+    left: 100%;
+}
+
+.ibox-content {
+    padding: 30px;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+}
+
+/* Tableaux magnifiques */
+.table {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border: none;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.table tbody td {
+    padding: 15px;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.table-striped > tbody > tr:hover {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    transform: scale(1.01);
+    transition: all 0.3s ease;
+}
+
+/* Labels super stylés */
+.label {
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.label-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* Statistiques époustouflantes */
+.statistic-box {
+    text-align: center;
+    padding: 30px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.statistic-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.statistic-box:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.statistic-box:hover::before {
+    transform: scaleX(1);
+}
+
+.statistic-box h4 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.statistic-box p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Boutons magnifiques */
+.btn {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-white {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.btn-white:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Informations de page avec style */
+.dl-horizontal dt {
+    color: #667eea;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.dl-horizontal dd {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+/* Animations d'entrée pour les éléments */
+.row {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive design amélioré */
+@media (max-width: 768px) {
+    .nav-link {
+        padding: 12px 15px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    
+    .tab-content {
+        padding: 20px;
+    }
+    
+    .widget {
+        margin-bottom: 15px;
+        padding: 20px;
+    }
+    
+    .statistic-box {
+        padding: 20px;
+    }
+    
+    .statistic-box h4 {
+        font-size: 24px;
+    }
+    
+    .chart-container {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .wrapper-content {
+        padding: 10px;
+    }
+    
+    .ibox-content {
+        padding: 15px;
+    }
+    
+    .tabs-container {
+        margin-top: 15px;
+    }
+    
+    .nav-tabs {
+        padding: 5px;
+    }
+    
+    .nav-link {
+        padding: 10px 12px;
+        font-size: 11px;
+    }
+}
+
+/* Effets de particules pour le fond */
+.wrapper-content::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+</style>
+{% endblock %}

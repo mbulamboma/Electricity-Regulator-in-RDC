@@ -223,27 +223,29 @@
 
 <!-- Scripts spécifiques -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {{
+{% raw %}
+document.addEventListener('DOMContentLoaded', function() {
     // Validation des formulaires Bootstrap
     var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {{
-        form.addEventListener('submit', function(event) {{
-            if (!form.checkValidity()) {{
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-            }}
+            }
             form.classList.add('was-validated');
-        }}, false);
-    }});
+        }, false);
+    });
     
     // Recherche en temps réel
     const searchInput = document.getElementById('searchInput');
-    if (searchInput) {{
-        searchInput.addEventListener('input', function() {{
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
             // Implémentation de la recherche
             console.log('Recherche:', this.value);
-        }});
-    }}
-}});
+        });
+    }
+});
+{% endraw %}
 </script>
 {% endblock %}

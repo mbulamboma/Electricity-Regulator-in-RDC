@@ -584,7 +584,7 @@
                     <h5 class="sidebar-title">Dossiers</h5>
                     <ul class="sidebar-list">
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link active" data-folder="inbox">
+                            <a href="#" class="sidebar-link {{ 'active' if vue == 'recus' and not current_filters.priorite and not current_filters.categorie and not current_filters.etiquette else '' }}" data-folder="inbox">
                                 <div class="sidebar-text">
                                     <i class="fas fa-inbox sidebar-icon"></i>
                                     Boîte de réception
@@ -593,7 +593,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-folder="sent">
+                            <a href="#" class="sidebar-link {{ 'active' if vue == 'envoyes' else '' }}" data-folder="sent">
                                 <div class="sidebar-text">
                                     <i class="fas fa-paper-plane sidebar-icon"></i>
                                     Messages envoyés
@@ -601,7 +601,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-folder="important">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.priorite == '2' else '' }}" data-folder="important">
                                 <div class="sidebar-text">
                                     <i class="fas fa-star sidebar-icon"></i>
                                     Important
@@ -609,7 +609,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-folder="drafts">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.statut == 'brouillon' else '' }}" data-folder="drafts">
                                 <div class="sidebar-text">
                                     <i class="fas fa-file-alt sidebar-icon"></i>
                                     Brouillons
@@ -618,7 +618,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-folder="trash">
+                            <a href="#" class="sidebar-link {{ 'active' if vue == 'archives' else '' }}" data-folder="trash">
                                 <div class="sidebar-text">
                                     <i class="fas fa-trash sidebar-icon"></i>
                                     Corbeille
@@ -633,7 +633,7 @@
                     <h5 class="sidebar-title">Catégories</h5>
                     <ul class="sidebar-list">
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-category="work">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.categorie == 'work' else '' }}" data-category="work">
                                 <div class="sidebar-text">
                                     <i class="fas fa-briefcase sidebar-icon"></i>
                                     Travail
@@ -642,7 +642,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-category="documents">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.categorie == 'documents' else '' }}" data-category="documents">
                                 <div class="sidebar-text">
                                     <i class="fas fa-file-text sidebar-icon"></i>
                                     Documents
@@ -650,7 +650,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-category="reports">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.categorie == 'reports' else '' }}" data-category="reports">
                                 <div class="sidebar-text">
                                     <i class="fas fa-chart-bar sidebar-icon"></i>
                                     Rapports
@@ -658,7 +658,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-category="notifications">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.categorie == 'notifications' else '' }}" data-category="notifications">
                                 <div class="sidebar-text">
                                     <i class="fas fa-bell sidebar-icon"></i>
                                     Notifications
@@ -673,7 +673,7 @@
                     <h5 class="sidebar-title">Étiquettes</h5>
                     <ul class="sidebar-list">
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-label="urgent">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.etiquette == 'urgent' else '' }}" data-label="urgent">
                                 <div class="sidebar-text">
                                     <i class="fas fa-circle sidebar-icon" style="color: #ed5565;"></i>
                                     Urgent
@@ -681,7 +681,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-label="maintenance">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.etiquette == 'maintenance' else '' }}" data-label="maintenance">
                                 <div class="sidebar-text">
                                     <i class="fas fa-circle sidebar-icon" style="color: #f8ac59;"></i>
                                     Maintenance
@@ -689,7 +689,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-label="production">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.etiquette == 'production' else '' }}" data-label="production">
                                 <div class="sidebar-text">
                                     <i class="fas fa-circle sidebar-icon" style="color: #1ab394;"></i>
                                     Production
@@ -697,7 +697,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link" data-label="distribution">
+                            <a href="#" class="sidebar-link {{ 'active' if current_filters.etiquette == 'distribution' else '' }}" data-label="distribution">
                                 <div class="sidebar-text">
                                     <i class="fas fa-circle sidebar-icon" style="color: #1c84c6;"></i>
                                     Distribution
@@ -764,7 +764,11 @@
                                         {% if message.priorite >= 2 %}
                                             <span class="priority-indicator {{ 'priority-urgent' if message.priorite == 3 else 'priority-important' }}"></span>
                                         {% endif %}
-                                        {{ (message.expediteur.nom_utilisateur or message.expediteur.nom)[:20] }}
+                                        {% if message.expediteur %}
+                                            {{ (message.expediteur.nom_utilisateur or message.expediteur.nom or 'Utilisateur inconnu')[:20] }}
+                                        {% else %}
+                                            Système
+                                        {% endif %}
                                     </td>
                                     <td class="message-subject">
                                         {{ message.sujet }}
@@ -819,6 +823,7 @@
 </div>
 
 <script>
+{% raw %}
 // Variables globales
 let currentFolder = 'inbox';
 
@@ -834,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const messageId = this.getAttribute('data-message-id');
             if (messageId) {
-                const baseUrl = "{{ url_for('notifications.messages') }}".replace('/messages', '/messages/');
+                const baseUrl = "{ url_for('notifications.messages') }".replace('/messages', '/messages/');
                 const url = baseUrl + messageId;
                 window.location.href = url;
             }
@@ -846,33 +851,41 @@ document.addEventListener('DOMContentLoaded', function() {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Retirer la classe active de tous les liens
-            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            
-            // Ajouter la classe active au lien cliqué
-            this.classList.add('active');
-            
-            // Mettre à jour le titre de la boîte
+            // Construire la nouvelle URL avec les filtres
             const folder = this.getAttribute('data-folder');
             const category = this.getAttribute('data-category');
             const label = this.getAttribute('data-label');
             
-            let title = 'Messages';
+            let baseUrl = "{ url_for('notifications.messages') }";
+            let params = new URLSearchParams();
+            
             if (folder) {
                 switch(folder) {
-                    case 'inbox': title = 'Boîte de réception'; break;
-                    case 'sent': title = 'Messages envoyés'; break;
-                    case 'important': title = 'Important'; break;
-                    case 'drafts': title = 'Brouillons'; break;
-                    case 'trash': title = 'Corbeille'; break;
+                    case 'inbox': 
+                        params.set('vue', 'recus'); 
+                        break;
+                    case 'sent': 
+                        params.set('vue', 'envoyes'); 
+                        break;
+                    case 'important': 
+                        params.set('priorite', '2'); 
+                        break;
+                    case 'drafts': 
+                        params.set('statut', 'brouillon'); 
+                        break;
+                    case 'trash': 
+                        params.set('vue', 'archives'); 
+                        break;
                 }
             } else if (category) {
-                title = 'Catégorie: ' + this.querySelector('.sidebar-text').textContent.trim();
+                params.set('categorie', category);
             } else if (label) {
-                title = 'Étiquette: ' + this.querySelector('.sidebar-text').textContent.trim();
+                params.set('etiquette', label);
             }
             
-            document.querySelector('.mailbox-title').textContent = title;
+            // Rediriger avec les nouveaux paramètres
+            const newUrl = baseUrl + (params.toString() ? '?' + params.toString() : '');
+            window.location.href = newUrl;
         });
     });
 
@@ -897,5 +910,6 @@ document.addEventListener('DOMContentLoaded', function() {
         checkboxes.forEach(cb => cb.checked = this.checked);
     });
 });
+{% endraw %}
 </script>
 {% endblock %}

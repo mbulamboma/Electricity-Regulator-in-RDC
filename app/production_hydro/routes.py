@@ -301,21 +301,50 @@ def edit(id):
     
     # Pré-remplir les sous-formulaires
     if request.method == 'GET':
-        # Groupes de production
-        while len(form.groupes_production) > 0:
-            form.groupes_production.pop_entry()
+        # Créer des dictionnaires de données pour pré-remplir le formulaire
+        form_data = {}
         
-        for groupe in rapport.groupes_production:
-            groupe_form = GroupeProductionForm(obj=groupe)
-            form.groupes_production.append_entry(groupe_form)
+        # Données des groupes de production
+        for i, groupe in enumerate(rapport.groupes_production):
+            form_data[f'groupes_production-{i}-id'] = str(groupe.id)
+            form_data[f'groupes_production-{i}-delete'] = ''
+            form_data[f'groupes_production-{i}-numero_groupe'] = groupe.numero_groupe or ''
+            form_data[f'groupes_production-{i}-nom_groupe'] = groupe.nom_groupe or ''
+            form_data[f'groupes_production-{i}-puissance_nominale'] = str(groupe.puissance_nominale) if groupe.puissance_nominale else ''
+            form_data[f'groupes_production-{i}-tension_nominale'] = str(groupe.tension_nominale) if groupe.tension_nominale else ''
+            form_data[f'groupes_production-{i}-vitesse_rotation'] = str(groupe.vitesse_rotation) if groupe.vitesse_rotation else ''
+            form_data[f'groupes_production-{i}-type_turbine'] = groupe.type_turbine or ''
+            form_data[f'groupes_production-{i}-heures_fonctionnement'] = str(groupe.heures_fonctionnement) if groupe.heures_fonctionnement else ''
+            form_data[f'groupes_production-{i}-energie_produite'] = str(groupe.energie_produite) if groupe.energie_produite else ''
+            form_data[f'groupes_production-{i}-puissance_moyenne'] = str(groupe.puissance_moyenne) if groupe.puissance_moyenne else ''
+            form_data[f'groupes_production-{i}-puissance_max'] = str(groupe.puissance_max) if groupe.puissance_max else ''
+            form_data[f'groupes_production-{i}-nombre_arrets_programme'] = str(groupe.nombre_arrets_programme or 0)
+            form_data[f'groupes_production-{i}-nombre_arrets_force'] = str(groupe.nombre_arrets_force or 0)
+            form_data[f'groupes_production-{i}-duree_arrets_programme'] = str(groupe.duree_arrets_programme or 0.0)
+            form_data[f'groupes_production-{i}-duree_arrets_force'] = str(groupe.duree_arrets_force or 0.0)
+            form_data[f'groupes_production-{i}-rendement_moyen'] = str(groupe.rendement_moyen) if groupe.rendement_moyen else ''
+            form_data[f'groupes_production-{i}-incidents'] = groupe.incidents or ''
+            form_data[f'groupes_production-{i}-travaux_realises'] = groupe.travaux_realises or ''
+            form_data[f'groupes_production-{i}-observations'] = groupe.observations or ''
+            
+        # Données des transformateurs
+        for i, transfo in enumerate(rapport.transformateurs):
+            form_data[f'transformateurs-{i}-id'] = str(transfo.id)
+            form_data[f'transformateurs-{i}-delete'] = ''
+            form_data[f'transformateurs-{i}-numero_transformateur'] = transfo.numero_transformateur or ''
+            form_data[f'transformateurs-{i}-nom_transformateur'] = transfo.nom_transformateur or ''
+            form_data[f'transformateurs-{i}-puissance_nominale'] = str(transfo.puissance_nominale) if transfo.puissance_nominale else ''
+            form_data[f'transformateurs-{i}-type_refroidissement'] = transfo.type_refroidissement or ''
+            form_data[f'transformateurs-{i}-tension_primaire'] = str(transfo.tension_primaire) if transfo.tension_primaire else ''
+            form_data[f'transformateurs-{i}-tension_secondaire'] = str(transfo.tension_secondaire) if transfo.tension_secondaire else ''
+            form_data[f'transformateurs-{i}-etat_general'] = transfo.etat_general or 'bon'
+            form_data[f'transformateurs-{i}-incidents'] = transfo.incidents or ''
+            form_data[f'transformateurs-{i}-observations'] = transfo.observations or ''
         
-        # Transformateurs
-        while len(form.transformateurs) > 0:
-            form.transformateurs.pop_entry()
-        
-        for transfo in rapport.transformateurs:
-            transfo_form = TransformateurRapportForm(obj=transfo)
-            form.transformateurs.append_entry(transfo_form)
+        # Recréer le formulaire avec les données existantes
+        from werkzeug.datastructures import MultiDict
+        form = RapportHydroForm(MultiDict(form_data), obj=rapport)
+        form.populate_centrales(centrales_accessibles)
     
     if form.validate_on_submit():
         try:

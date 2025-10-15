@@ -521,3 +521,179 @@ class DonneesDistributionQuotidiennes(BaseModel):
     
     def __repr__(self):
         return f'<DonneesDistributionQuotidiennes {self.date.strftime("%d/%m/%Y") if self.date else "N/A"}>'
+
+
+class DonneesDistributionMensuelles(BaseModel):
+    """
+    Modèle pour les données mensuelles de distribution
+    Clientèle, énergie distribuée, revenus, qualité de service
+    """
+    __tablename__ = 'donnees_distribution_mensuelles'
+    
+    # Relations
+    reseau_id = Column(Integer, ForeignKey('reseaux_distribution.id'), nullable=False)
+    operateur_id = Column(Integer, ForeignKey('operateurs.id'), nullable=False)
+    
+    # Période
+    annee = Column(Integer, nullable=False)
+    mois = Column(Integer, nullable=False)
+    
+    # === CLIENTÈLE ===
+    clients_ht_debut_mois = Column(Integer, default=0)
+    clients_mt_debut_mois = Column(Integer, default=0)
+    clients_bt_debut_mois = Column(Integer, default=0)
+    
+    nouveaux_raccordements_ht = Column(Integer, default=0)
+    nouveaux_raccordements_mt = Column(Integer, default=0)
+    nouveaux_raccordements_bt = Column(Integer, default=0)
+    
+    deconnexions_ht = Column(Integer, default=0)
+    deconnexions_mt = Column(Integer, default=0)
+    deconnexions_bt = Column(Integer, default=0)
+    
+    # === ÉNERGIE DISTRIBUÉE ===
+    energie_distribuee_ht_mwh = Column(Float, default=0.0)
+    energie_distribuee_mt_mwh = Column(Float, default=0.0)
+    energie_distribuee_bt_mwh = Column(Float, default=0.0)
+    
+    energie_achetee_mwh = Column(Float, default=0.0)
+    pertes_techniques_mwh = Column(Float, default=0.0)
+    pertes_commerciales_mwh = Column(Float, default=0.0)
+    
+    # === REVENUS ET FACTURES ===
+    revenus_ht_usd = Column(Float, default=0.0)
+    revenus_mt_usd = Column(Float, default=0.0)
+    revenus_bt_usd = Column(Float, default=0.0)
+    
+    factures_emises = Column(Integer, default=0)
+    factures_payees = Column(Integer, default=0)
+    impayes_usd = Column(Float, default=0.0)
+    
+    # === QUALITÉ DE SERVICE ===
+    duree_coupures_heures = Column(Float, default=0.0)
+    nombre_pannes = Column(Integer, default=0)
+    temps_retablissement_moyen_heures = Column(Float, default=0.0)
+    plaintes_clients = Column(Integer, default=0)
+    
+    # === MAINTENANCE ===
+    cout_maintenance_usd = Column(Float, default=0.0)
+    interventions_maintenance = Column(Integer, default=0)
+    
+    # === OBSERVATIONS ===
+    observations = Column(Text)
+    
+    # Contrainte d'unicité : un seul enregistrement par réseau/mois/année
+    __table_args__ = (
+        db.UniqueConstraint('reseau_id', 'annee', 'mois', name='uq_donnees_distrib_periode'),
+    )
+    
+    # Relations
+    reseau = relationship("ReseauDistribution", backref="donnees_mensuelles")
+    operateur = relationship("Operateur")
+    
+    @property
+    def clients_ht_fin_mois(self):
+        """Calcul automatique des clients HT en fin de mois"""
+        return (self.clients_ht_debut_mois or 0) + (self.nouveaux_raccordements_ht or 0) - (self.deconnexions_ht or 0)
+    
+    @property
+    def clients_mt_fin_mois(self):
+        """Calcul automatique des clients MT en fin de mois"""
+        return (self.clients_mt_debut_mois or 0) + (self.nouveaux_raccordements_mt or 0) - (self.deconnexions_mt or 0)
+    
+    @property
+    def clients_bt_fin_mois(self):
+        """Calcul automatique des clients BT en fin de mois"""
+        return (self.clients_bt_debut_mois or 0) + (self.nouveaux_raccordements_bt or 0) - (self.deconnexions_bt or 0)
+    
+    @property
+    def total_clients_fin_mois(self):
+        """Total des clients en fin de mois"""
+        return self.clients_ht_fin_mois + self.clients_mt_fin_mois + self.clients_bt_fin_mois
+    
+    @property
+    def energie_totale_distribuee_mwh(self):
+        """Énergie totale distribuée tous niveaux confondus"""
+        return (self.energie_distribuee_ht_mwh or 0) + (self.energie_distribuee_mt_mwh or 0) + (self.energie_distribuee_bt_mwh or 0)
+    
+    @property
+    def revenus_totaux_usd(self):
+        """Revenus totaux tous niveaux confondus"""
+        return (self.revenus_ht_usd or 0) + (self.revenus_mt_usd or 0) + (self.revenus_bt_usd or 0)
+    
+    @property
+    def taux_paiement(self):
+        """Taux de paiement des factures en %"""
+        if not self.factures_emises or self.factures_emises == 0:
+            return 0
+        return round((self.factures_payees or 0) / self.factures_emises * 100, 2)
+    
+    @property
+    def taux_pertes_techniques(self):
+        """Taux de pertes techniques en %"""
+        if not self.energie_achetee_mwh or self.energie_achetee_mwh == 0:
+            return 0
+        return round((self.pertes_techniques_mwh or 0) / self.energie_achetee_mwh * 100, 2)
+    
+    @property
+    def taux_pertes_commerciales(self):
+        """Taux de pertes commerciales en %"""
+        if not self.energie_achetee_mwh or self.energie_achetee_mwh == 0:
+            return 0
+        return round((self.pertes_commerciales_mwh or 0) / self.energie_achetee_mwh * 100, 2)
+    
+    @property
+    def taux_pertes_totales(self):
+        """Taux de pertes totales en %"""
+        return self.taux_pertes_techniques + self.taux_pertes_commerciales
+    
+    def get_periode_str(self):
+        """Retourne la période sous forme de chaîne"""
+        mois_noms = [
+            '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        ]
+        mois_nom = mois_noms[self.mois] if 1 <= self.mois <= 12 else str(self.mois)
+        return f"{mois_nom} {self.annee}"
+    
+    def to_dict(self):
+        """Conversion en dictionnaire pour l'API"""
+        data = super().to_dict()
+        data.update({
+            'reseau_id': self.reseau_id,
+            'operateur_id': self.operateur_id,
+            'annee': self.annee,
+            'mois': self.mois,
+            'periode_str': self.get_periode_str(),
+            
+            # Clientèle
+            'clients_ht_debut_mois': self.clients_ht_debut_mois,
+            'clients_mt_debut_mois': self.clients_mt_debut_mois,
+            'clients_bt_debut_mois': self.clients_bt_debut_mois,
+            'clients_ht_fin_mois': self.clients_ht_fin_mois,
+            'clients_mt_fin_mois': self.clients_mt_fin_mois,
+            'clients_bt_fin_mois': self.clients_bt_fin_mois,
+            'total_clients_fin_mois': self.total_clients_fin_mois,
+            
+            # Énergie
+            'energie_totale_distribuee_mwh': self.energie_totale_distribuee_mwh,
+            'energie_achetee_mwh': self.energie_achetee_mwh,
+            'taux_pertes_totales': self.taux_pertes_totales,
+            
+            # Revenus
+            'revenus_totaux_usd': self.revenus_totaux_usd,
+            'taux_paiement': self.taux_paiement,
+            
+            # Qualité
+            'duree_coupures_heures': self.duree_coupures_heures,
+            'nombre_pannes': self.nombre_pannes,
+            'plaintes_clients': self.plaintes_clients,
+            
+            # Relations
+            'reseau_nom': self.reseau.nom if self.reseau else None,
+            'operateur_nom': self.operateur.nom if self.operateur else None
+        })
+        return data
+    
+    def __repr__(self):
+        return f'<DonneesDistributionMensuelles {self.get_periode_str()} - {self.reseau.nom if self.reseau else "N/A"}>'

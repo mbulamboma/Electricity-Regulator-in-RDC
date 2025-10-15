@@ -407,9 +407,10 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
     // Données du rapport
-    const rapportData = {{ rapport.contenu_json|tojson|safe if rapport.contenu_json else '{}' }};
+    const rapportData = { rapport.contenu_json|tojson|safe if rapport.contenu_json else '{}' };
     
     // Graphique de production par source
     const productionCtx = document.getElementById('productionChart');
@@ -487,8 +488,8 @@ function exporterPDF() {
 function partagerRapport() {
     if (navigator.share) {
         navigator.share({
-            title: '{{ rapport.titre }}',
-            text: 'Rapport annuel {{ rapport.annee }} - Autorité de Régulation de l\'Électricité',
+            title: '{ rapport.titre }',
+            text: 'Rapport annuel { rapport.annee } - Autorité de Régulation de l\'Électricité',
             url: window.location.href
         });
     } else {
@@ -513,5 +514,6 @@ window.addEventListener('afterprint', function() {
         el.style.display = '';
     });
 });
+{% endraw %}
 </script>
 {% endblock %}

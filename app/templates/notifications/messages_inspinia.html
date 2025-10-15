@@ -835,6 +835,7 @@
 </div>
 
 <script>
+{% raw %}
 // Variables globales
 let currentFolder = 'inbox';
 
@@ -869,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const messageId = this.getAttribute('data-message-id');
             if (messageId) {
-                const baseUrl = "{{ url_for('notifications.messages') }}".replace('/messages', '/messages/');
+                const baseUrl = "{ url_for('notifications.messages') }".replace('/messages', '/messages/');
                 const url = baseUrl + messageId;
                 window.location.href = url;
             }
@@ -946,5 +947,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+{% endraw %}
 </script>
 {% endblock %}

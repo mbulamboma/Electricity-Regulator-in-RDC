@@ -172,6 +172,175 @@ def backup():
                          backup_history=backup_history)
 
 
+@admin.route('/export-database-excel')
+@login_required
+@require_super_admin
+def export_database_excel():
+    """Télécharger toute la base de données en format Excel"""
+    if not HAS_PANDAS:
+        flash('Pandas n\'est pas installé. Impossible d\'exporter en Excel.', 'error')
+        return redirect(url_for('admin.backup'))
+    
+    try:
+        # Créer un buffer en mémoire pour le fichier Excel
+        output = BytesIO()
+        
+        # Créer un objet ExcelWriter
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            
+            # Exporter les utilisateurs
+            users_query = db.session.query(User).filter(User.actif == True)
+            if users_query.count() > 0:
+                users_df = pd.read_sql(users_query.statement, db.engine)
+                # Supprimer la colonne mot de passe pour la sécurité
+                if 'mot_de_passe_hash' in users_df.columns:
+                    users_df = users_df.drop('mot_de_passe_hash', axis=1)
+                users_df.to_excel(writer, sheet_name='Utilisateurs', index=False)
+            
+            # Exporter les opérateurs
+            from app.models.operateurs import Operateur
+            operators_query = db.session.query(Operateur).filter(Operateur.actif == True)
+            if operators_query.count() > 0:
+                operators_df = pd.read_sql(operators_query.statement, db.engine)
+                operators_df.to_excel(writer, sheet_name='Operateurs', index=False)
+            
+            # Exporter les centrales hydro
+            from app.models.production_hydro import CentraleHydro, RapportHydro
+            centrales_query = db.session.query(CentraleHydro).filter(CentraleHydro.actif == True)
+            if centrales_query.count() > 0:
+                centrales_df = pd.read_sql(centrales_query.statement, db.engine)
+                centrales_df.to_excel(writer, sheet_name='Centrales_Hydro', index=False)
+            
+            # Exporter les rapports hydro
+            rapports_hydro_query = db.session.query(RapportHydro).filter(RapportHydro.actif == True)
+            if rapports_hydro_query.count() > 0:
+                rapports_df = pd.read_sql(rapports_hydro_query.statement, db.engine)
+                rapports_df.to_excel(writer, sheet_name='Rapports_Hydro', index=False)
+            
+            # Exporter les centrales thermiques
+            try:
+                from app.models.production_thermique import CentraleThermique, RapportThermique
+                centrales_therm_query = db.session.query(CentraleThermique).filter(CentraleThermique.actif == True)
+                if centrales_therm_query.count() > 0:
+                    centrales_therm_df = pd.read_sql(centrales_therm_query.statement, db.engine)
+                    centrales_therm_df.to_excel(writer, sheet_name='Centrales_Thermique', index=False)
+                
+                rapports_therm_query = db.session.query(RapportThermique).filter(RapportThermique.actif == True)
+                if rapports_therm_query.count() > 0:
+                    rapports_therm_df = pd.read_sql(rapports_therm_query.statement, db.engine)
+                    rapports_therm_df.to_excel(writer, sheet_name='Rapports_Thermique', index=False)
+            except ImportError:
+                pass
+            
+            # Exporter les centrales solaires
+            try:
+                from app.models.production_solaire import CentraleSolaire, RapportSolaire
+                centrales_sol_query = db.session.query(CentraleSolaire).filter(CentraleSolaire.actif == True)
+                if centrales_sol_query.count() > 0:
+                    centrales_sol_df = pd.read_sql(centrales_sol_query.statement, db.engine)
+                    centrales_sol_df.to_excel(writer, sheet_name='Centrales_Solaire', index=False)
+                
+                rapports_sol_query = db.session.query(RapportSolaire).filter(RapportSolaire.actif == True)
+                if rapports_sol_query.count() > 0:
+                    rapports_sol_df = pd.read_sql(rapports_sol_query.statement, db.engine)
+                    rapports_sol_df.to_excel(writer, sheet_name='Rapports_Solaire', index=False)
+            except ImportError:
+                pass
+            
+            # Exporter les données de distribution
+            try:
+                from app.models.distribution import ReseauDistribution, PosteDistribution, FeederDistribution, RapportDistribution
+                
+                reseaux_query = db.session.query(ReseauDistribution).filter(ReseauDistribution.actif == True)
+                if reseaux_query.count() > 0:
+                    reseaux_df = pd.read_sql(reseaux_query.statement, db.engine)
+                    reseaux_df.to_excel(writer, sheet_name='Reseaux_Distribution', index=False)
+                
+                postes_query = db.session.query(PosteDistribution).filter(PosteDistribution.actif == True)
+                if postes_query.count() > 0:
+                    postes_df = pd.read_sql(postes_query.statement, db.engine)
+                    postes_df.to_excel(writer, sheet_name='Postes_Distribution', index=False)
+                
+                feeders_query = db.session.query(FeederDistribution).filter(FeederDistribution.actif == True)
+                if feeders_query.count() > 0:
+                    feeders_df = pd.read_sql(feeders_query.statement, db.engine)
+                    feeders_df.to_excel(writer, sheet_name='Feeders_Distribution', index=False)
+                
+                rapports_dist_query = db.session.query(RapportDistribution).filter(RapportDistribution.actif == True)
+                if rapports_dist_query.count() > 0:
+                    rapports_dist_df = pd.read_sql(rapports_dist_query.statement, db.engine)
+                    rapports_dist_df.to_excel(writer, sheet_name='Rapports_Distribution', index=False)
+            except ImportError:
+                pass
+            
+            # Exporter les données de transport
+            try:
+                from app.models.transport import LigneTransport, PosteTransport, RapportTransport
+                
+                lignes_query = db.session.query(LigneTransport).filter(LigneTransport.actif == True)
+                if lignes_query.count() > 0:
+                    lignes_df = pd.read_sql(lignes_query.statement, db.engine)
+                    lignes_df.to_excel(writer, sheet_name='Lignes_Transport', index=False)
+                
+                postes_trans_query = db.session.query(PosteTransport).filter(PosteTransport.actif == True)
+                if postes_trans_query.count() > 0:
+                    postes_trans_df = pd.read_sql(postes_trans_query.statement, db.engine)
+                    postes_trans_df.to_excel(writer, sheet_name='Postes_Transport', index=False)
+                
+                rapports_trans_query = db.session.query(RapportTransport).filter(RapportTransport.actif == True)
+                if rapports_trans_query.count() > 0:
+                    rapports_trans_df = pd.read_sql(rapports_trans_query.statement, db.engine)
+                    rapports_trans_df.to_excel(writer, sheet_name='Rapports_Transport', index=False)
+            except ImportError:
+                pass
+            
+            # Exporter les données de collecte
+            try:
+                from app.models.collecte_donnees import CollecteDonneesMensuelles, CollecteProjetNouveau
+                
+                collecte_query = db.session.query(CollecteDonneesMensuelles).filter(CollecteDonneesMensuelles.actif == True)
+                if collecte_query.count() > 0:
+                    collecte_df = pd.read_sql(collecte_query.statement, db.engine)
+                    collecte_df.to_excel(writer, sheet_name='Collecte_Donnees', index=False)
+                
+                projets_query = db.session.query(CollecteProjetNouveau).filter(CollecteProjetNouveau.actif == True)
+                if projets_query.count() > 0:
+                    projets_df = pd.read_sql(projets_query.statement, db.engine)
+                    projets_df.to_excel(writer, sheet_name='Nouveaux_Projets', index=False)
+            except ImportError:
+                pass
+            
+            # Exporter les notifications
+            try:
+                from app.models.notifications import Notification
+                
+                notifications_query = db.session.query(Notification).filter(Notification.actif == True)
+                if notifications_query.count() > 0:
+                    notifications_df = pd.read_sql(notifications_query.statement, db.engine)
+                    notifications_df.to_excel(writer, sheet_name='Notifications', index=False)
+            except ImportError:
+                pass
+        
+        # Préparer le fichier pour téléchargement
+        output.seek(0)
+        
+        # Générer nom de fichier avec timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'base_donnees_complete_{timestamp}.xlsx'
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    
+    except Exception as e:
+        current_app.logger.error(f"Erreur export Excel: {e}")
+        flash(f'Erreur lors de l\'export Excel: {str(e)}', 'error')
+        return redirect(url_for('admin.backup'))
+
+
 @admin.route('/config', methods=['GET', 'POST'])
 @login_required
 @require_super_admin

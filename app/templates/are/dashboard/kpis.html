@@ -214,6 +214,7 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 function mettreAJourKPIs() {
     const btn = document.querySelector('button[onclick="mettreAJourKPIs()"]');
     const icon = btn.querySelector('i');
@@ -222,11 +223,11 @@ function mettreAJourKPIs() {
     icon.classList.add('fa-spin');
     btn.disabled = true;
     
-    fetch('/are/dashboard/api/kpis/mettre-a-jour/{{ annee }}', {
+    fetch('/are/dashboard/api/kpis/mettre-a-jour/{ annee }', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'X-CSRFToken': '{ csrf_token() }'
         }
     })
     .then(response => response.json())
@@ -268,5 +269,6 @@ function supprimerKPI(kpiId) {
         console.log('Suppression KPI:', kpiId);
     }
 }
+{% endraw %}
 </script>
 {% endblock %}

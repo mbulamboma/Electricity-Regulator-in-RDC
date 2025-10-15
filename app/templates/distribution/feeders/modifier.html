@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ feeder.nom }} - Distribution{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">Modifier le feeder</h4>
+                        <small class="text-muted">{{ feeder.nom }} - {{ feeder.reseau.nom }}</small>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{{ url_for('distribution.detail_feeder', id=feeder.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form method="POST" novalidate class="needs-validation">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Informations de base -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Informations de base</h5>
+                                
+                                <div class="mb-3">
+                                    {{ form.nom.label(class="form-label") }}
+                                    {{ form.nom(class="form-control" + (" is-invalid" if form.nom.errors else "")) }}
+                                    {% if form.nom.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.nom.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.code.label(class="form-label") }}
+                                    {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else "")) }}
+                                    {% if form.code.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.code.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.reseau_id.label(class="form-label") }}
+                                    {{ form.reseau_id(class="form-select" + (" is-invalid" if form.reseau_id.errors else "")) }}
+                                    {% if form.reseau_id.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.reseau_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.poste_source_id.label(class="form-label") }}
+                                    {{ form.poste_source_id(class="form-select" + (" is-invalid" if form.poste_source_id.errors else "")) }}
+                                    {% if form.poste_source_id.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.poste_source_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.type_feeder.label(class="form-label") }}
+                                    {{ form.type_feeder(class="form-select" + (" is-invalid" if form.type_feeder.errors else "")) }}
+                                    {% if form.type_feeder.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.type_feeder.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Caractéristiques techniques -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Caractéristiques techniques</h5>
+                                
+                                <div class="mb-3">
+                                    {{ form.tension_nominale.label(class="form-label") }}
+                                    {{ form.tension_nominale(class="form-control" + (" is-invalid" if form.tension_nominale.errors else "")) }}
+                                    {% if form.tension_nominale.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.tension_nominale.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.longueur_totale.label(class="form-label") }}
+                                    {{ form.longueur_totale(class="form-control" + (" is-invalid" if form.longueur_totale.errors else "")) }}
+                                    {% if form.longueur_totale.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.longueur_totale.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.section_conducteur.label(class="form-label") }}
+                                    {{ form.section_conducteur(class="form-control" + (" is-invalid" if form.section_conducteur.errors else "")) }}
+                                    {% if form.section_conducteur.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.section_conducteur.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.type_conducteur.label(class="form-label") }}
+                                    {{ form.type_conducteur(class="form-select" + (" is-invalid" if form.type_conducteur.errors else "")) }}
+                                    {% if form.type_conducteur.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.type_conducteur.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.type_reseau.label(class="form-label") }}
+                                    {{ form.type_reseau(class="form-select" + (" is-invalid" if form.type_reseau.errors else "")) }}
+                                    {% if form.type_reseau.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.type_reseau.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Configuration et protection -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Configuration</h5>
+                                
+                                <div class="mb-3">
+                                    {{ form.nombre_branches.label(class="form-label") }}
+                                    {{ form.nombre_branches(class="form-control" + (" is-invalid" if form.nombre_branches.errors else "")) }}
+                                    {% if form.nombre_branches.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.nombre_branches.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.protection_tete.label(class="form-label") }}
+                                    {{ form.protection_tete(class="form-select" + (" is-invalid" if form.protection_tete.errors else "")) }}
+                                    {% if form.protection_tete.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.protection_tete.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Coordonnées -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Localisation</h5>
+                                
+                                {% if form.latitude %}
+                                <div class="mb-3">
+                                    {{ form.latitude.label(class="form-label") }}
+                                    {{ form.latitude(class="form-control" + (" is-invalid" if form.latitude.errors else "")) }}
+                                    {% if form.latitude.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.latitude.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                {% if form.longitude %}
+                                <div class="mb-3">
+                                    {{ form.longitude.label(class="form-label") }}
+                                    {{ form.longitude(class="form-control" + (" is-invalid" if form.longitude.errors else "")) }}
+                                    {% if form.longitude.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.longitude.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('distribution.detail_feeder', id=feeder.id) }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Enregistrer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts spécifiques -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des formulaires Bootstrap
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Mise à jour des postes source selon le réseau sélectionné
+    const reseauSelect = document.getElementById('reseau_id');
+    const posteSelect = document.getElementById('poste_source_id');
+    
+    if (reseauSelect && posteSelect) {
+        reseauSelect.addEventListener('change', function() {
+            const reseauId = this.value;
+            
+            if (reseauId) {
+                fetch(`/distribution/api/postes/${reseauId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        posteSelect.innerHTML = '<option value="">Aucun</option>';
+                        data.postes.forEach(poste => {
+                            const option = document.createElement('option');
+                            option.value = poste.id;
+                            option.textContent = poste.nom;
+                            posteSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des postes:', error);
+                    });
+            } else {
+                posteSelect.innerHTML = '<option value="">Aucun</option>';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

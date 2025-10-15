@@ -37,19 +37,385 @@ from app.are.dashboard.forms import (
     IndicateurSectorielForm, RapportAnnuelForm, ExportForm
 )
 from app.are.services import IndicateursAREService
+from app.are.services_statistiques import StatistiquesAREService, DashboardAREService
 from app.utils.decorators import admin_required
 from app.utils.permissions import get_accessible_operateurs
+
+
+@dashboard_bp.route('/api/kpis/<int:annee>/mettre-a-jour', methods=['POST'])
+@login_required
+@admin_required
+def api_mettre_a_jour_kpis(annee):
+    """API pour mettre à jour les KPIs automatiquement"""
+    kpis = IndicateursAREService.mettre_a_jour_kpis_strategiques(annee)
+    
+    return jsonify({
+        'message': f'{len(kpis)} KPIs mis à jour',
+        'kpis': [kpi.to_dict() for kpi in kpis]
+    })
+
+
+# ===== NOUVELLES ROUTES STATISTIQUES ARE =====
+
+@dashboard_bp.route('/statistiques')
+@login_required
+@admin_required
+def statistiques():
+    """Page des statistiques complètes ARE"""
+    annee_debut = request.args.get('annee_debut', 2020, type=int)
+    annee_fin = request.args.get('annee_fin', 2024, type=int)
+    
+    # 1. Portfolio de projets
+    portfolio = DashboardAREService.get_portfolio_projets()
+    
+    # 2. Evolution de la capacité installée
+    evolution_capacite = DashboardAREService.get_evolution_capacite(annee_debut, annee_fin)
+    
+    # 3. Statistiques nationales
+    stats_nationales = DashboardAREService.get_statistiques_nationales_periode(annee_debut, annee_fin)
+    
+    # 4. Données solaires
+    donnees_solaires = DashboardAREService.get_donnees_solaires()
+    
+    # 5. Statistiques de clientèle
+    stats_clientele = DashboardAREService.get_statistiques_clientele(annee_debut, annee_fin)
+    
+    # 6. Données provinciales pour la carte
+    donnees_provinciales = DonneesProvince.query.filter(
+        DonneesProvince.annee.between(annee_debut, annee_fin),
+        DonneesProvince.actif == True
+    ).order_by(DonneesProvince.province, DonneesProvince.annee).all()
+    
+    # Préparer les données pour les graphiques
+    graphiques_data = {
+        'evolution_capacite_labels': list(range(annee_debut, annee_fin + 1)),
+        'evolution_capacite_hydro': [],
+        'evolution_capacite_thermique': [],
+        'evolution_capacite_solaire': [],
+        'evolution_production_labels': list(range(annee_debut, annee_fin + 1)),
+        'evolution_production_values': [],
+        'evolution_clients_labels': list(range(annee_debut, annee_fin + 1)),
+        'evolution_clients_values': []
+    }
+    
+    # Remplir les données de graphiques
+    for annee in range(annee_debut, annee_fin + 1):
+        # Capacités par source
+        capacite_hydro = sum([c['capacite_installee_mw'] for c in evolution_capacite 
+                             if c['annee'] == annee and c['type_source'] == 'production_hydro'])
+        capacite_thermique = sum([c['capacite_installee_mw'] for c in evolution_capacite 
+                                 if c['annee'] == annee and c['type_source'] == 'production_thermique'])
+        capacite_solaire = sum([c['capacite_installee_mw'] for c in evolution_capacite 
+                               if c['annee'] == annee and c['type_source'] == 'production_solaire'])
+        
+        graphiques_data['evolution_capacite_hydro'].append(capacite_hydro)
+        graphiques_data['evolution_capacite_thermique'].append(capacite_thermique)
+        graphiques_data['evolution_capacite_solaire'].append(capacite_solaire)
+        
+        # Production totale
+        stat_nat = next((s for s in stats_nationales if s['annee'] == annee), None)
+        production_totale = stat_nat['production_totale_annuelle_gwh'] if stat_nat else 0
+        graphiques_data['evolution_production_values'].append(production_totale)
+        
+        # Clients totaux
+        clients_totaux = sum([c['total_clients'] for c in stats_clientele if c['annee'] == annee])
+        graphiques_data['evolution_clients_values'].append(clients_totaux)
+    
+    return render_template('are/dashboard/statistiques.html',
+                         portfolio=portfolio,
+                         evolution_capacite=evolution_capacite,
+                         stats_nationales=stats_nationales,
+                         donnees_solaires=donnees_solaires,
+                         stats_clientele=stats_clientele,
+                         donnees_provinciales=donnees_provinciales,
+                         graphiques_data=graphiques_data,
+                         annee_debut=annee_debut,
+                         annee_fin=annee_fin)
+
+
+@dashboard_bp.route('/calculer-statistiques/<int:annee>')
+@login_required
+@admin_required
+def calculer_statistiques(annee):
+    """Lance le calcul des statistiques pour une année donnée"""
+    try:
+        success = StatistiquesAREService.calculer_toutes_statistiques(annee)
+        
+        if success:
+            flash(f'✅ Statistiques calculées avec succès pour l\'année {annee}', 'success')
+        else:
+            flash(f'❌ Erreur lors du calcul des statistiques pour l\'année {annee}', 'error')
+    
+    except Exception as e:
+        flash(f'❌ Erreur technique: {str(e)}', 'error')
+    
+    return redirect(url_for('are_dashboard.statistiques'))
+
+
+@dashboard_bp.route('/api/statistiques/portfolio')
+@login_required
+@admin_required
+def api_portfolio_projets():
+    """API pour récupérer le portfolio des projets"""
+    portfolio = DashboardAREService.get_portfolio_projets()
+    return jsonify(portfolio)
+
+
+@dashboard_bp.route('/api/statistiques/evolution-capacite')
+@login_required
+@admin_required
+def api_evolution_capacite():
+    """API pour récupérer l'évolution de la capacité"""
+    annee_debut = request.args.get('annee_debut', 2020, type=int)
+    annee_fin = request.args.get('annee_fin', 2024, type=int)
+    
+    evolution = DashboardAREService.get_evolution_capacite(annee_debut, annee_fin)
+    return jsonify(evolution)
+
+
+@dashboard_bp.route('/api/statistiques/nationales')
+@login_required
+@admin_required
+def api_statistiques_nationales():
+    """API pour récupérer les statistiques nationales"""
+    annee_debut = request.args.get('annee_debut', 2020, type=int)
+    annee_fin = request.args.get('annee_fin', 2024, type=int)
+    
+    stats = DashboardAREService.get_statistiques_nationales_periode(annee_debut, annee_fin)
+    return jsonify(stats)
+
+
+def _calculer_statistiques_nationales_avancees(annee_debut=2020, annee_fin=None):
+    """Calculer toutes les statistiques nationales demandées"""
+    from sqlalchemy import func, and_, extract
+    from app.models.production_hydro import CentraleHydro, RapportHydro
+    from app.models.production_thermique import CentraleThermique, RapportThermique  
+    from app.models.production_solaire import CentraleSolaire, RapportSolaire
+    from app.models.distribution import ReseauDistribution, DonneesDistributionMensuelles
+    from app.models.transport import LigneTransport, PosteTransport
+    
+    if annee_fin is None:
+        annee_fin = datetime.now().year
+    
+    stats = {}
+    
+    # 1. Evolution de la capacité installée en puissance MW
+    evolution_capacite = []
+    for annee in range(annee_debut, annee_fin + 1):
+        capacite_hydro = db.session.query(func.sum(CentraleHydro.puissance_installee)).filter(
+            CentraleHydro.actif == True,
+            extract('year', CentraleHydro.date_mise_service) <= annee
+        ).scalar() or 0
+        
+        capacite_thermique = db.session.query(func.sum(CentraleThermique.puissance_installee)).filter(
+            CentraleThermique.actif == True,
+            extract('year', CentraleThermique.date_mise_service) <= annee
+        ).scalar() or 0
+        
+        capacite_solaire = db.session.query(func.sum(CentraleSolaire.puissance_installee)).filter(
+            CentraleSolaire.actif == True,
+            extract('year', CentraleSolaire.date_mise_service) <= annee
+        ).scalar() or 0
+        
+        evolution_capacite.append({
+            'annee': annee,
+            'capacite_hydro_mw': round(capacite_hydro, 2),
+            'capacite_thermique_mw': round(capacite_thermique, 2),
+            'capacite_solaire_mw': round(capacite_solaire, 2),
+            'capacite_totale_mw': round(capacite_hydro + capacite_thermique + capacite_solaire, 2)
+        })
+    
+    # 2. Production annuelle d'énergie électrique
+    evolution_production = []
+    for annee in range(annee_debut, annee_fin + 1):
+        prod_hydro = db.session.query(func.sum(RapportHydro.energie_produite)).filter(
+            RapportHydro.annee == annee,
+            RapportHydro.actif == True
+        ).scalar() or 0
+        
+        prod_thermique = db.session.query(func.sum(RapportThermique.energie_produite)).filter(
+            RapportThermique.annee == annee,
+            RapportThermique.actif == True
+        ).scalar() or 0
+        
+        prod_solaire = db.session.query(func.sum(RapportSolaire.energie_produite)).filter(
+            RapportSolaire.annee == annee,
+            RapportSolaire.actif == True
+        ).scalar() or 0
+        
+        evolution_production.append({
+            'annee': annee,
+            'production_hydro_gwh': round(prod_hydro / 1000, 2) if prod_hydro else 0,
+            'production_thermique_gwh': round(prod_thermique / 1000, 2) if prod_thermique else 0,
+            'production_solaire_gwh': round(prod_solaire / 1000, 2) if prod_solaire else 0,
+            'production_totale_gwh': round((prod_hydro + prod_thermique + prod_solaire) / 1000, 2)
+        })
+    
+    # 3. Statistiques de clientèle
+    evolution_clients = []
+    for annee in range(annee_debut, annee_fin + 1):
+        # Trouver le dernier mois avec des données pour l'année
+        dernier_mois = db.session.query(
+            func.max(DonneesDistributionMensuelles.mois)
+        ).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 12
+        
+        # Calculer les totaux par type de client au dernier mois disponible
+        clients_ht_total = db.session.query(
+            func.sum(DonneesDistributionMensuelles.clients_ht_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_ht - 
+                    DonneesDistributionMensuelles.deconnexions_ht)
+        ).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.mois == dernier_mois,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+        
+        clients_mt_total = db.session.query(
+            func.sum(DonneesDistributionMensuelles.clients_mt_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_mt - 
+                    DonneesDistributionMensuelles.deconnexions_mt)
+        ).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.mois == dernier_mois,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+        
+        clients_bt_total = db.session.query(
+            func.sum(DonneesDistributionMensuelles.clients_bt_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_bt - 
+                    DonneesDistributionMensuelles.deconnexions_bt)
+        ).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.mois == dernier_mois,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+            
+        # Somme de tous les opérateurs pour l'année
+        total_clients_annee = db.session.query(
+            func.sum(DonneesDistributionMensuelles.clients_ht_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_ht - 
+                    DonneesDistributionMensuelles.deconnexions_ht +
+                    DonneesDistributionMensuelles.clients_mt_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_mt - 
+                    DonneesDistributionMensuelles.deconnexions_mt +
+                    DonneesDistributionMensuelles.clients_bt_debut_mois + 
+                    DonneesDistributionMensuelles.nouveaux_raccordements_bt - 
+                    DonneesDistributionMensuelles.deconnexions_bt)
+        ).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.mois == dernier_mois,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+        
+        # Factures émises et payées
+        factures_emises = db.session.query(func.sum(DonneesDistributionMensuelles.factures_emises)).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+        
+        factures_payees = db.session.query(func.sum(DonneesDistributionMensuelles.factures_payees)).filter(
+            DonneesDistributionMensuelles.annee == annee,
+            DonneesDistributionMensuelles.actif == True
+        ).scalar() or 0
+        
+        evolution_clients.append({
+            'annee': annee,
+            'clients_ht': clients_ht_total,
+            'clients_mt': clients_mt_total,
+            'clients_bt': clients_bt_total,
+            'clients_total': total_clients_annee,
+            'factures_emises': factures_emises,
+            'factures_payees': factures_payees,
+            'taux_paiement': round((factures_payees / factures_emises * 100), 2) if factures_emises > 0 else 0
+        })
+    
+    # 4. Capacité solaire domestique (estimation basée sur les centrales solaires)
+    capacite_solaire_domestique = {}
+    for annee in range(annee_debut, annee_fin + 1):
+        # Estimation : 30% de la capacité solaire totale pour le domestique
+        capacite_totale = db.session.query(func.sum(CentraleSolaire.puissance_installee)).filter(
+            CentraleSolaire.actif == True,
+            extract('year', CentraleSolaire.date_mise_service) <= annee
+        ).scalar() or 0
+        
+        capacite_solaire_domestique[annee] = round(capacite_totale * 0.3, 2)
+    
+    # 5. Statistiques d'infrastructure
+    stats_infrastructure = {
+        'nb_centrales_hydro': CentraleHydro.query.filter_by(actif=True).count(),
+        'nb_centrales_thermique': CentraleThermique.query.filter_by(actif=True).count(),
+        'nb_centrales_solaire': CentraleSolaire.query.filter_by(actif=True).count(),
+        'nb_reseaux_distribution': ReseauDistribution.query.filter_by(actif=True).count(),
+        'nb_lignes_transport': LigneTransport.query.filter_by(actif=True).count(),
+        'nb_postes_transport': PosteTransport.query.filter_by(actif=True).count(),
+    }
+    
+    # 6. Taux et couverture (estimations basées sur les données disponibles)
+    # Population totale estimée de la RDC : ~105 millions (2025)
+    population_rdc = 105000000
+    
+    taux_electrification = []
+    for annee in range(annee_debut, annee_fin + 1):
+        # Récupérer les données de StatistiqueNationale si disponibles
+        from app.models.statistiques_are import StatistiqueNationale
+        stats_annee = StatistiqueNationale.query.filter_by(annee=annee).first()
+        
+        if stats_annee:
+            # Utiliser les vraies statistiques
+            clients_annee = stats_annee.total_clients_nationaux or 0
+            taux_electrification_reel = stats_annee.taux_electrification_national or 0
+            taux_acces_reel = stats_annee.taux_acces_national or 0
+            taux_couverture_reel = stats_annee.taux_couverture_national or 0
+            
+            taux_electrification.append({
+                'annee': annee,
+                'clients': clients_annee,
+                'personnes_desservies': int(clients_annee * 4.5),  # 4.5 personnes par ménage
+                'taux_acces_pct': round(taux_acces_reel, 3),
+                'taux_electrification_pct': round(taux_electrification_reel, 3),
+                'taux_couverture_pct': round(taux_couverture_reel, 3)
+            })
+        else:
+            # Fallback vers l'ancien calcul si pas de StatistiqueNationale
+            clients_annee = next((c['clients_total'] for c in evolution_clients if c['annee'] == annee), 0)
+            # Estimation : 1 client = 5 personnes desservies en moyenne
+            personnes_desservies = clients_annee * 5
+            taux = round((personnes_desservies / population_rdc * 100), 2) if population_rdc > 0 else 0
+            
+            taux_electrification.append({
+                'annee': annee,
+                'clients': clients_annee,
+                'personnes_desservies': personnes_desservies,
+                'taux_acces_pct': taux,
+                'taux_electrification_pct': taux * 0.8,  # Facteur de correction
+                'taux_couverture_pct': taux * 1.2 if taux * 1.2 <= 100 else 100
+            })
+    
+    return {
+        'evolution_capacite': evolution_capacite,
+        'evolution_production': evolution_production, 
+        'evolution_clients': evolution_clients,
+        'capacite_solaire_domestique': capacite_solaire_domestique,
+        'stats_infrastructure': stats_infrastructure,
+        'taux_electrification': taux_electrification,
+        'periode': {'debut': annee_debut, 'fin': annee_fin}
+    }
 
 
 @dashboard_bp.route('/')
 @login_required
 @admin_required
 def index():
-    """Page principale du dashboard ARE"""
+    """Page principale du dashboard ARE avec statistiques nationales complètes"""
     form = FiltreTableauBordForm()
     
     # Récupérer les filtres
     annee = request.args.get('annee', datetime.now().year, type=int)
+    annee_debut = request.args.get('annee_debut', 2020, type=int)
+    annee_fin = request.args.get('annee_fin', datetime.now().year, type=int)
     operateur_id = request.args.get('operateur_id', type=int)
     province = request.args.get('province', '')
     
@@ -80,6 +446,9 @@ def index():
         donnees_provinces_obj = DonneesProvince.query.filter_by(annee=annee).all()
         donnees_provinces = [province.to_dict() for province in donnees_provinces_obj]
     
+    # NOUVELLES STATISTIQUES NATIONALES AVANCÉES
+    stats_nationales = _calculer_statistiques_nationales_avancees(annee_debut, annee_fin)
+    
     # Statistiques générales
     stats = {
         'nb_operateurs_actifs': Operateur.query.filter_by(actif=True).count(),
@@ -96,7 +465,10 @@ def index():
                          performance_operateurs=performance_operateurs,
                          donnees_provinces=donnees_provinces,
                          stats=stats,
+                         stats_nationales=stats_nationales,
                          annee=annee,
+                         annee_debut=annee_debut,
+                         annee_fin=annee_fin,
                          operateur_id=operateur_id,
                          province=province)
 
@@ -302,6 +674,32 @@ def resoudre_alerte(alerte_id):
     )
     
     flash('Alerte marquée comme résolue.', 'success')
+    return redirect(url_for('are_dashboard.alertes'))
+
+
+@dashboard_bp.route('/alertes/<int:alerte_id>')
+@login_required
+@admin_required
+def detail_alerte(alerte_id):
+    """Voir les détails d'une alerte"""
+    alerte = AlerteRegulateur.query.get_or_404(alerte_id)
+    return render_template('are/dashboard/alerte_detail.html', alerte=alerte)
+
+
+@dashboard_bp.route('/alertes/<int:alerte_id>/supprimer', methods=['POST'])
+@login_required
+@admin_required
+def supprimer_alerte(alerte_id):
+    """Supprimer une alerte"""
+    alerte = AlerteRegulateur.query.get_or_404(alerte_id)
+    
+    # Sauvegarder les infos pour le message
+    titre_alerte = alerte.titre
+    
+    # Supprimer l'alerte
+    alerte.delete()
+    
+    flash(f'Alerte "{titre_alerte}" supprimée avec succès.', 'success')
     return redirect(url_for('are_dashboard.alertes'))
 
 
@@ -565,14 +963,160 @@ def api_generer_alertes():
     })
 
 
-@dashboard_bp.route('/api/kpis/mettre-a-jour/<int:annee>', methods=['POST'])
+@dashboard_bp.route('/kpi/<int:kpi_id>/supprimer', methods=['POST'])
 @login_required
 @admin_required
-def api_mettre_a_jour_kpis(annee):
-    """API pour mettre à jour les KPIs automatiquement"""
-    kpis = IndicateursAREService.mettre_a_jour_kpis_strategiques(annee)
+def supprimer_kpi(kpi_id):
+    """Supprimer un KPI stratégique"""
+    kpi = KPIStrategic.query.get_or_404(kpi_id)
     
-    return jsonify({
-        'message': f'{len(kpis)} KPIs mis à jour',
-        'kpis': [kpi.to_dict() for kpi in kpis]
-    })
+    try:
+        nom_kpi = kpi.nom
+        kpi.delete()
+        flash(f'KPI "{nom_kpi}" supprimé avec succès.', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de la suppression du KPI: {str(e)}', 'error')
+    
+    return redirect(url_for('are_dashboard.index'))
+
+
+@dashboard_bp.route('/export/<export_type>/<data_type>')
+@login_required
+@admin_required
+def export_data(export_type, data_type):
+    """Exporter des données du dashboard en différents formats"""
+    if not current_user.is_super_admin():
+        abort(403)
+    
+    try:
+        # Récupérer les services de données
+        stats_service = StatistiquesAREService()
+        dashboard_service = DashboardAREService()
+        
+        # Générer le nom de fichier avec timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        if export_type == 'excel':
+            return _export_to_excel(data_type, timestamp, stats_service, dashboard_service)
+        elif export_type == 'csv':
+            return _export_to_csv(data_type, timestamp, stats_service, dashboard_service)
+        elif export_type == 'json':
+            return _export_to_json(data_type, timestamp, stats_service, dashboard_service)
+        else:
+            flash('Format d\'export non supporté.', 'error')
+            return redirect(url_for('are_dashboard.index'))
+            
+    except Exception as e:
+        flash(f'Erreur lors de l\'export: {str(e)}', 'error')
+        return redirect(url_for('are_dashboard.index'))
+
+
+def _export_to_excel(data_type, timestamp, stats_service, dashboard_service):
+    """Export en format Excel"""
+    if not PANDAS_AVAILABLE:
+        flash('Pandas n\'est pas disponible pour l\'export Excel.', 'error')
+        return redirect(url_for('are_dashboard.index'))
+    
+    output = io.BytesIO()
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        if data_type == 'production' or data_type == 'all':
+            # Données de production
+            stats = stats_service.calculer_statistiques_nationales()
+            if stats and stats.evolution_production:
+                production_data = []
+                for item in stats.evolution_production:
+                    production_data.append({
+                        'Année': item.annee,
+                        'Production Hydro (GWh)': item.production_hydro_gwh,
+                        'Production Thermique (GWh)': item.production_thermique_gwh,
+                        'Production Solaire (GWh)': item.production_solaire_gwh,
+                        'Production Totale (GWh)': item.production_totale_gwh
+                    })
+                
+                if production_data:
+                    df_production = pd.DataFrame(production_data)
+                    df_production.to_excel(writer, sheet_name='Production', index=False)
+        
+        if data_type == 'capacite' or data_type == 'all':
+            # Données de capacité installée
+            stats = stats_service.calculer_statistiques_nationales()
+            if stats and stats.evolution_capacite:
+                capacite_data = []
+                for item in stats.evolution_capacite:
+                    capacite_data.append({
+                        'Année': item.annee,
+                        'Capacité Hydro (MW)': item.capacite_hydro_mw,
+                        'Capacité Thermique (MW)': item.capacite_thermique_mw,
+                        'Capacité Solaire (MW)': item.capacite_solaire_mw,
+                        'Capacité Totale (MW)': item.capacite_totale_mw
+                    })
+                
+                if capacite_data:
+                    df_capacite = pd.DataFrame(capacite_data)
+                    df_capacite.to_excel(writer, sheet_name='Capacité', index=False)
+        
+        if data_type == 'kpis' or data_type == 'all':
+            # KPIs stratégiques
+            kpis = KPIStrategic.query.filter_by(actif=True).all()
+            if kpis:
+                kpi_data = []
+                for kpi in kpis:
+                    kpi_data.append({
+                        'Nom': kpi.nom,
+                        'Valeur': kpi.valeur_actuelle,
+                        'Objectif': kpi.valeur_objectif,
+                        'Unité': kpi.unite,
+                        'Tendance': kpi.tendance,
+                        'Dernière MAJ': kpi.date_modification.strftime('%Y-%m-%d %H:%M')
+                    })
+                
+                df_kpis = pd.DataFrame(kpi_data)
+                df_kpis.to_excel(writer, sheet_name='KPIs', index=False)
+        
+        if data_type == 'alertes' or data_type == 'all':
+            # Alertes
+            alertes = AlerteRegulateur.query.filter_by(actif=True).order_by(
+                AlerteRegulateur.date_creation.desc()
+            ).limit(100).all()
+            
+            if alertes:
+                alerte_data = []
+                for alerte in alertes:
+                    alerte_data.append({
+                        'Titre': alerte.titre,
+                        'Type': alerte.type_alerte,
+                        'Niveau': alerte.niveau_urgence,
+                        'Statut': alerte.statut,
+                        'Description': alerte.description,
+                        'Date': alerte.date_creation.strftime('%Y-%m-%d %H:%M')
+                    })
+                
+                df_alertes = pd.DataFrame(alerte_data)
+                df_alertes.to_excel(writer, sheet_name='Alertes', index=False)
+    
+    output.seek(0)
+    
+    filename = f'are_dashboard_{data_type}_{timestamp}.xlsx'
+    
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+def _export_to_csv(data_type, timestamp, stats_service, dashboard_service):
+    """Export en format CSV"""
+    # Implementation CSV similaire mais plus simple
+    pass
+
+
+def _export_to_json(data_type, timestamp, stats_service, dashboard_service):
+    """Export en format JSON"""
+    # Implementation JSON
+    pass
+
+
+# Fonction supprimée - dupliquée plus haut avec route différente

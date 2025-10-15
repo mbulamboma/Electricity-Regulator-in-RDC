@@ -62,6 +62,52 @@ class CentraleHydroForm(FlaskForm):
                                ],
                                validators=[Optional()])
     
+    # Caractéristiques détaillées
+    type_turbine = SelectField('Type de turbine',
+                              choices=[
+                                  ('', 'Sélectionner...'),
+                                  ('pelton', 'Pelton'),
+                                  ('francis', 'Francis'),
+                                  ('kaplan', 'Kaplan'),
+                                  ('crossflow', 'Cross-flow'),
+                                  ('autre', 'Autre')
+                              ],
+                              validators=[Optional()])
+    
+    type_barrage = SelectField('Type de barrage',
+                              choices=[
+                                  ('', 'Sélectionner...'),
+                                  ('gravite', 'Gravité'),
+                                  ('voute', 'Voûte'),
+                                  ('contreforts', 'Contreforts'),
+                                  ('remblai', 'Remblai'),
+                                  ('seuil', 'Seuil'),
+                                  ('autre', 'Autre')
+                              ],
+                              validators=[Optional()])
+    
+    niveau_tension = FloatField('Niveau de tension (kV)', validators=[Optional(), NumberRange(min=0)])
+    superficie_bassin = FloatField('Superficie du bassin versant (km²)', validators=[Optional(), NumberRange(min=0)])
+    volume_retenue = FloatField('Volume de retenue (millions m³)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Coordonnées géographiques
+    latitude = FloatField('Latitude', validators=[Optional(), NumberRange(min=-90, max=90)])
+    longitude = FloatField('Longitude', validators=[Optional(), NumberRange(min=-180, max=180)])
+    
+    # Statut opérationnel
+    statut = SelectField('Statut',
+                        choices=[
+                            ('operationnelle', 'Opérationnelle'),
+                            ('maintenance', 'En maintenance'),
+                            ('arret', 'Arrêtée'),
+                            ('construction', 'En construction')
+                        ],
+                        validators=[Optional()],
+                        default='operationnelle')
+    
+    # Description générale
+    description = TextAreaField('Description', validators=[Optional()], widget=TextArea())
+    
     # Équipements
     nombre_groupes = IntegerField('Nombre de groupes', validators=[Optional(), NumberRange(min=0)], default=0)
     nombre_transformateurs = IntegerField('Nombre de transformateurs', validators=[Optional(), NumberRange(min=0)], default=0)

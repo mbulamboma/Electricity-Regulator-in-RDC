@@ -22,6 +22,9 @@
                         <a href="{{ url_for('distribution.modifier_feeder', id=feeder.id) }}" class="btn btn-primary">
                             <i class="fas fa-edit"></i> Modifier
                         </a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -182,9 +185,8 @@
         </div>
     </div>
 </div>
-{% endblock %}
-                    
-                    <!-- Interface utilisateur -->
+
+<!-- Interface utilisateur -->
                                         # Interface utilisateur
                     {% if "liste" in "distribution/feeders/detail.html" or "index" in "distribution/feeders/detail.html" %}
                     <!-- Interface de liste -->
@@ -348,27 +350,50 @@
 
 <!-- Scripts spécifiques -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {{
+document.addEventListener('DOMContentLoaded', function() {
     // Validation des formulaires Bootstrap
     var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {{
-        form.addEventListener('submit', function(event) {{
-            if (!form.checkValidity()) {{
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-            }}
+            }
             form.classList.add('was-validated');
-        }}, false);
-    }});
+        }, false);
+    });
     
     // Recherche en temps réel
     const searchInput = document.getElementById('searchInput');
-    if (searchInput) {{
-        searchInput.addEventListener('input', function() {{
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
             // Implémentation de la recherche
             console.log('Recherche:', this.value);
-        }});
-    }}
-}});
+        });
+    }
+});
 </script>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le feeder <strong>{{ feeder.nom }}</strong> ?</p>
+                <p class="text-muted">Cette action ne peut pas être annulée.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="{{ url_for('distribution.supprimer_feeder', id=feeder.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

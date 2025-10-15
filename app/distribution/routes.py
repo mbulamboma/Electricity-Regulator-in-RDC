@@ -528,6 +528,77 @@ def detail_feeder(id):
                          donnees_performance=donnees_performance,
                          rapports_reseau=rapports_reseau)
 
+@bp.route('/feeders/<int:id>/modifier', methods=['GET', 'POST'])
+@login_required
+def modifier_feeder(id):
+    """Modifier un feeder de distribution"""
+    
+    feeder = FeederDistribution.query.get_or_404(id)
+    
+    if not verifier_permission_operateur(feeder.reseau.operateur_id):
+        abort(403)
+    
+    form = FeederDistributionForm(obj=feeder)
+    form.feeder_id = feeder.id
+    
+    # Configuration des choix selon les permissions
+    accessible_operateurs = get_accessible_operateurs()
+    reseaux = ReseauDistribution.query.filter(
+        ReseauDistribution.operateur_id.in_([op.id for op in accessible_operateurs]),
+        ReseauDistribution.actif == True
+    ).all()
+    
+    form.reseau_id.choices = [(r.id, f"{r.nom} - {r.operateur.nom}") for r in reseaux]
+    
+    # Postes source pour le réseau sélectionné
+    if feeder.reseau_id:
+        postes = PosteDistribution.query.filter_by(
+            reseau_id=feeder.reseau_id,
+            actif=True
+        ).all()
+        form.poste_source_id.choices = [('', 'Aucun')] + [(p.id, p.nom) for p in postes]
+    else:
+        form.poste_source_id.choices = [('', 'Aucun')]
+    
+    if form.validate_on_submit():
+        try:
+            form.populate_obj(feeder)
+            feeder.update()
+            
+            flash('Feeder modifié avec succès!', 'success')
+            return redirect(url_for('distribution.detail_feeder', id=feeder.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la modification : {str(e)}', 'error')
+    
+    return render_template('distribution/feeders/modifier.html',
+                         form=form,
+                         feeder=feeder,
+                         title="Modifier Feeder")
+
+@bp.route('/feeders/<int:id>/supprimer', methods=['POST'])
+@login_required
+def supprimer_feeder(id):
+    """Supprimer un feeder de distribution"""
+    
+    feeder = FeederDistribution.query.get_or_404(id)
+    
+    if not verifier_permission_operateur(feeder.reseau.operateur_id):
+        abort(403)
+    
+    try:
+        # Suppression soft
+        feeder.soft_delete()
+        
+        flash('Feeder supprimé avec succès!', 'success')
+        return redirect(url_for('distribution.liste_feeders'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la suppression : {str(e)}', 'error')
+        return redirect(url_for('distribution.detail_feeder', id=id))
+
 @bp.route('/rapports')
 @login_required
 def liste_rapports():
@@ -635,9 +706,9 @@ def api_statistiques():
     rapports = rapports_periode.all()
     
     if rapports:
-        saidi_moyen = sum([r.saidi for r in rapports if r.saidi]) / len(rapports)
-        saifi_moyen = sum([r.saifi for r in rapports if r.saifi]) / len(rapports)
-        disponibilite_moyenne = sum([r.disponibilite for r in rapports if r.disponibilite]) / len(rapports)
+        saidi_moyen = sum([r.saidi_realise for r in rapports if r.saidi_realise]) / len(rapports)
+        saifi_moyen = sum([r.saifi_realise for r in rapports if r.saifi_realise]) / len(rapports)
+        disponibilite_moyenne = sum([r.taux_disponibilite for r in rapports if r.taux_disponibilite]) / len(rapports)
     else:
         saidi_moyen = 0
         saifi_moyen = 0
@@ -656,13 +727,18 @@ def api_statistiques():
 
 # Fonctions utilitaires
 def calculer_statistiques_distribution(reseaux, postes, feeders):
-    """Calculer les statistiques globales de distribution"""
+    """Calculer les statistiques globales de distribution à partir des données mensuelles réelles"""
     
+    from app.models.distribution import DonneesDistributionMensuelles
+    from datetime import datetime
+    from sqlalchemy import func
+    from flask_login import current_user
+    
+    # Statistiques de base sur l'infrastructure
     stats = {
         'total_reseaux': len(reseaux),
-        'total_postes': len(postes),
-        'total_feeders': len(feeders),
-        'clients_total': sum([p.nombre_clients_raccordes for p in postes if p.nombre_clients_raccordes]),
+        'nb_reseaux': len(reseaux),  # Alias pour compatibilité
+        'nb_feeders': len(feeders),
         'puissance_totale': sum([p.puissance_installee for p in postes if p.puissance_installee]),
         'longueur_lignes_mt': sum([r.longueur_reseau_mt for r in reseaux if r.longueur_reseau_mt]),
         'longueur_lignes_bt': sum([r.longueur_reseau_bt for r in reseaux if r.longueur_reseau_bt]),
@@ -670,11 +746,110 @@ def calculer_statistiques_distribution(reseaux, postes, feeders):
         'feeders_en_service': len([f for f in feeders if f.statut == 'en_service'])
     }
     
-    # Calcul du taux de desserte (si applicable)
-    if stats['clients_total'] > 0:
+    # Calculer les statistiques opérationnelles à partir des données mensuelles
+    annee_courante = datetime.now().year
+    
+    if current_user.is_admin():
+        # Super admin voit toutes les données
+        base_query = DonneesDistributionMensuelles.query
+    else:
+        # Opérateur ne voit que ses données
+        if current_user.operateur:
+            base_query = DonneesDistributionMensuelles.query.filter_by(
+                operateur_id=current_user.operateur.id
+            )
+        else:
+            base_query = DonneesDistributionMensuelles.query.filter(False)  # Aucune donnée
+    
+    # Données de l'année courante
+    donnees_annee = base_query.filter_by(annee=annee_courante).all()
+    
+    if donnees_annee:
+        # Dernière saisie pour avoir le nombre de clients le plus récent
+        derniere_saisie = base_query.filter_by(annee=annee_courante).order_by(
+            DonneesDistributionMensuelles.mois.desc()
+        ).first()
+        
+        if derniere_saisie:
+            stats['nb_clients'] = (
+                (derniere_saisie.clients_ht_fin_mois or 0) +
+                (derniere_saisie.clients_mt_fin_mois or 0) +
+                (derniere_saisie.clients_bt_fin_mois or 0)
+            )
+        else:
+            stats['nb_clients'] = 0
+        
+        # Énergie distribuée totale sur l'année (en GWh)
+        energie_totale_mwh = sum([
+            (donnee.energie_distribuee_ht_mwh or 0) +
+            (donnee.energie_distribuee_mt_mwh or 0) +
+            (donnee.energie_distribuee_bt_mwh or 0)
+            for donnee in donnees_annee
+        ])
+        stats['energie_distribuee'] = round(energie_totale_mwh / 1000, 2)  # Conversion MWh -> GWh
+        
+        # Revenus totaux sur l'année (USD)
+        stats['revenus_totaux'] = sum([
+            (donnee.revenus_ht_usd or 0) +
+            (donnee.revenus_mt_usd or 0) +
+            (donnee.revenus_bt_usd or 0)
+            for donnee in donnees_annee
+        ])
+        
+        # Taux de recouvrement moyen (revenus - impayés)
+        revenus_total = sum([
+            (donnee.revenus_ht_usd or 0) +
+            (donnee.revenus_mt_usd or 0) +
+            (donnee.revenus_bt_usd or 0)
+            for donnee in donnees_annee
+        ])
+        
+        impayes_total = sum([
+            (donnee.impayes_usd or 0)
+            for donnee in donnees_annee
+        ])
+        
+        if revenus_total > 0:
+            stats['taux_recouvrement'] = round(((revenus_total - impayes_total) / revenus_total) * 100, 1)
+        else:
+            stats['taux_recouvrement'] = 0
+        
+        # Taux de pertes moyen
+        energie_totale = sum([
+            (donnee.energie_distribuee_ht_mwh or 0) +
+            (donnee.energie_distribuee_mt_mwh or 0) +
+            (donnee.energie_distribuee_bt_mwh or 0)
+            for donnee in donnees_annee
+        ])
+        
+        pertes_totales = sum([
+            (donnee.pertes_techniques_mwh or 0) +
+            (donnee.pertes_commerciales_mwh or 0)
+            for donnee in donnees_annee
+        ])
+        
+        if energie_totale > 0:
+            stats['taux_pertes'] = round((pertes_totales / energie_totale) * 100, 1)
+        else:
+            stats['taux_pertes'] = 0
+        
+    else:
+        # Pas de données mensuelles, utiliser des valeurs par défaut
+        stats.update({
+            'nb_clients': 0,
+            'energie_distribuee': 0.0,
+            'revenus_totaux': 0,
+            'taux_recouvrement': 0,
+            'taux_pertes': 0
+        })
+    
+    # Calcul du taux de desserte (basé sur l'infrastructure)
+    clients_infrastructure = sum([p.nombre_clients_raccordes for p in postes if p.nombre_clients_raccordes])
+    
+    if clients_infrastructure > 0:
         clients_alimentes = sum([p.nombre_clients_raccordes for p in postes 
                                if p.statut == 'en_service' and p.nombre_clients_raccordes])
-        stats['taux_desserte'] = round((clients_alimentes / stats['clients_total']) * 100, 2)
+        stats['taux_desserte'] = round((clients_alimentes / clients_infrastructure) * 100, 2)
     else:
         stats['taux_desserte'] = 0
     
@@ -752,9 +927,9 @@ def generer_donnees_performance_reseau(reseau):
         donnees['labels'].append(mois)
         
         # Moyennes des indicateurs
-        disponibilite_moy = sum([r.disponibilite for r in rapports_mois if r.disponibilite]) / len(rapports_mois)
-        saidi_moy = sum([r.saidi for r in rapports_mois if r.saidi]) / len(rapports_mois)
-        saifi_moy = sum([r.saifi for r in rapports_mois if r.saifi]) / len(rapports_mois)
+        disponibilite_moy = sum([r.taux_disponibilite for r in rapports_mois if r.taux_disponibilite]) / len(rapports_mois)
+        saidi_moy = sum([r.saidi_realise for r in rapports_mois if r.saidi_realise]) / len(rapports_mois)
+        saifi_moy = sum([r.saifi_realise for r in rapports_mois if r.saifi_realise]) / len(rapports_mois)
         
         donnees['disponibilite'].append(round(disponibilite_moy, 2))
         donnees['saidi'].append(round(saidi_moy, 2))
@@ -1037,3 +1212,315 @@ def supprimer_transformateur(id):
     
     flash(f'Transformateur "{nom}" supprimé avec succès', 'success')
     return redirect(url_for('distribution.detail_poste', id=poste_id))
+
+
+# === DONNÉES MENSUELLES DE DISTRIBUTION ===
+
+@bp.route('/donnees-mensuelles')
+@login_required
+@role_required('operateur', 'admin_operateur', 'super_admin')
+def donnees_mensuelles():
+    """Page de gestion des données mensuelles de distribution"""
+    
+    from app.models.distribution import DonneesDistributionMensuelles
+    
+    # Filtres
+    annee = request.args.get('annee', type=int, default=datetime.now().year)
+    mois = request.args.get('mois', type=int)
+    operateur_id = request.args.get('operateur_id', type=int)
+    
+    # Requête de base selon les permissions
+    operateurs = get_accessible_operateurs()
+    
+    if current_user.is_admin():
+        query = DonneesDistributionMensuelles.query
+        if operateur_id:
+            if not can_access_operateur(operateur_id):
+                flash("Accès refusé à cet opérateur", "error")
+                return redirect(url_for('distribution.donnees_mensuelles'))
+            operateur_actuel = Operateur.query.get(operateur_id)
+            query = query.filter_by(operateur_id=operateur_id)
+        else:
+            operateur_actuel = None
+    else:
+        # Opérateur ne voit que ses données
+        if not current_user.operateur_id:
+            flash("Aucun opérateur associé à votre compte", "warning")
+            return redirect(url_for('distribution.index'))
+        
+        operateur_actuel = current_user.operateur
+        query = DonneesDistributionMensuelles.query.filter_by(operateur_id=current_user.operateur_id)
+    
+    # Appliquer les filtres
+    query = query.filter_by(annee=annee)
+    if mois:
+        query = query.filter_by(mois=mois)
+    
+    # Ordonner par période (plus récent en premier)
+    donnees = query.order_by(
+        DonneesDistributionMensuelles.annee.desc(),
+        DonneesDistributionMensuelles.mois.desc()
+    ).paginate(
+        page=request.args.get('page', 1, type=int),
+        per_page=20,
+        error_out=False
+    )
+    
+    # Calculer les statistiques globales pour l'année
+    if operateur_actuel:
+        # Statistiques pour un opérateur spécifique
+        stats_operateur_id = operateur_actuel.id
+    elif current_user.is_admin() and not operateur_id:
+        # Super admin sans filtre opérateur - toutes les données
+        stats_operateur_id = None
+    else:
+        # Cas par défaut - opérateur actuel ou premier accessible
+        if current_user.operateur_id:
+            stats_operateur_id = current_user.operateur_id
+            operateur_actuel = current_user.operateur
+        elif operateurs:
+            stats_operateur_id = operateurs[0].id
+            operateur_actuel = operateurs[0]
+        else:
+            stats_operateur_id = None
+    
+    if stats_operateur_id:
+        stats_query = DonneesDistributionMensuelles.query.filter(
+            DonneesDistributionMensuelles.operateur_id == stats_operateur_id,
+            DonneesDistributionMensuelles.annee == annee
+        )
+    else:
+        stats_query = DonneesDistributionMensuelles.query.filter(
+            DonneesDistributionMensuelles.annee == annee
+        )
+    
+    # Totaux sur l'année
+    if stats_operateur_id:
+        filter_condition = and_(
+            DonneesDistributionMensuelles.operateur_id == stats_operateur_id,
+            DonneesDistributionMensuelles.annee == annee
+        )
+    else:
+        filter_condition = DonneesDistributionMensuelles.annee == annee
+        
+    total_energie = db.session.query(
+        func.sum(
+            func.coalesce(DonneesDistributionMensuelles.energie_distribuee_ht_mwh, 0) +
+            func.coalesce(DonneesDistributionMensuelles.energie_distribuee_mt_mwh, 0) +
+            func.coalesce(DonneesDistributionMensuelles.energie_distribuee_bt_mwh, 0)
+        )
+    ).filter(filter_condition).scalar() or 0
+    
+    total_revenus = db.session.query(
+        func.sum(
+            func.coalesce(DonneesDistributionMensuelles.revenus_ht_usd, 0) +
+            func.coalesce(DonneesDistributionMensuelles.revenus_mt_usd, 0) +
+            func.coalesce(DonneesDistributionMensuelles.revenus_bt_usd, 0)
+        )
+    ).filter(filter_condition).scalar() or 0
+    
+    # Dernières données client (du mois le plus récent)
+    derniere_donnee = stats_query.order_by(
+        DonneesDistributionMensuelles.mois.desc()
+    ).first()
+    
+    total_clients = 0
+    if derniere_donnee:
+        total_clients = (
+            (derniere_donnee.clients_ht_fin_mois or 0) +
+            (derniere_donnee.clients_mt_fin_mois or 0) +
+            (derniere_donnee.clients_bt_fin_mois or 0)
+        )
+    
+    # Nombre de réseaux avec données
+    nb_reseaux = db.session.query(
+        func.count(func.distinct(DonneesDistributionMensuelles.reseau_id))
+    ).filter(filter_condition).scalar() or 0
+    
+    stats = {
+        'reseaux': nb_reseaux,
+        'clients_connectes': total_clients,
+        'energie_distribuee_gwh': round(total_energie / 1000, 2) if total_energie else 0,  # MWh -> GWh
+        'revenus_usd': total_revenus
+    }
+    
+    return render_template('distribution/donnees_mensuelles/index.html',
+                         donnees=donnees,
+                         operateurs=operateurs,
+                         operateur_actuel=operateur_actuel,
+                         annee=annee,
+                         mois=mois,
+                         stats=stats)
+
+
+@bp.route('/donnees-mensuelles/nouvelle')
+@login_required
+@role_required('operateur', 'admin_operateur')
+def nouvelle_donnee_mensuelle():
+    """Formulaire pour ajouter des données mensuelles"""
+    
+    from app.distribution.forms import DonneesDistributionMensuellesForm
+    
+    if not current_user.operateur:
+        flash("Vous devez être associé à un opérateur pour saisir des données", "error")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    form = DonneesDistributionMensuellesForm()
+    
+    return render_template('distribution/donnees_mensuelles/nouvelle.html',
+                         form=form,
+                         operateur=current_user.operateur)
+
+
+@bp.route('/donnees-mensuelles/creer', methods=['POST'])
+@login_required
+@role_required('operateur', 'admin_operateur')
+def creer_donnee_mensuelle():
+    """Traiter la création des données mensuelles"""
+    
+    from app.distribution.forms import DonneesDistributionMensuellesForm
+    from app.models.distribution import DonneesDistributionMensuelles
+    
+    if not current_user.operateur:
+        flash("Vous devez être associé à un opérateur pour saisir des données", "error")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    form = DonneesDistributionMensuellesForm()
+    
+    if form.validate_on_submit():
+        # Vérifier si des données existent déjà pour cette période/réseau
+        existing = DonneesDistributionMensuelles.query.filter(
+            DonneesDistributionMensuelles.reseau_id == form.reseau_id.data,
+            DonneesDistributionMensuelles.annee == int(form.annee.data),
+            DonneesDistributionMensuelles.mois == int(form.mois.data)
+        ).first()
+        
+        if existing:
+            flash(f"Des données existent déjà pour {form.mois.data}/{form.annee.data} sur ce réseau", "error")
+            return render_template('distribution/donnees_mensuelles/nouvelle.html',
+                                 form=form,
+                                 operateur=current_user.operateur)
+        
+        # Vérifier que le réseau appartient à l'opérateur
+        reseau = ReseauDistribution.query.get_or_404(form.reseau_id.data)
+        if reseau.operateur_id != current_user.operateur.id:
+            flash("Vous ne pouvez saisir des données que pour vos propres réseaux", "error")
+            return render_template('distribution/donnees_mensuelles/nouvelle.html',
+                                 form=form,
+                                 operateur=current_user.operateur)
+        
+        # Créer les données
+        donnee = DonneesDistributionMensuelles(
+            reseau_id=form.reseau_id.data,
+            operateur_id=current_user.operateur.id,
+            annee=int(form.annee.data),
+            mois=int(form.mois.data)
+        )
+        
+        # Remplir tous les champs du formulaire
+        form.populate_obj(donnee)
+        
+        # Corriger les champs qui ont été mal assignés
+        donnee.reseau_id = form.reseau_id.data
+        donnee.operateur_id = current_user.operateur.id
+        donnee.annee = int(form.annee.data)
+        donnee.mois = int(form.mois.data)
+        
+        donnee.save()
+        
+        flash(f"Données mensuelles ajoutées avec succès pour {donnee.get_periode_str()}", "success")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    # En cas d'erreur
+    return render_template('distribution/donnees_mensuelles/nouvelle.html',
+                         form=form,
+                         operateur=current_user.operateur)
+
+
+@bp.route('/donnees-mensuelles/<int:id>')
+@login_required
+def voir_donnee_mensuelle(id):
+    """Voir le détail d'une donnée mensuelle"""
+    
+    from app.models.distribution import DonneesDistributionMensuelles
+    
+    donnee = DonneesDistributionMensuelles.query.get_or_404(id)
+    
+    # Vérification des permissions
+    if current_user.role not in ['super_admin'] and current_user.operateur_id != donnee.operateur_id:
+        flash("Accès refusé à ces données", "error")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    return render_template('distribution/donnees_mensuelles/voir.html',
+                         donnee=donnee)
+
+
+@bp.route('/donnees-mensuelles/<int:id>/modifier')
+@login_required
+@role_required('operateur', 'admin_operateur')
+def modifier_donnee_mensuelle(id):
+    """Formulaire de modification des données mensuelles"""
+    
+    from app.models.distribution import DonneesDistributionMensuelles
+    from app.distribution.forms import DonneesDistributionMensuellesForm
+    
+    donnee = DonneesDistributionMensuelles.query.get_or_404(id)
+    
+    # Vérification des permissions
+    if current_user.operateur_id != donnee.operateur_id:
+        flash("Vous ne pouvez modifier que vos propres données", "error")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    form = DonneesDistributionMensuellesForm(obj=donnee)
+    form.annee.data = str(donnee.annee)
+    form.mois.data = str(donnee.mois)
+    
+    return render_template('distribution/donnees_mensuelles/modifier.html',
+                         form=form,
+                         donnee=donnee,
+                         operateur=current_user.operateur)
+
+
+@bp.route('/donnees-mensuelles/<int:id>/mettre-a-jour', methods=['POST'])
+@login_required
+@role_required('operateur', 'admin_operateur')
+def mettre_a_jour_donnee_mensuelle(id):
+    """Traiter la modification des données mensuelles"""
+    
+    from app.models.distribution import DonneesDistributionMensuelles
+    from app.distribution.forms import DonneesDistributionMensuellesForm
+    
+    donnee = DonneesDistributionMensuelles.query.get_or_404(id)
+    
+    # Vérification des permissions
+    if current_user.operateur_id != donnee.operateur_id:
+        flash("Vous ne pouvez modifier que vos propres données", "error")
+        return redirect(url_for('distribution.donnees_mensuelles'))
+    
+    form = DonneesDistributionMensuellesForm()
+    
+    if form.validate_on_submit():
+        # Garder les identifiants inchangés
+        original_reseau_id = donnee.reseau_id
+        original_operateur_id = donnee.operateur_id
+        original_annee = donnee.annee
+        original_mois = donnee.mois
+        
+        # Remplir avec les données du formulaire
+        form.populate_obj(donnee)
+        
+        # Restaurer les identifiants
+        donnee.reseau_id = original_reseau_id
+        donnee.operateur_id = original_operateur_id
+        donnee.annee = original_annee
+        donnee.mois = original_mois
+        
+        donnee.update()
+        
+        flash(f"Données mensuelles mises à jour avec succès", "success")
+        return redirect(url_for('distribution.voir_donnee_mensuelle', id=id))
+    
+    return render_template('distribution/donnees_mensuelles/modifier.html',
+                         form=form,
+                         donnee=donnee,
+                         operateur=current_user.operateur)

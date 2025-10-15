@@ -172,6 +172,12 @@ def messages():
     # Type de vue (reçus, envoyés, archivés)
     vue = request.args.get('vue', 'recus')
     
+    # Filtres additionnels
+    priorite_filter = request.args.get('priorite')
+    statut_filter = request.args.get('statut')
+    categorie_filter = request.args.get('categorie')
+    etiquette_filter = request.args.get('etiquette')
+    
     # Requête selon le type de vue
     if vue == 'envoyes':
         query = MessageInterne.query.filter_by(
@@ -194,6 +200,9 @@ def messages():
         )
     
     # Application des filtres
+    if priorite_filter:
+        query = query.filter(MessageInterne.priorite == int(priorite_filter))
+        
     if filtre_form.priorite.data:
         query = query.filter(MessageInterne.priorite == int(filtre_form.priorite.data))
     
@@ -209,6 +218,56 @@ def messages():
             MessageInterne.sujet.ilike(terme),
             MessageInterne.contenu.ilike(terme)
         ))
+    
+    # Filtres par catégorie et étiquette (simulation)
+    if categorie_filter:
+        # Pour l'instant, filtrer par mots-clés dans le sujet ou contenu
+        if categorie_filter == 'work':
+            terme = "%travail%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+        elif categorie_filter == 'documents':
+            terme = "%document%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+        elif categorie_filter == 'reports':
+            terme = "%rapport%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+        elif categorie_filter == 'notifications':
+            terme = "%notification%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+    
+    if etiquette_filter:
+        if etiquette_filter == 'urgent':
+            query = query.filter(MessageInterne.priorite == 3)
+        elif etiquette_filter == 'maintenance':
+            terme = "%maintenance%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+        elif etiquette_filter == 'production':
+            terme = "%production%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
+        elif etiquette_filter == 'distribution':
+            terme = "%distribution%"
+            query = query.filter(or_(
+                MessageInterne.sujet.ilike(terme),
+                MessageInterne.contenu.ilike(terme)
+            ))
     
     # Pagination
     page = request.args.get('page', 1, type=int)
@@ -247,7 +306,13 @@ def messages():
                          filtre_form=filtre_form,
                          vue=vue,
                          stats=stats,
-                         now=datetime.now())
+                         now=datetime.now(),
+                         current_filters={
+                             'priorite': priorite_filter,
+                             'statut': statut_filter,
+                             'categorie': categorie_filter,
+                             'etiquette': etiquette_filter
+                         })
 
 
 @bp.route('/messages/nouveau', methods=['GET', 'POST'])

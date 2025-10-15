@@ -553,6 +553,7 @@
 </div>
 
 <script>
+{% raw %}
 // Variables globales
 let composeOpen = false;
 
@@ -581,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
         element.addEventListener('click', function() {
             const messageId = this.getAttribute('data-message-id');
             if (messageId) {
-                const url = "{{ url_for('notifications.voir_message', id='PLACEHOLDER_ID') }}".replace('PLACEHOLDER_ID', messageId);
+                const url = "{ url_for('notifications.voir_message', id='PLACEHOLDER_ID') }".replace('PLACEHOLDER_ID', messageId);
                 window.location.href = url;
             }
         });
@@ -654,5 +655,6 @@ document.addEventListener('keydown', function(e) {
         closeCompose();
     }
 });
+{% endraw %}
 </script>
 {% endblock %}

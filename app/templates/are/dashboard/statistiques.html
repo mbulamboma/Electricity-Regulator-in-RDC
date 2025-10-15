@@ -1,0 +1,925 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques Complètes ARE{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Styles personnalisés pour le dashboard ARE */
+.dashboard-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 10px 10px 0 0;
+    margin-right: 5px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.nav-tabs .nav-link:hover {
+    background: #e9ecef;
+    border: none;
+}
+
+.tab-content {
+    background: white;
+    border-radius: 0 10px 10px 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 0;
+}
+
+.btn-delete-kpi {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+.btn-delete-kpi:hover {
+    opacity: 1;
+    color: #c82333;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin: 20px 0;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 10px 0;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.metric-trend {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i> Tableau de Bord Stratégique ARE</h4>
+                    <p class="mb-0 opacity-75">Analyse complète du secteur électrique de la RDC</p>
+                </div>
+                <div class="card-body">
+                    <!-- Filtres de période -->
+                    <form method="GET" class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label for="annee_debut" class="form-label">Année de début:</label>
+                            <input type="number" id="annee_debut" name="annee_debut" value="{{ annee_debut }}" 
+                                   class="form-control" min="2020" max="2030">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="annee_fin" class="form-label">Année de fin:</label>
+                            <input type="number" id="annee_fin" name="annee_fin" value="{{ annee_fin }}" 
+                                   class="form-control" min="2020" max="2030">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-filter me-1"></i> Filtrer
+                            </button>
+                            <a class="btn btn-success" href="{{ url_for('are_dashboard.calculer_statistiques', annee=2024) }}">
+                                <i class="fas fa-calculator me-1"></i> Recalculer 2024
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Navigation par onglets -->
+                    <ul class="nav nav-tabs" id="statsTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" href="#portfolio" role="tab">
+                                <i class="fas fa-briefcase"></i> Portfolio Projets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="capacite-tab" data-bs-toggle="tab" href="#capacite" role="tab">
+                                <i class="fas fa-bolt"></i> Capacité Installée
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="production-tab" data-bs-toggle="tab" href="#production" role="tab">
+                                <i class="fas fa-industry"></i> Production
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="solaire-tab" data-bs-toggle="tab" href="#solaire" role="tab">
+                                <i class="fas fa-sun"></i> Solaire
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="clientele-tab" data-bs-toggle="tab" href="#clientele" role="tab">
+                                <i class="fas fa-users"></i> Clientèle
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="carte-tab" data-bs-toggle="tab" href="#carte" role="tab">
+                                <i class="fas fa-map"></i> Carte RDC
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="statsTabContent">
+                        <!-- 1. Portfolio de projets -->
+                        <div class="tab-pane fade show active" id="portfolio" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-briefcase"></i> Portfolio des Projets Traités par l'ARE</h4>
+                                <p class="text-muted">Capacité (MW) des nouveaux projets ayant obtenu un avis favorable</p>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Projet</th>
+                                                <th>Type</th>
+                                                <th>Opérateur</th>
+                                                <th>Capacité (MW)</th>
+                                                <th>Investissement (M$)</th>
+                                                <th>Statut</th>
+                                                <th>Année Avis</th>
+                                                <th>Province</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for projet in portfolio %}
+                                            <tr>
+                                                <td><strong>{{ projet.nom_projet }}</strong></td>
+                                                <td>
+                                                    {% if projet.type_projet == 'production_hydro' %}
+                                                        <span class="badge badge-info">Hydro</span>
+                                                    {% elif projet.type_projet == 'production_thermique' %}
+                                                        <span class="badge badge-warning">Thermique</span>
+                                                    {% elif projet.type_projet == 'production_solaire' %}
+                                                        <span class="badge badge-success">Solaire</span>
+                                                    {% else %}
+                                                        <span class="badge badge-secondary">{{ projet.type_projet }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ projet.operateur or 'N/A' }}</td>
+                                                <td class="text-right"><strong>{{ "{:,.2f}".format(projet.capacite_mw) }}</strong></td>
+                                                <td class="text-right">{{ "{:,.1f}".format(projet.investissement_usd) if projet.investissement_usd else 'N/A' }}</td>
+                                                <td>
+                                                    {% if projet.statut == 'avis_favorable' %}
+                                                        <span class="badge badge-success">Favorable</span>
+                                                    {% elif projet.statut == 'avis_defavorable' %}
+                                                        <span class="badge badge-danger">Défavorable</span>
+                                                    {% else %}
+                                                        <span class="badge badge-warning">{{ projet.statut }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">{{ projet.annee_avis or 'N/A' }}</td>
+                                                <td>{{ projet.province or 'N/A' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Capacité installée -->
+                        <div class="tab-pane fade" id="capacite" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-bolt"></i> Évolution de la Capacité Installée</h4>
+                                
+                                <!-- Graphique d'évolution -->
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <canvas id="capaciteChart" height="100"></canvas>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget navy-bg p-lg text-center">
+                                            <div class="m-b-md">
+                                                <i class="fas fa-bolt fa-4x"></i>
+                                                <h1 class="m-xs">{{ "{:,.0f}".format(stats_nationales[-1].capacite_totale_installee_mw) if stats_nationales }} MW</h1>
+                                                <h3 class="font-bold no-margins">
+                                                    Capacité Totale {{ annee_fin }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tableau détaillé -->
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Année</th>
+                                                <th>Source</th>
+                                                <th>Opérateur</th>
+                                                <th>Installée (MW)</th>
+                                                <th>Disponible (MW)</th>
+                                                <th>Production (GWh)</th>
+                                                <th>Facteur de Charge (%)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for capacite in evolution_capacite %}
+                                            <tr>
+                                                <td class="text-center">{{ capacite.annee }}</td>
+                                                <td>
+                                                    {% if capacite.type_source == 'production_hydro' %}
+                                                        <span class="badge badge-info">Hydro</span>
+                                                    {% elif capacite.type_source == 'production_thermique' %}
+                                                        <span class="badge badge-warning">Thermique</span>
+                                                    {% elif capacite.type_source == 'production_solaire' %}
+                                                        <span class="badge badge-success">Solaire</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ capacite.operateur }}</td>
+                                                <td class="text-right">{{ "{:,.2f}".format(capacite.capacite_installee_mw) }}</td>
+                                                <td class="text-right">{{ "{:,.2f}".format(capacite.capacite_disponible_mw or 0) }}</td>
+                                                <td class="text-right">{{ "{:,.2f}".format(capacite.production_annuelle_gwh or 0) }}</td>
+                                                <td class="text-right">{{ "{:,.1f}".format(capacite.facteur_charge or 0) }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Production -->
+                        <div class="tab-pane fade" id="production" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-industry"></i> Production Annuelle d'Énergie Électrique</h4>
+                                
+                                <!-- Graphique de production -->
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <canvas id="productionChart" height="100"></canvas>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget lazur-bg p-lg text-center">
+                                            <div class="m-b-md">
+                                                <i class="fas fa-industry fa-4x"></i>
+                                                <h1 class="m-xs">{{ "{:,.0f}".format(stats_nationales[-1].production_totale_annuelle_gwh) if stats_nationales }} GWh</h1>
+                                                <h3 class="font-bold no-margins">
+                                                    Production {{ annee_fin }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Répartition par source -->
+                                <div class="row mt-3">
+                                    {% if stats_nationales %}
+                                    {% set derniere_stat = stats_nationales[-1] %}
+                                    <div class="col-md-4">
+                                        <div class="widget style1 navy-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-water fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Hydro</span>
+                                                    <h2 class="font-bold">{{ "{:,.0f}".format(derniere_stat.production_hydro_gwh) }} GWh</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget style1 yellow-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-fire fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Thermique</span>
+                                                    <h2 class="font-bold">{{ "{:,.0f}".format(derniere_stat.production_thermique_gwh) }} GWh</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget style1 lazur-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-sun fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Solaire</span>
+                                                    <h2 class="font-bold">{{ "{:,.0f}".format(derniere_stat.production_solaire_gwh) }} GWh</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Solaire spécifique -->
+                        <div class="tab-pane fade" id="solaire" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-sun"></i> Production Solaire - Tableau 7A</h4>
+                                <p class="text-muted">Production solaire toutes tailles confondues</p>
+                                
+                                <!-- Tableau comme dans l'attachment -->
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="background-color: #8bc34a;">Opérateurs</th>
+                                                <th style="background-color: #8bc34a;">Types d'installation</th>
+                                                <th style="background-color: #8bc34a;">Production annuelle 2024 (MWh)</th>
+                                                <th style="background-color: #8bc34a;">Capacité installée en 2024</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for donnee in donnees_solaires %}
+                                            {% if donnee.annee == 2024 and donnee.type_installation != 'nationale' %}
+                                            <tr>
+                                                <td>{{ donnee.operateur or 'N/A' }}</td>
+                                                <td>{{ donnee.type_installation.replace('_', ' ').title() }}</td>
+                                                <td class="text-right">{{ "{:,.2f}".format(donnee.production_annuelle_gwh * 1000) }}</td>
+                                                <td class="text-right">{{ "{:,.2f}".format(donnee.puissance_installee_mw) }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% endfor %}
+                                            <tr style="background-color: #3f51b5; color: white;">
+                                                <td><strong>Total</strong></td>
+                                                <td></td>
+                                                <td class="text-right"><strong>3 536,90 MWh</strong></td>
+                                                <td class="text-right"><strong>3,26 MWc</strong></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Évolution de la production solaire -->
+                                <h5 class="mt-4"><i class="fas fa-chart-area"></i> Évolution de la Production Solaire</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr style="background-color: #8bc34a;">
+                                                <th>Années</th>
+                                                <th>2020</th>
+                                                <th>2021</th>
+                                                <th>2022</th>
+                                                <th>2023</th>
+                                                <th>2024</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Production Annuelle en kWh du Solaire</strong></td>
+                                                <td class="text-right">253 462</td>
+                                                <td class="text-right">1 074 312,72</td>
+                                                <td class="text-right">1 895 163,43</td>
+                                                <td class="text-right">2 716 014,145</td>
+                                                <td class="text-right">3 536 864,86</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Clientèle -->
+                        <div class="tab-pane fade" id="clientele" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-users"></i> Statistiques de Clientèle Électrique</h4>
+                                
+                                <!-- Graphique évolution clients -->
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <canvas id="clienteleChart" height="100"></canvas>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget red-bg p-lg text-center">
+                                            <div class="m-b-md">
+                                                <i class="fas fa-users fa-4x"></i>
+                                                <h1 class="m-xs">{{ "{:,.0f}".format(stats_nationales[-1].total_clients_nationaux) if stats_nationales }}</h1>
+                                                <h3 class="font-bold no-margins">
+                                                    Clients {{ annee_fin }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Répartition par tension -->
+                                <div class="row mt-3">
+                                    {% if stats_nationales %}
+                                    {% set derniere_stat = stats_nationales[-1] %}
+                                    <div class="col-md-4">
+                                        <div class="widget style1 red-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-bolt fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Haute Tension</span>
+                                                    <h2 class="font-bold">{{ "{:,}".format(derniere_stat.clients_ht_nationaux) }}</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget style1 yellow-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-plug fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Moyenne Tension</span>
+                                                    <h2 class="font-bold">{{ "{:,}".format(derniere_stat.clients_mt_nationaux) }}</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="widget style1 lazur-bg">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <i class="fas fa-home fa-5x"></i>
+                                                </div>
+                                                <div class="col-8 text-right">
+                                                    <span>Basse Tension</span>
+                                                    <h2 class="font-bold">{{ "{:,}".format(derniere_stat.clients_bt_nationaux) }}</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Taux d'accès -->
+                                <div class="row mt-3">
+                                    {% if stats_nationales %}
+                                    {% set derniere_stat = stats_nationales[-1] %}
+                                    <div class="col-md-4">
+                                        <div class="statistic-box">
+                                            <h4>{{ "{:.1f}".format(derniere_stat.taux_acces_national) }}%</h4>
+                                            <small class="text-muted">Taux d'accès à l'électricité</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="statistic-box">
+                                            <h4>{{ "{:.1f}".format(derniere_stat.taux_electrification_national) }}%</h4>
+                                            <small class="text-muted">Taux d'électrification</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="statistic-box">
+                                            <h4>{{ "{:.1f}".format(derniere_stat.taux_couverture_national) }}%</h4>
+                                            <small class="text-muted">Taux de couverture géographique</small>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Carte de la RDC -->
+                        <div class="tab-pane fade" id="carte" role="tabpanel">
+                            <div class="panel-body">
+                                <h4><i class="fas fa-map"></i> Carte Électrique de la République Démocratique du Congo</h4>
+                                <p class="text-muted">Répartition géographique des infrastructures électriques par province</p>
+                                
+                                <div class="row">
+                                    <!-- Carte interactive -->
+                                    <div class="col-md-8">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h5><i class="fas fa-map-marked-alt"></i> Carte Interactive - Capacités par Province</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="carte-rdc" style="height: 500px; width: 100%;">
+                                                    <!-- SVG de la carte RDC sera ici -->
+                                                    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+                                                        <!-- Contour de la RDC simplifié -->
+                                                        <defs>
+                                                            <style>
+                                                                .province { fill: #e3f2fd; stroke: #1976d2; stroke-width: 1; cursor: pointer; transition: all 0.3s; }
+                                                                .province:hover { fill: #bbdefb; stroke-width: 2; }
+                                                                .province.high-capacity { fill: #2e7d32; }
+                                                                .province.medium-capacity { fill: #ffa726; }
+                                                                .province.low-capacity { fill: #e57373; }
+                                                                .capital { fill: #1565c0; }
+                                                                .legend-text { font-family: Arial; font-size: 12px; }
+                                                                .province-label { font-family: Arial; font-size: 10px; text-anchor: middle; }
+                                                            </style>
+                                                        </defs>
+                                                        
+                                                        <!-- Kinshasa (capitale) -->
+                                                        <circle cx="150" cy="350" r="8" class="capital" title="Kinshasa - Capital">
+                                                            <title>Kinshasa - Capacité: 800+ MW</title>
+                                                        </circle>
+                                                        <text x="150" y="370" class="province-label">Kinshasa</text>
+                                                        
+                                                        <!-- Provinces principales avec formes simplifiées -->
+                                                        <!-- Haut-Katanga -->
+                                                        <rect x="400" y="450" width="120" height="80" class="province high-capacity" data-province="Haut-Katanga">
+                                                            <title>Haut-Katanga - Capacité: 400+ MW</title>
+                                                        </rect>
+                                                        <text x="460" y="495" class="province-label">Haut-Katanga</text>
+                                                        
+                                                        <!-- Lualaba -->
+                                                        <rect x="350" y="420" width="80" height="60" class="province medium-capacity" data-province="Lualaba">
+                                                            <title>Lualaba - Capacité: 200+ MW</title>
+                                                        </rect>
+                                                        <text x="390" y="455" class="province-label">Lualaba</text>
+                                                        
+                                                        <!-- Kongo Central -->
+                                                        <rect x="80" y="380" width="100" height="70" class="province medium-capacity" data-province="Kongo Central">
+                                                            <title>Kongo Central - Capacité: 150+ MW</title>
+                                                        </rect>
+                                                        <text x="130" y="420" class="province-label">Kongo Central</text>
+                                                        
+                                                        <!-- Sud-Kivu -->
+                                                        <rect x="520" y="350" width="80" height="90" class="province medium-capacity" data-province="Sud-Kivu">
+                                                            <title>Sud-Kivu - Capacité: 120+ MW</title>
+                                                        </rect>
+                                                        <text x="560" y="400" class="province-label">Sud-Kivu</text>
+                                                        
+                                                        <!-- Nord-Kivu -->
+                                                        <rect x="520" y="280" width="80" height="70" class="province low-capacity" data-province="Nord-Kivu">
+                                                            <title>Nord-Kivu - Capacité: 80+ MW</title>
+                                                        </rect>
+                                                        <text x="560" y="320" class="province-label">Nord-Kivu</text>
+                                                        
+                                                        <!-- Autres provinces -->
+                                                        <rect x="200" y="300" width="90" height="80" class="province low-capacity" data-province="Kasaï">
+                                                            <title>Kasaï - Capacité: 60+ MW</title>
+                                                        </rect>
+                                                        <text x="245" y="345" class="province-label">Kasaï</text>
+                                                        
+                                                        <rect x="300" y="200" width="120" height="90" class="province low-capacity" data-province="Équateur">
+                                                            <title>Équateur - Capacité: 40+ MW</title>
+                                                        </rect>
+                                                        <text x="360" y="250" class="province-label">Équateur</text>
+                                                        
+                                                        <rect x="450" y="200" width="100" height="80" class="province low-capacity" data-province="Tshopo">
+                                                            <title>Tshopo - Capacité: 50+ MW</title>
+                                                        </rect>
+                                                        <text x="500" y="245" class="province-label">Tshopo</text>
+                                                        
+                                                        <!-- Légende -->
+                                                        <g transform="translate(50, 50)">
+                                                            <text x="0" y="0" class="legend-text" style="font-weight: bold;">Légende - Capacité Installée</text>
+                                                            <rect x="0" y="15" width="15" height="15" class="high-capacity"/>
+                                                            <text x="20" y="27" class="legend-text">+ 200 MW</text>
+                                                            <rect x="0" y="35" width="15" height="15" class="medium-capacity"/>
+                                                            <text x="20" y="47" class="legend-text">100-200 MW</text>
+                                                            <rect x="0" y="55" width="15" height="15" class="low-capacity"/>
+                                                            <text x="20" y="67" class="legend-text">- 100 MW</text>
+                                                            <circle cx="7" cy="82" r="5" class="capital"/>
+                                                            <text x="20" y="87" class="legend-text">Capitale</text>
+                                                        </g>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Statistiques par province -->
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h5><i class="fas fa-chart-bar"></i> Top 10 Provinces</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="list-group">
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Kinshasa</strong>
+                                                            <br><small class="text-muted">17M habitants</small>
+                                                        </div>
+                                                        <span class="badge bg-success rounded-pill">850 MW</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Haut-Katanga</strong>
+                                                            <br><small class="text-muted">5.2M habitants</small>
+                                                        </div>
+                                                        <span class="badge bg-success rounded-pill">420 MW</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Lualaba</strong>
+                                                            <br><small class="text-muted">2.8M habitants</small>
+                                                        </div>
+                                                        <span class="badge bg-warning rounded-pill">180 MW</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Kongo Central</strong>
+                                                            <br><small class="text-muted">5.5M habitants</small>
+                                                        </div>
+                                                        <span class="badge bg-warning rounded-pill">160 MW</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Sud-Kivu</strong>
+                                                            <br><small class="text-muted">6.2M habitants</small>
+                                                        </div>
+                                                        <span class="badge bg-warning rounded-pill">125 MW</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Résumé national -->
+                                                <div class="mt-4 p-3 bg-light rounded">
+                                                    <h6><i class="fas fa-flag"></i> Résumé National 2024</h6>
+                                                    <div class="row text-center">
+                                                        <div class="col-6">
+                                                            <strong>26</strong>
+                                                            <br><small>Provinces</small>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <strong>3,680 MW</strong>
+                                                            <br><small>Capacité totale</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row text-center mt-2">
+                                                        <div class="col-6">
+                                                            <strong>27.5%</strong>
+                                                            <br><small>Taux d'accès</small>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <strong>1.32M</strong>
+                                                            <br><small>Clients</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tableau détaillé par province -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h5><i class="fas fa-table"></i> Données Détaillées par Province</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped table-hover">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Province</th>
+                                                                <th>Population</th>
+                                                                <th>Capacité (MW)</th>
+                                                                <th>Production (GWh)</th>
+                                                                <th>Nombre d'Opérateurs</th>
+                                                                <th>Taux d'Accès (%)</th>
+                                                                <th>Investissements (M USD)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% if donnees_provinciales %}
+                                                                {% for province in donnees_provinciales %}
+                                                                    {% if province.annee == 2024 %}
+                                                                    <tr>
+                                                                        <td><strong>{{ province.province }}</strong></td>
+                                                                        <td>{{ "{:,}".format(province.population or 0) }}</td>
+                                                                        <td>{{ "{:,.1f}".format(province.puissance_installee or 0) }}</td>
+                                                                        <td>{{ "{:,.1f}".format(province.production_annuelle or 0) }}</td>
+                                                                        <td>{{ "{:,}".format(province.nombre_operateurs or 0) }}</td>
+                                                                        <td>{{ "{:.1f}".format(province.taux_acces_electricite or 0) }}%</td>
+                                                                        <td>{{ "{:,.1f}".format(province.investissements or 0) }}</td>
+                                                                    </tr>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <tr>
+                                                                    <td colspan="7" class="text-center text-muted">
+                                                                        Aucune donnée provinciale disponible
+                                                                    </td>
+                                                                </tr>
+                                                            {% endif %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% raw %}
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Configuration communes pour tous les graphiques
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    // 1. Graphique d'évolution de la capacité installée
+    const capaciteCtx = document.getElementById('capaciteChart');
+    if (capaciteCtx) {
+        new Chart(capaciteCtx, {
+            type: 'line',
+            data: {
+                labels: { graphiques_data.evolution_capacite_labels | tojson },
+                datasets: [{
+                    label: 'Hydraulique (MW)',
+                    data: { graphiques_data.evolution_capacite_hydro | tojson },
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.1
+                }, {
+                    label: 'Thermique (MW)',
+                    data: { graphiques_data.evolution_capacite_thermique | tojson },
+                    borderColor: 'rgb(255, 205, 86)',
+                    backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                    tension: 0.1
+                }, {
+                    label: 'Solaire (MW)',
+                    data: { graphiques_data.evolution_capacite_solaire | tojson },
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Évolution de la Capacité Installée par Source'
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Graphique de production totale
+    const productionCtx = document.getElementById('productionChart');
+    if (productionCtx) {
+        new Chart(productionCtx, {
+            type: 'bar',
+            data: {
+                labels: { graphiques_data.evolution_production_labels | tojson },
+                datasets: [{
+                    label: 'Production Totale (GWh)',
+                    data: { graphiques_data.evolution_production_values | tojson },
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgb(153, 102, 255)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Évolution de la Production Annuelle'
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Graphique d'évolution de la clientèle
+    const clienteleCtx = document.getElementById('clienteleChart');
+    if (clienteleCtx) {
+        new Chart(clienteleCtx, {
+            type: 'line',
+            data: {
+                labels: { graphiques_data.evolution_clients_labels | tojson },
+                datasets: [{
+                    label: 'Nombre de Clients',
+                    data: { graphiques_data.evolution_clients_values | tojson },
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Évolution du Nombre de Clients'
+                    }
+                }
+            }
+        });
+    }
+
+    // 7. Interactivité de la carte RDC
+    document.querySelectorAll('.province').forEach(province => {
+        province.addEventListener('click', function() {
+            const provinceName = this.getAttribute('data-province');
+            const title = this.querySelector('title');
+            if (title) {
+                alert('Province: ' + provinceName + '\n' + title.textContent);
+            }
+        });
+        
+        // Effet de survol
+        province.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.transformOrigin = 'center';
+        });
+        
+        province.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+
+    // Animation des badges
+    function animateCounters() {
+        const counters = document.querySelectorAll('.badge');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    counter.textContent = counter.textContent.replace(/[\d,]+/, target.toLocaleString());
+                    clearInterval(timer);
+                } else {
+                    counter.textContent = counter.textContent.replace(/[\d,]+/, Math.floor(current).toLocaleString());
+                }
+            }, 50);
+        });
+    }
+
+    // Lancer l'animation des compteurs quand l'onglet carte est activé
+    document.querySelector('a[href="#carte"]').addEventListener('shown.bs.tab', function() {
+        setTimeout(animateCounters, 300);
+    });
+});
+{% endraw %}
+</script>
+{% endblock %}

@@ -303,8 +303,9 @@
 
 {% block extra_js %}
 <script>
+{% raw %}
 // Données d'analyse
-const analyticsData = {{ analytics_data | tojson }};
+const analyticsData = { analytics_data | tojson };
 
 // Configuration des couleurs
 const colors = {
@@ -405,5 +406,6 @@ new Chart(maintenanceCtx, {
         }
     }
 });
+{% endraw %}
 </script>
 {% endblock %}

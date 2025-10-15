@@ -596,28 +596,31 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
-    const map = L.map('map').setView([{{ centrale.latitude }}, {{ centrale.longitude }}], 13);
+    const map = L.map('map').setView([{ centrale.latitude }, { centrale.longitude }], 13);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
     
-    L.marker([{{ centrale.latitude }}, {{ centrale.longitude }}])
+    L.marker([{ centrale.latitude }, { centrale.longitude }])
         .addTo(map)
-        .bindPopup('<strong>{{ centrale.nom }}</strong><br>{{ centrale.localisation }}')
+        .bindPopup('<strong>{ centrale.nom }</strong><br>{ centrale.localisation }')
         .openPopup();
 });
+{% endraw %}
 </script>
 {% else %}
 <!-- Leaflet pour la sélection de coordonnées -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+{% raw %}
 let map = null;
 let marker = null;
-let groupeIndex = {{ form.groupes_production|length if form.groupes_production else 0 }};
-let transformateurIndex = {{ form.transformateurs|length if form.transformateurs else 0 }};
+let groupeIndex = { form.groupes_production|length if form.groupes_production else 0 };
+let transformateurIndex = { form.transformateurs|length if form.transformateurs else 0 };
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialiser les dates
@@ -886,6 +889,7 @@ document.getElementById('centraleForm').addEventListener('submit', function(e) {
         alert('Veuillez remplir tous les champs obligatoires.');
     }
 });
+{% endraw %}
 </script>
 {% endif %}
 {% endblock %}

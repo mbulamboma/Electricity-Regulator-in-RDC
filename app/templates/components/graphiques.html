@@ -85,9 +85,11 @@
 </script>
 
 <script>
+{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
-    initGraphiqueLigne('{{ id }}');
+    initGraphiqueLigne('{ id }');
 });
+{% endraw %}
 </script>
 {% endmacro %}
 
