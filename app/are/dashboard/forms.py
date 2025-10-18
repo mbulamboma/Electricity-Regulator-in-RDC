@@ -806,3 +806,14 @@ class CollecteSolaireForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.operateur_id.choices.extend(get_operateur_choices())
+
+
+class EditKPIForm(FlaskForm):
+    """Formulaire pour modifier un KPI stratégique"""
+    
+    nom = StringField('Indicateur', validators=[DataRequired()])
+    valeur = FloatField('Valeur', validators=[DataRequired()])
+    objectif = FloatField('Objectif', validators=[Optional()])
+    unite = StringField('Unité', validators=[Optional()])
+    statut = SelectField('Statut', choices=[('atteint', 'Atteint'), ('en_cours', 'En cours')], validators=[DataRequired()])
+    submit = SubmitField('Enregistrer')

@@ -146,102 +146,14 @@
 {% endif %}
 
 <!-- Indicateur de progression -->
-<div class="progress-indicator">
-    <div class="d-flex flex-wrap align-items-center">
-        <span class="me-2 fw-bold">Sections :</span>
-        <a href="#section-general" class="progress-step active" data-section="general">
-            <i class="fas fa-info-circle me-1"></i>Général
-        </a>
-        <a href="#section-production" class="progress-step" data-section="production">
-            <i class="fas fa-bolt me-1"></i>Production
-        </a>
-        <a href="#section-groupes" class="progress-step" data-section="groupes">
-            <i class="fas fa-cogs me-1"></i>Groupes
-        </a>
-        <a href="#section-transformateurs" class="progress-step" data-section="transformateurs">
-            <i class="fas fa-plug me-1"></i>Transformateurs
-        </a>
-        <a href="#section-maintenance" class="progress-step" data-section="maintenance">
-            <i class="fas fa-tools me-1"></i>Maintenance
-        </a>
-    </div>
-</div>
+{% include 'production_hydro/composants_centrales/indicateur_progress.html' %}
+ 
 
 <form method="POST" id="rapportForm" novalidate>
     {{ form.hidden_tag() }}
     
     <!-- Section Informations Générales -->
-    <div class="form-section" id="section-general">
-        <h5><i class="fas fa-info-circle me-2"></i>Informations Générales</h5>
-        <div class="row">
-            <div class="col-md-6 required-field">
-                {{ form.centrale_id.label(class="form-label") }}
-                {{ form.centrale_id(class="form-select" + (" is-invalid" if form.centrale_id.errors else ""), id="centrale_id") }}
-                {% if form.centrale_id.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.centrale_id.errors %}{{ error }}{% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-            <div class="col-md-3 required-field">
-                {{ form.annee.label(class="form-label") }}
-                {{ form.annee(class="form-control" + (" is-invalid" if form.annee.errors else "")) }}
-                {% if form.annee.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.annee.errors %}{{ error }}{% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-            <div class="col-md-3 required-field">
-                {{ form.mois.label(class="form-label") }}
-                {{ form.mois(class="form-select" + (" is-invalid" if form.mois.errors else "")) }}
-                {% if form.mois.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.mois.errors %}{{ error }}{% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div class="row mt-3">
-            <div class="col-md-6 required-field">
-                {{ form.periode_debut.label(class="form-label") }}
-                {{ form.periode_debut(class="form-control" + (" is-invalid" if form.periode_debut.errors else ""), placeholder="dd/mm/yyyy") }}
-                {% if form.periode_debut.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.periode_debut.errors %}{{ error }}{% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-            <div class="col-md-6 required-field">
-                {{ form.periode_fin.label(class="form-label") }}
-                {{ form.periode_fin(class="form-control" + (" is-invalid" if form.periode_fin.errors else ""), placeholder="dd/mm/yyyy") }}
-                {% if form.periode_fin.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.periode_fin.errors %}{{ error }}{% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Informations sur la centrale sélectionnée -->
-        <div id="centrale-info" class="mt-3" style="display: none;">
-            <div class="alert alert-info">
-                <h6>Informations de la centrale :</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <strong>Puissance installée :</strong> <span id="centrale-puissance">-</span> MW
-                    </div>
-                    <div class="col-md-4">
-                        <strong>Groupes :</strong> <span id="centrale-groupes">-</span>
-                    </div>
-                    <div class="col-md-4">
-                        <strong>Transformateurs :</strong> <span id="centrale-transformateurs">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include 'production_hydro/composants_centrales/information_generale.html' %}
     
     <!-- Section Données Hydrologiques -->
     <div class="form-section">
@@ -575,8 +487,8 @@
 <script>
 {% raw %}
 // Variables globales
-let groupeIndex = { form.groupes_production|length };
-let transformateurIndex = { form.transformateurs|length };
+let groupeIndex = 0;
+let transformateurIndex = 0;
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
@@ -592,6 +504,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (centraleSelect.value) {
         chargerInfosCentrale(centraleSelect.value);
     }
+    
+    // Attacher l'événement onchange au champ centrale
+    centraleSelect.addEventListener('change', function() {
+        chargerInfosCentrale(this.value);
+    });
     
     // Événements pour les calculs automatiques
     setupCalculsAutomatiques();
@@ -620,12 +537,52 @@ function chargerInfosCentrale(centraleId) {
                 document.getElementById('centrale-transformateurs').textContent = centrale.nombre_transformateurs || '-';
                 document.getElementById('centrale-info').style.display = 'block';
                 
-                // Ajuster le nombre de groupes et transformateurs si nécessaire
-                ajusterNombreFormsets('groupes', centrale.nombre_groupes);
-                ajusterNombreFormsets('transformateurs', centrale.nombre_transformateurs);
+                // Charger les équipements détaillés
+                chargerEquipementsCentrale(centraleId);
             }
         })
         .catch(error => console.error('Erreur:', error));
+}
+
+// Charger les équipements détaillés de la centrale
+function chargerEquipementsCentrale(centraleId) {
+    fetch(`/production-hydro/api/centrale/${centraleId}/equipements`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Données équipements reçues:', data);
+            // Pré-remplir les groupes
+            preremplirGroupes(data.groupes);
+            
+            // Pré-remplir les transformateurs
+            preremplirTransformateurs(data.transformateurs);
+        })
+        .catch(error => console.error('Erreur chargement équipements:', error));
+}
+
+// Pré-remplir les groupes de production
+function preremplirGroupes(groupes) {
+    // Vider les groupes existants
+    const container = document.getElementById('groupes-container');
+    container.innerHTML = '';
+    groupeIndex = 0;
+    
+    // Ajouter chaque groupe existant
+    groupes.forEach(groupe => {
+        ajouterGroupeAvecDonnees(groupe);
+    });
+}
+
+// Pré-remplir les transformateurs
+function preremplirTransformateurs(transformateurs) {
+    // Vider les transformateurs existants
+    const container = document.getElementById('transformateurs-container');
+    container.innerHTML = '';
+    transformateurIndex = 0;
+    
+    // Ajouter chaque transformateur existant
+    transformateurs.forEach(transfo => {
+        ajouterTransformateurAvecDonnees(transfo);
+    });
 }
 
 // Ajuster le nombre de formsets selon les données de la centrale
@@ -825,6 +782,235 @@ function supprimerTransformateur(index) {
         deleteInput.value = 'true';
         element.classList.add('marked-for-deletion');
     }
+}
+
+// Ajouter un groupe avec données pré-remplies
+function ajouterGroupeAvecDonnees(groupe) {
+    const container = document.getElementById('groupes-container');
+    const template = `
+        <div class="formset-item" id="groupe-${groupeIndex}">
+            <input type="hidden" name="groupes_production-${groupeIndex}-id" value="${groupe.id || ''}">
+            <input type="hidden" name="groupes_production-${groupeIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                    onclick="supprimerGroupe(${groupeIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-numero_groupe" class="form-control" placeholder="G01" value="${groupe.numero_groupe || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom du groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-nom_groupe" class="form-control" value="${groupe.nom_groupe || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance nominale (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_nominale" class="form-control groupe-puissance" value="${groupe.puissance_nominale || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type de turbine</label>
+                    <select name="groupes_production-${groupeIndex}-type_turbine" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="Pelton" ${groupe.type_turbine === 'Pelton' ? 'selected' : ''}>Pelton</option>
+                        <option value="Francis" ${groupe.type_turbine === 'Francis' ? 'selected' : ''}>Francis</option>
+                        <option value="Kaplan" ${groupe.type_turbine === 'Kaplan' ? 'selected' : ''}>Kaplan</option>
+                        <option value="Turgo" ${groupe.type_turbine === 'Turgo' ? 'selected' : ''}>Turgo</option>
+                        <option value="Banki" ${groupe.type_turbine === 'Banki' ? 'selected' : ''}>Banki</option>
+                        <option value="Autre" ${groupe.type_turbine === 'Autre' ? 'selected' : ''}>Autre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tension nominale (kV)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-tension_nominale" class="form-control" value="${groupe.tension_nominale || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Vitesse rotation (tr/min)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-vitesse_rotation" class="form-control" value="${groupe.vitesse_rotation || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Heures fonctionnement</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-heures_fonctionnement" class="form-control groupe-heures" value="${groupe.heures_fonctionnement || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Énergie produite (MWh)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-energie_produite" class="form-control groupe-energie" value="${groupe.energie_produite || ''}">
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Puissance moyenne (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_moyenne" class="form-control" value="${groupe.puissance_moyenne || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance max (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_max" class="form-control" value="${groupe.puissance_max || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Arrêts programmés</label>
+                    <input type="number" name="groupes_production-${groupeIndex}-nombre_arrets_programme" class="form-control" value="${groupe.nombre_arrets_programme || 0}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Arrêts forcés</label>
+                    <input type="number" name="groupes_production-${groupeIndex}-nombre_arrets_force" class="form-control" value="${groupe.nombre_arrets_force || 0}">
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Durée arrêts prog. (h)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-duree_arrets_programme" class="form-control" value="${groupe.duree_arrets_programme || 0.0}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durée arrêts forcés (h)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-duree_arrets_force" class="form-control" value="${groupe.duree_arrets_force || 0.0}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Rendement moyen (%)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-rendement_moyen" class="form-control" value="${groupe.rendement_moyen || ''}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Travaux réalisés</label>
+                    <textarea name="groupes_production-${groupeIndex}-travaux_realises" class="form-control" rows="2">${groupe.travaux_realises || ''}</textarea>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Incidents</label>
+                    <textarea name="groupes_production-${groupeIndex}-incidents" class="form-control" rows="3">${groupe.incidents || ''}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observations</label>
+                    <textarea name="groupes_production-${groupeIndex}-observations" class="form-control" rows="3">${groupe.observations || ''}</textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    groupeIndex++;
+    
+    // Reconfigurer les événements pour les calculs
+    setupCalculsAutomatiques();
+}
+
+// Ajouter un transformateur avec données pré-remplies
+function ajouterTransformateurAvecDonnees(transfo) {
+    const container = document.getElementById('transformateurs-container');
+    const template = `
+        <div class="formset-item" id="transformateur-${transformateurIndex}">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-id" value="${transfo.id || ''}">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-formset-item" 
+                    onclick="supprimerTransformateur(${transformateurIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Transformateur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-numero_transformateur" class="form-control" placeholder="T01" value="${transfo.numero_transformateur || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-nom_transformateur" class="form-control" value="${transfo.nom_transformateur || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance (MVA)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-puissance_nominale" class="form-control" value="${transfo.puissance_nominale || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Refroidissement</label>
+                    <select name="transformateurs-${transformateurIndex}-type_refroidissement" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="ONAN" ${transfo.type_refroidissement === 'ONAN' ? 'selected' : ''}>ONAN - Huile naturelle</option>
+                        <option value="ONAF" ${transfo.type_refroidissement === 'ONAF' ? 'selected' : ''}>ONAF - Huile forcée</option>
+                        <option value="OFAF" ${transfo.type_refroidissement === 'OFAF' ? 'selected' : ''}>OFAF - Huile/Air forcé</option>
+                        <option value="ODAF" ${transfo.type_refroidissement === 'ODAF' ? 'selected' : ''}>ODAF - Huile dirigée</option>
+                        <option value="Sec" ${transfo.type_refroidissement === 'Sec' ? 'selected' : ''}>Transformateur sec</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tension primaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_primaire" class="form-control" value="${transfo.tension_primaire || ''}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tension secondaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_secondaire" class="form-control" value="${transfo.tension_secondaire || ''}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">État général</label>
+                    <select name="transformateurs-${transformateurIndex}-etat_general" class="form-select">
+                        <option value="bon" ${transfo.etat_general === 'bon' ? 'selected' : ''}>Bon</option>
+                        <option value="moyen" ${transfo.etat_general === 'moyen' ? 'selected' : ''}>Moyen</option>
+                        <option value="mauvais" ${transfo.etat_general === 'mauvais' ? 'selected' : ''}>Mauvais</option>
+                        <option value="critique" ${transfo.etat_general === 'critique' ? 'selected' : ''}>Critique</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Énergie transférée (MWh)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-energie_transferee" class="form-control" value="${transfo.energie_transferee || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Heures service</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-heures_service" class="form-control" value="${transfo.heures_service || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Charge moyenne (%)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-charge_moyenne" class="form-control" value="${transfo.charge_moyenne || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Charge max (%)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-charge_max" class="form-control" value="${transfo.charge_max || ''}">
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Temp huile moy (°C)</label>
+                    <input type="number" step="0.1" name="transformateurs-${transformateurIndex}-temperature_huile_moyenne" class="form-control" value="${transfo.temperature_huile_moyenne || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Temp huile max (°C)</label>
+                    <input type="number" step="0.1" name="transformateurs-${transformateurIndex}-temperature_huile_max" class="form-control" value="${transfo.temperature_huile_max || ''}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Temp enroul. max (°C)</label>
+                    <input type="number" step="0.1" name="transformateurs-${transformateurIndex}-temperature_enroulements_max" class="form-control" value="${transfo.temperature_enroulements_max || ''}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Travaux réalisés</label>
+                    <textarea name="transformateurs-${transformateurIndex}-travaux_realises" class="form-control" rows="2">${transfo.travaux_realises || ''}</textarea>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Incidents</label>
+                    <textarea name="transformateurs-${transformateurIndex}-incidents" class="form-control" rows="3">${transfo.incidents || ''}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observations</label>
+                    <textarea name="transformateurs-${transformateurIndex}-observations" class="form-control" rows="3">${transfo.observations || ''}</textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    transformateurIndex++;
 }
 
 // Configuration des calculs automatiques

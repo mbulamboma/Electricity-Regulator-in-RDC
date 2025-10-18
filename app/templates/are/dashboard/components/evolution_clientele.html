@@ -1,0 +1,163 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Evolution de la clientèle nationale</h5>
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.evolution_clients and stats_nationales.evolution_clients|length > 0 %}
+		<div class="row">
+			<!-- Graphique -->
+			<div class="col-md-6">
+				<div class="chart-container">
+					<canvas id="chartEvolutionClients"></canvas>
+				</div>
+			</div>
+			<!-- Tableau -->
+			<div class="col-md-6">
+				<div class="table-responsive">
+					<table class="table table-sm table-striped">
+						<thead class="table-dark">
+							<tr>
+								<th>Année</th>
+								<th class="text-end">Clients HT</th>
+								<th class="text-end">Clients MT</th>
+								<th class="text-end">Clients BT</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for item in stats_nationales.evolution_clients %}
+							<tr>
+								<td><strong>{{ item.annee }}</strong></td>
+								<td class="text-end">{{ item.clients_ht }}</td>
+								<td class="text-end">{{ item.clients_mt }}</td>
+								<td class="text-end">{{ item.clients_bt }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-users fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucune donnée de clientèle disponible</h6>
+			<p class="text-muted small">
+				Les graphiques et tableaux de la clientèle apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>
+<style>
+.chart-container {
+	height: 350px;
+	position: relative;
+}
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+var clientLabels = [];
+var clientsHT = [];
+var clientsMT = [];
+var clientsBT = [];
+{% for item in stats_nationales.evolution_clients %}
+	clientLabels.push("{{ item.annee }}");
+	clientsHT.push({{ item.clients_ht }});
+	clientsMT.push({{ item.clients_mt }});
+	clientsBT.push({{ item.clients_bt }});
+{% endfor %}
+if (document.getElementById('chartEvolutionClients')) {
+	const ctxClients = document.getElementById('chartEvolutionClients').getContext('2d');
+	new Chart(ctxClients, {
+		type: 'line',
+		data: {
+			labels: clientLabels,
+			datasets: [
+				{
+					label: 'Clients HT',
+					data: clientsHT,
+					borderColor: '#dc3545',
+					backgroundColor: 'rgba(220, 53, 69, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4,
+					pointBackgroundColor: '#dc3545',
+					pointBorderColor: '#fff',
+					pointBorderWidth: 2,
+					pointRadius: 5
+				},
+				{
+					label: 'Clients MT',
+					data: clientsMT,
+					borderColor: '#fd7e14',
+					backgroundColor: 'rgba(253, 126, 20, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4,
+					pointBackgroundColor: '#fd7e14',
+					pointBorderColor: '#fff',
+					pointBorderWidth: 2,
+					pointRadius: 5
+				},
+				{
+					label: 'Clients BT',
+					data: clientsBT,
+					borderColor: '#0d6efd',
+					backgroundColor: 'rgba(13, 110, 253, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4,
+					pointBackgroundColor: '#0d6efd',
+					pointBorderColor: '#fff',
+					pointBorderWidth: 2,
+					pointRadius: 5
+				}
+			]
+		},
+		options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Evolution du nombre de clients par niveau de tension',
+					font: {
+						size: 14
+					}
+				},
+				legend: {
+					position: 'top'
+				}
+			},
+			scales: {
+				y: {
+					beginAtZero: true,
+					title: {
+						display: true,
+						text: 'Nombre de clients'
+					},
+					ticks: {
+						callback: function(value) {
+							return value.toLocaleString();
+						}
+					}
+				},
+				x: {
+					title: {
+						display: true,
+						text: 'Année'
+					}
+				}
+			},
+			interaction: {
+				intersect: false,
+				mode: 'index'
+			}
+		}
+	});
+}
+</script>

@@ -54,6 +54,30 @@ def index():
     # IDs des centrales accessibles (peut être vide pour super admin)
     centrale_ids = [c.id for c in centrales_accessibles] if centrales_accessibles else []
     
+    # Années disponibles pour les filtres
+    annees = []
+    if centrale_ids:
+        annees = db.session.query(extract('year', RapportThermique.periode_debut).label('annee'))\
+            .filter(RapportThermique.centrale_id.in_(centrale_ids))\
+            .distinct().order_by('annee').all()
+    
+    # Créer le formulaire de filtrage
+    filtre_form = FiltreRapportThermiqueForm()
+    filtre_form.centrale_id.choices = [(None, 'Toutes les centrales')] + [
+        (c.id, c.nom) for c in centrales_accessibles
+    ]
+    filtre_form.annee.choices = [(None, 'Toutes les années')] + [(int(a.annee), str(a.annee)) for a in annees]
+    
+    # Requête de base pour les rapports
+    if centrales_accessibles:
+        query = RapportThermique.query.filter(RapportThermique.centrale_id.in_(centrale_ids))
+    else:
+        # Si pas de centrales mais utilisateur autorisé, afficher page vide
+        query = RapportThermique.query.filter(False)  # Requête qui retourne rien
+
+        # Maintenant initialiser avec les données de l'URL
+    filtre_form.process(dict(request.args))
+    
     # Requête de base pour les rapports
     if centrales_accessibles:
         query = RapportThermique.query.filter(RapportThermique.centrale_id.in_(centrale_ids))
@@ -61,40 +85,51 @@ def index():
         # Si pas de centrales mais utilisateur autorisé, afficher page vide
         query = RapportThermique.query.filter(False)  # Requête qui retourne rien
     
-    # Filtres
-    filtre_form = FiltreRapportThermiqueForm()
-    filtre_form.centrale_id.choices = [(None, 'Toutes les centrales')] + [
-        (c.id, c.nom) for c in centrales_accessibles
-    ]
+    # Appliquer les filtres depuis les paramètres GET
+    mois_param = request.args.get('mois')
+    if mois_param and mois_param.isdigit():
+        query = query.filter(RapportThermique.mois == int(mois_param))
     
-    # Années disponibles
-    annees = db.session.query(extract('year', RapportThermique.periode_debut).label('annee'))\
-        .filter(RapportThermique.centrale_id.in_(centrale_ids))\
-        .distinct().order_by('annee').all()
-    filtre_form.annee.choices = [(None, 'Toutes les années')] + [(int(a.annee), str(a.annee)) for a in annees]
+    annee_param = request.args.get('annee')
+    if annee_param and annee_param.isdigit():
+        query = query.filter(extract('year', RapportThermique.periode_debut) == int(annee_param))
     
-    if filtre_form.validate_on_submit():
-        if filtre_form.centrale_id.data is not None:
-            query = query.filter(RapportThermique.centrale_id == filtre_form.centrale_id.data)
-        if filtre_form.annee.data is not None:
-            query = query.filter(extract('year', RapportThermique.periode_debut) == filtre_form.annee.data)
-        if filtre_form.mois.data:
-            query = query.filter(RapportThermique.mois == int(filtre_form.mois.data))
-        if filtre_form.statut.data:
-            query = query.filter(RapportThermique.statut == filtre_form.statut.data)
+    centrale_param = request.args.get('centrale_id')
+    if centrale_param and centrale_param.isdigit():
+        query = query.filter(RapportThermique.centrale_id == int(centrale_param))
+    
+    statut_param = request.args.get('statut')
+    if statut_param:
+        query = query.filter(RapportThermique.statut == statut_param)
+    
+    # Recherche textuelle
+    search = request.args.get('search', '', type=str)
+    if search:
+        centrales_ids_search = [c.id for c in centrales_accessibles if search.lower() in c.nom.lower()]
+        if centrales_ids_search:
+            query = query.filter(RapportThermique.centrale_id.in_(centrales_ids_search))
+        else:
+            query = query.filter(False)  # Aucun résultat si pas de correspondance
     
     # Pagination
     rapports = query.order_by(RapportThermique.periode_debut.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
-    # Statistiques générales
+    # Statistiques générales (toujours basées sur tous les rapports accessibles)
     stats = {
-        'total_rapports': query.count(),
-        'rapports_valides': query.filter(RapportThermique.statut == 'valide').count(),
+        'total_rapports': RapportThermique.query.filter(RapportThermique.centrale_id.in_(centrale_ids)).count(),
+        'rapports_valides': RapportThermique.query.filter(
+            RapportThermique.centrale_id.in_(centrale_ids),
+            RapportThermique.statut == 'valide'
+        ).count(),
         'energie_totale': db.session.query(func.sum(RapportThermique.energie_produite))\
             .filter(RapportThermique.centrale_id.in_(centrale_ids)).scalar() or 0,
-        'nombre_centrales': len(centrales_accessibles)
+        'nombre_centrales': len(centrales_accessibles),
+        'rapports_brouillon': RapportThermique.query.filter(
+            RapportThermique.centrale_id.in_(centrale_ids),
+            RapportThermique.statut == 'brouillon'
+        ).count()
     }
     
     return render_template('production_thermique/index.html',
@@ -102,6 +137,7 @@ def index():
                          filtre_form=filtre_form,
                          stats=stats,
                          centrales=centrales_accessibles,
+                         search=search,
                          title='Production Thermique')
 
 
@@ -230,56 +266,21 @@ def nouveau_rapport_centrale(centrale_id):
         # Convertir les dates en datetime pour la base de données
         periode_debut = datetime.combine(form.periode_debut.data, datetime.min.time())
         periode_fin = datetime.combine(form.periode_fin.data, datetime.min.time())
-        
+
         rapport = RapportThermique(
             centrale_id=centrale_id,
             annee=form.annee.data,
             mois=form.mois.data,
             periode_debut=periode_debut,
-            periode_fin=periode_fin,
-            energie_produite=form.energie_produite.data,
-            energie_disponible=form.energie_disponible.data,
-            facteur_charge=form.facteur_charge.data,
-            temps_fonctionnement=form.temps_fonctionnement.data,
-            nombre_demarrages=form.nombre_demarrages.data,
-            nombre_arrets=form.nombre_arrets.data,
-            duree_arrets=form.duree_arrets.data,
-            consommation_combustible=form.consommation_combustible.data,
-            type_combustible_utilise=form.type_combustible_utilise.data,
-            cout_combustible=form.cout_combustible.data,
-            prix_unitaire_combustible=form.prix_unitaire_combustible.data,
-            consommation_specifique_reelle=form.consommation_specifique_reelle.data,
-            rendement_global=form.rendement_global.data,
-            rendement_thermique=form.rendement_thermique.data,
-            rendement_electrique=form.rendement_electrique.data,
-            temperature_fumees=form.temperature_fumees.data,
-            pression_admission=form.pression_admission.data,
-            charge_moyenne=form.charge_moyenne.data,
-            charge_maximale=form.charge_maximale.data,
-            charge_minimale=form.charge_minimale.data,
-            temperature_ambiante_moyenne=form.temperature_ambiante_moyenne.data,
-            humidite_relative_moyenne=form.humidite_relative_moyenne.data,
-            maintenances_preventives=form.maintenances_preventives.data,
-            maintenances_correctives=form.maintenances_correctives.data,
-            incidents_majeurs=form.incidents_majeurs.data,
-            description_incidents=form.description_incidents.data,
-            duree_maintenance=form.duree_maintenance.data,
-            consommation_huile_moteur=form.consommation_huile_moteur.data,
-            consommation_liquide_refroidissement=form.consommation_liquide_refroidissement.data,
-            remplacement_filtres=form.remplacement_filtres.data,
-            autres_consommables=form.autres_consommables.data,
-            emissions_co2=form.emissions_co2.data,
-            emissions_nox=form.emissions_nox.data,
-            emissions_co=form.emissions_co.data,
-            gestion_dechets=form.gestion_dechets.data,
-            impact_environnemental=form.impact_environnemental.data,
-            cout_exploitation=form.cout_exploitation.data,
-            cout_maintenance=form.cout_maintenance.data,
-            recettes_vente=form.recettes_vente.data,
-            rentabilite=form.rentabilite.data,
-            observations=form.observations.data,
-            statut='brouillon'
+            periode_fin=periode_fin
         )
+        
+        # Utiliser populate_obj pour tous les autres champs
+        form.populate_obj(rapport)
+        
+        # Définir le statut par défaut si pas défini
+        if not rapport.statut:
+            rapport.statut = 'brouillon'
         
         try:
             rapport.save()
@@ -464,6 +465,87 @@ def nouvelle_centrale():
                          title='Nouvelle Centrale Thermique')
 
 
+@production_thermique.route('/centrale/<int:id>/modifier', methods=['GET', 'POST'])
+@login_required
+def modifier_centrale(id):
+    """Modifier une centrale thermique"""
+    centrale = CentraleThermique.query.get_or_404(id)
+    
+    # Vérifier les permissions
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent modifier des centrales.', 'error')
+        return redirect(url_for('production_thermique.detail_centrale', id=id))
+    
+    form = CentraleThermiqueForm(obj=centrale)
+    operateurs = Operateur.query.filter_by(actif=True).all()
+    
+    if form.validate_on_submit():
+        # Vérifier l'unicité du code (sauf pour la centrale actuelle)
+        centrale_existante = CentraleThermique.query.filter(
+            CentraleThermique.code == form.code.data,
+            CentraleThermique.id != id
+        ).first()
+        if centrale_existante:
+            flash('Une centrale avec ce code existe déjà.', 'error')
+            return render_template('production_thermique/centrale_form.html',
+                                 form=form,
+                                 operateurs=operateurs,
+                                 action='modifier',
+                                 title=f'Modifier Centrale {centrale.nom}')
+        
+        # Mettre à jour la centrale
+        centrale.operateur_id = form.operateur_id.data
+        centrale.nom = form.nom.data
+        centrale.code = form.code.data
+        centrale.localisation = form.localisation.data
+        centrale.province = form.province.data
+        centrale.puissance_installee = form.puissance_installee.data
+        centrale.puissance_disponible = form.puissance_disponible.data
+        centrale.type_centrale = form.type_centrale.data
+        centrale.type_combustible = form.type_combustible.data
+        centrale.consommation_specifique = form.consommation_specifique.data
+        centrale.latitude = form.latitude.data
+        centrale.longitude = form.longitude.data
+        centrale.nombre_groupes = form.nombre_groupes.data
+        centrale.type_moteur = form.type_moteur.data
+        centrale.refroidissement = form.refroidissement.data
+        centrale.niveau_tension = form.niveau_tension.data
+        centrale.tension_evacuation = form.tension_evacuation.data
+        centrale.systeme_demarrage = form.systeme_demarrage.data
+        centrale.systeme_refroidissement = form.systeme_refroidissement.data
+        centrale.capacite_stockage_combustible = form.capacite_stockage_combustible.data
+        centrale.autonomie_combustible = form.autonomie_combustible.data
+        centrale.systeme_traitement_fumees = form.systeme_traitement_fumees.data
+        centrale.niveau_emission_nox = form.niveau_emission_nox.data
+        centrale.niveau_emission_co = form.niveau_emission_co.data
+        centrale.certification_environnementale = form.certification_environnementale.data
+        centrale.statut = form.statut.data
+        centrale.mode_fonctionnement = form.mode_fonctionnement.data
+        centrale.description = form.description.data
+        centrale.date_mise_service = form.date_mise_service.data
+        centrale.date_derniere_revision = form.date_derniere_revision.data
+        centrale.prochaine_maintenance = form.prochaine_maintenance.data
+        centrale.constructeur = form.constructeur.data
+        centrale.fournisseur_combustible = form.fournisseur_combustible.data
+        centrale.annee_construction = form.annee_construction.data
+        centrale.duree_vie_estimee = form.duree_vie_estimee.data
+        centrale.observations = form.observations.data
+        
+        try:
+            centrale.save()
+            flash('Centrale modifiée avec succès.', 'success')
+            return redirect(url_for('production_thermique.detail_centrale', id=centrale.id))
+        except Exception as e:
+            current_app.logger.error(f'Erreur lors de la modification de la centrale: {e}')
+            flash('Erreur lors de la modification de la centrale.', 'error')
+    
+    return render_template('production_thermique/centrale_form.html',
+                         form=form,
+                         operateurs=operateurs,
+                         action='modifier',
+                         title=f'Modifier Centrale {centrale.nom}')
+
+
 @production_thermique.route('/centrale/<int:id>')
 @login_required
 def detail_centrale(id):
@@ -496,9 +578,40 @@ def detail_centrale(id):
                          title=f'Centrale {centrale.nom}')
 
 
-@production_thermique.route('/api/stats')
+@production_thermique.route('/centrale/<int:id>/supprimer', methods=['POST', 'DELETE'])
 @login_required
-def api_stats():
+def supprimer_centrale(id):
+    """Supprimer une centrale thermique (soft delete)"""
+    # Vérifier les permissions
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent supprimer des centrales.', 'danger')
+        return redirect(url_for('production_thermique.liste_centrales'))
+
+    # Récupérer la centrale
+    centrale = CentraleThermique.query.get_or_404(id)
+
+    # Vérifier s'il y a des rapports associés
+    rapports_count = RapportThermique.query.filter_by(centrale_id=id, actif=True).count()
+    if rapports_count > 0:
+        flash(f'Impossible de supprimer la centrale "{centrale.nom}". Elle possède {rapports_count} rapport(s) associé(s).', 'danger')
+        return redirect(url_for('production_thermique.liste_centrales'))
+
+    try:
+        # Soft delete
+        centrale.actif = False
+        centrale.save()
+
+        flash(f'Centrale "{centrale.nom}" supprimée avec succès.', 'success')
+    except Exception as e:
+        current_app.logger.error(f'Erreur lors de la suppression de la centrale {id}: {str(e)}')
+        flash('Erreur lors de la suppression de la centrale.', 'danger')
+
+    return redirect(url_for('production_thermique.liste_centrales'))
+
+
+@production_thermique.route('/api/statistiques')
+@login_required
+def api_statistiques():
     """API pour les statistiques de production thermique"""
     centrales_accessibles = get_accessible_centrales_thermique()
     centrale_ids = [c.id for c in centrales_accessibles]

@@ -12,7 +12,7 @@
             <i class="fas fa-arrow-left"></i> Retour
         </a>
         {% if current_user.is_super_admin() %}
-        <a href="#" class="btn btn-primary">
+        <a href="{{ url_for('production_thermique.modifier_centrale', id=centrale.id) }}" class="btn btn-primary">
             <i class="fas fa-edit"></i> Modifier
         </a>
         {% endif %}
@@ -147,8 +147,41 @@
     </div>
 </div>
 
+<!-- Informations complémentaires -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle"></i> Informations complémentaires
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Construction et maintenance</h6>
+                <p><strong>Constructeur :</strong> {{ centrale.constructeur or 'Non spécifié' }}</p>
+                <p><strong>Année de construction :</strong> {{ centrale.annee_construction or 'Non spécifiée' }}</p>
+                <p><strong>Durée de vie estimée :</strong> {{ centrale.duree_vie_estimee or 'N/A' }} ans</p>
+                {% if centrale.date_derniere_revision %}
+                <p><strong>Dernière révision :</strong> {{ centrale.date_derniere_revision.strftime('%d/%m/%Y') }}</p>
+                {% endif %}
+                {% if centrale.prochaine_maintenance %}
+                <p><strong>Prochaine maintenance :</strong> {{ centrale.prochaine_maintenance.strftime('%d/%m/%Y') }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <h6>Combustible et environnement</h6>
+                <p><strong>Fournisseur de combustible :</strong> {{ centrale.fournisseur_combustible or 'Non spécifié' }}</p>
+                <p><strong>Système de traitement des fumées :</strong> {{ centrale.systeme_traitement_fumees or 'Non spécifié' }}</p>
+                <p><strong>Certification environnementale :</strong> {{ centrale.certification_environnementale or 'Non spécifiée' }}</p>
+                {% if centrale.observations %}
+                <p><strong>Observations :</strong> {{ centrale.observations }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Localisation -->
-{% if centrale.latitude and centrale.longitude %}
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="card-title mb-0">
@@ -156,13 +189,9 @@
         </h5>
     </div>
     <div class="card-body">
-        <div id="map" style="height: 300px;"></div>
-        <p class="mt-2 text-muted">
-            <strong>Coordonnées :</strong> {{ centrale.latitude }}, {{ centrale.longitude }}
-        </p>
+        <div id="map" style="height: 400px; border-radius: 8px;"></div>
     </div>
 </div>
-{% endif %}
 
 <!-- Derniers rapports -->
 {% if derniers_rapports %}
@@ -224,28 +253,36 @@
 {% endif %}
 {% endblock %}
 
-{% block scripts %}
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 {% if centrale.latitude and centrale.longitude %}
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <script>
-{% raw %}
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser la carte
-    const map = L.map('map').setView([{ centrale.latitude }, { centrale.longitude }], 12);
-    
-    // Ajouter les tuiles de la carte
+    // Coordonnées de la centrale
+    const lat = {{ centrale.latitude|tojson }};
+    const lng = {{ centrale.longitude|tojson }};
+    const nom = {{ centrale.nom|tojson }};
+    const localisation = {{ (centrale.localisation or 'Localisation non spécifiée')|tojson }};
+
+    // Initialiser la carte centrée sur la centrale
+    const map = L.map('map').setView([lat, lng], 13);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-    
+
     // Ajouter un marqueur pour la centrale
-    L.marker([{ centrale.latitude }, { centrale.longitude }])
+    L.marker([lat, lng])
         .addTo(map)
-        .bindPopup('<strong>{ centrale.nom }</strong><br>{ centrale.localisation }')
+        .bindPopup('<strong>' + nom + '</strong><br>' + localisation)
         .openPopup();
 });
-{% endraw %}
 </script>
 {% endif %}
 {% endblock %}

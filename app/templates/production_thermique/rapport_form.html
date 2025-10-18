@@ -146,7 +146,7 @@
             </div>
         </div>
 
-        <!-- Section Combustible -->
+        <!-- Section Consommation combustible -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
@@ -179,6 +179,368 @@
                             {{ form.cout_combustible(class="form-control", step="0.01") }}
                             {% if form.cout_combustible.errors %}
                                 <div class="text-danger small">{{ form.cout_combustible.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.prix_unitaire_combustible.label(class="form-label") }}
+                            {{ form.prix_unitaire_combustible(class="form-control", step="0.01") }}
+                            {% if form.prix_unitaire_combustible.errors %}
+                                <div class="text-danger small">{{ form.prix_unitaire_combustible.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.consommation_specifique_reelle.label(class="form-label") }}
+                            {{ form.consommation_specifique_reelle(class="form-control", step="0.01") }}
+                            {% if form.consommation_specifique_reelle.errors %}
+                                <div class="text-danger small">{{ form.consommation_specifique_reelle.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Performance thermique -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>Performance thermique
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.rendement_global.label(class="form-label") }}
+                            {{ form.rendement_global(class="form-control", step="0.01") }}
+                            {% if form.rendement_global.errors %}
+                                <div class="text-danger small">{{ form.rendement_global.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.rendement_thermique.label(class="form-label") }}
+                            {{ form.rendement_thermique(class="form-control", step="0.01") }}
+                            {% if form.rendement_thermique.errors %}
+                                <div class="text-danger small">{{ form.rendement_thermique.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.rendement_electrique.label(class="form-label") }}
+                            {{ form.rendement_electrique(class="form-control", step="0.01") }}
+                            {% if form.rendement_electrique.errors %}
+                                <div class="text-danger small">{{ form.rendement_electrique.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.temperature_fumees.label(class="form-label") }}
+                            {{ form.temperature_fumees(class="form-control", step="0.01") }}
+                            {% if form.temperature_fumees.errors %}
+                                <div class="text-danger small">{{ form.temperature_fumees.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.pression_admission.label(class="form-label") }}
+                            {{ form.pression_admission(class="form-control", step="0.01") }}
+                            {% if form.pression_admission.errors %}
+                                <div class="text-danger small">{{ form.pression_admission.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Données d'exploitation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-industry me-2"></i>Données d'exploitation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.charge_moyenne.label(class="form-label") }}
+                            {{ form.charge_moyenne(class="form-control", step="0.01") }}
+                            {% if form.charge_moyenne.errors %}
+                                <div class="text-danger small">{{ form.charge_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.charge_maximale.label(class="form-label") }}
+                            {{ form.charge_maximale(class="form-control", step="0.01") }}
+                            {% if form.charge_maximale.errors %}
+                                <div class="text-danger small">{{ form.charge_maximale.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.charge_minimale.label(class="form-label") }}
+                            {{ form.charge_minimale(class="form-control", step="0.01") }}
+                            {% if form.charge_minimale.errors %}
+                                <div class="text-danger small">{{ form.charge_minimale.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.temperature_ambiante_moyenne.label(class="form-label") }}
+                            {{ form.temperature_ambiante_moyenne(class="form-control", step="0.01") }}
+                            {% if form.temperature_ambiante_moyenne.errors %}
+                                <div class="text-danger small">{{ form.temperature_ambiante_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.humidite_relative_moyenne.label(class="form-label") }}
+                            {{ form.humidite_relative_moyenne(class="form-control", step="0.01") }}
+                            {% if form.humidite_relative_moyenne.errors %}
+                                <div class="text-danger small">{{ form.humidite_relative_moyenne.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Maintenance et incidents -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Maintenance et incidents
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.maintenances_preventives.label(class="form-label") }}
+                            {{ form.maintenances_preventives(class="form-control") }}
+                            {% if form.maintenances_preventives.errors %}
+                                <div class="text-danger small">{{ form.maintenances_preventives.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.maintenances_correctives.label(class="form-label") }}
+                            {{ form.maintenances_correctives(class="form-control") }}
+                            {% if form.maintenances_correctives.errors %}
+                                <div class="text-danger small">{{ form.maintenances_correctives.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.incidents_majeurs.label(class="form-label") }}
+                            {{ form.incidents_majeurs(class="form-control") }}
+                            {% if form.incidents_majeurs.errors %}
+                                <div class="text-danger small">{{ form.incidents_majeurs.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.description_incidents.label(class="form-label") }}
+                            {{ form.description_incidents(class="form-control", rows="3") }}
+                            {% if form.description_incidents.errors %}
+                                <div class="text-danger small">{{ form.description_incidents.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.duree_maintenance.label(class="form-label") }}
+                            {{ form.duree_maintenance(class="form-control", step="0.01") }}
+                            {% if form.duree_maintenance.errors %}
+                                <div class="text-danger small">{{ form.duree_maintenance.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Consommables et lubrifiants -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-oil-can me-2"></i>Consommables et lubrifiants
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.consommation_huile_moteur.label(class="form-label") }}
+                            {{ form.consommation_huile_moteur(class="form-control", step="0.01") }}
+                            {% if form.consommation_huile_moteur.errors %}
+                                <div class="text-danger small">{{ form.consommation_huile_moteur.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.consommation_liquide_refroidissement.label(class="form-label") }}
+                            {{ form.consommation_liquide_refroidissement(class="form-control", step="0.01") }}
+                            {% if form.consommation_liquide_refroidissement.errors %}
+                                <div class="text-danger small">{{ form.consommation_liquide_refroidissement.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.remplacement_filtres.label(class="form-label") }}
+                            {{ form.remplacement_filtres(class="form-control") }}
+                            {% if form.remplacement_filtres.errors %}
+                                <div class="text-danger small">{{ form.remplacement_filtres.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            {{ form.autres_consommables.label(class="form-label") }}
+                            {{ form.autres_consommables(class="form-control", rows="3") }}
+                            {% if form.autres_consommables.errors %}
+                                <div class="text-danger small">{{ form.autres_consommables.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Données environnementales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-leaf me-2"></i>Données environnementales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.emissions_co2.label(class="form-label") }}
+                            {{ form.emissions_co2(class="form-control", step="0.01") }}
+                            {% if form.emissions_co2.errors %}
+                                <div class="text-danger small">{{ form.emissions_co2.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.emissions_nox.label(class="form-label") }}
+                            {{ form.emissions_nox(class="form-control", step="0.01") }}
+                            {% if form.emissions_nox.errors %}
+                                <div class="text-danger small">{{ form.emissions_nox.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.emissions_co.label(class="form-label") }}
+                            {{ form.emissions_co(class="form-control", step="0.01") }}
+                            {% if form.emissions_co.errors %}
+                                <div class="text-danger small">{{ form.emissions_co.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.gestion_dechets.label(class="form-label") }}
+                            {{ form.gestion_dechets(class="form-control", rows="3") }}
+                            {% if form.gestion_dechets.errors %}
+                                <div class="text-danger small">{{ form.gestion_dechets.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.impact_environnemental.label(class="form-label") }}
+                            {{ form.impact_environnemental(class="form-control", rows="3") }}
+                            {% if form.impact_environnemental.errors %}
+                                <div class="text-danger small">{{ form.impact_environnemental.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Données économiques -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-dollar-sign me-2"></i>Données économiques
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.cout_exploitation.label(class="form-label") }}
+                            {{ form.cout_exploitation(class="form-control", step="0.01") }}
+                            {% if form.cout_exploitation.errors %}
+                                <div class="text-danger small">{{ form.cout_exploitation.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.cout_maintenance.label(class="form-label") }}
+                            {{ form.cout_maintenance(class="form-control", step="0.01") }}
+                            {% if form.cout_maintenance.errors %}
+                                <div class="text-danger small">{{ form.cout_maintenance.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.recettes_vente.label(class="form-label") }}
+                            {{ form.recettes_vente(class="form-control", step="0.01") }}
+                            {% if form.recettes_vente.errors %}
+                                <div class="text-danger small">{{ form.recettes_vente.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.rentabilite.label(class="form-label") }}
+                            {{ form.rentabilite(class="form-control", step="0.01") }}
+                            {% if form.rentabilite.errors %}
+                                <div class="text-danger small">{{ form.rentabilite.errors[0] }}</div>
                             {% endif %}
                         </div>
                     </div>

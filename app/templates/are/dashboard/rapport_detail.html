@@ -115,10 +115,6 @@
             <button onclick="exporterPDF()" class="btn btn-outline-danger me-2">
                 <i class="fas fa-file-pdf"></i> Export PDF
             </button>
-            <a href="{{ url_for('are_dashboard.modifier_rapport', rapport_id=rapport.id) }}" 
-               class="btn btn-primary">
-                <i class="fas fa-edit"></i> Modifier
-            </a>
         </div>
     </div>
 
@@ -410,7 +406,7 @@
 {% raw %}
 document.addEventListener('DOMContentLoaded', function() {
     // Données du rapport
-    const rapportData = { rapport.contenu_json|tojson|safe if rapport.contenu_json else '{}' };
+    const rapportData = {{ (rapport.contenu_json or {})|tojson|safe }};
     
     // Graphique de production par source
     const productionCtx = document.getElementById('productionChart');

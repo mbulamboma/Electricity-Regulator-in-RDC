@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary">{{ title }}</h2>
+                <a href="{{ url_for('production_hydro.detail_centrale', centrale_id=centrale.id) }}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour à la centrale
+                </a>
+            </div>
+
+            <!-- Informations de la centrale -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Centrale</h6>
+                    <h5 class="card-title">{{ centrale.nom }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            {{ centrale.operateur.nom if centrale.operateur else 'Opérateur non défini' }}
+                        </small>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Formulaire -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Numéro du groupe -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.numero_groupe.label(class="form-label") }}
+                                {{ form.numero_groupe(class="form-control" + (" is-invalid" if form.numero_groupe.errors else "")) }}
+                                {% if form.numero_groupe.errors %}
+                                    {% for error in form.numero_groupe.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Nom du groupe -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.nom_groupe.label(class="form-label") }}
+                                {{ form.nom_groupe(class="form-control" + (" is-invalid" if form.nom_groupe.errors else "")) }}
+                                {% if form.nom_groupe.errors %}
+                                    {% for error in form.nom_groupe.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Puissance nominale -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.puissance_nominale.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.puissance_nominale(class="form-control" + (" is-invalid" if form.puissance_nominale.errors else "")) }}
+                                    <span class="input-group-text">MW</span>
+                                </div>
+                                {% if form.puissance_nominale.errors %}
+                                    {% for error in form.puissance_nominale.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Tension nominale -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.tension_nominale.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.tension_nominale(class="form-control" + (" is-invalid" if form.tension_nominale.errors else "")) }}
+                                    <span class="input-group-text">kV</span>
+                                </div>
+                                {% if form.tension_nominale.errors %}
+                                    {% for error in form.tension_nominale.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Vitesse de rotation -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.vitesse_rotation.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.vitesse_rotation(class="form-control" + (" is-invalid" if form.vitesse_rotation.errors else "")) }}
+                                    <span class="input-group-text">rpm</span>
+                                </div>
+                                {% if form.vitesse_rotation.errors %}
+                                    {% for error in form.vitesse_rotation.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Type de turbine -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.type_turbine.label(class="form-label") }}
+                                {{ form.type_turbine(class="form-select" + (" is-invalid" if form.type_turbine.errors else "")) }}
+                                {% if form.type_turbine.errors %}
+                                    {% for error in form.type_turbine.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Date de mise en service -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.date_mise_service.label(class="form-label") }}
+                                {{ form.date_mise_service(class="form-control" + (" is-invalid" if form.date_mise_service.errors else "")) }}
+                                {% if form.date_mise_service.errors %}
+                                    {% for error in form.date_mise_service.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('production_hydro.detail_centrale', centrale_id=centrale.id) }}" 
+                               class="btn btn-outline-secondary me-md-2">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if groupe is defined %}Modifier{% else %}Ajouter{% endif %} le groupe
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

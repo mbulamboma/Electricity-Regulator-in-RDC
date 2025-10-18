@@ -7,15 +7,138 @@ from wtforms import (
     SelectField, DateField, DateTimeField, HiddenField,
     FieldList, FormField, SubmitField
 )
-from wtforms.validators import DataRequired, Optional, NumberRange, Length, Email
+from wtforms.validators import DataRequired, Optional, NumberRange, Length, Email, ValidationError
 from app.utils.helpers import safe_int_coerce
 from wtforms.widgets import TextArea
 from datetime import datetime, date
 from app.utils.permissions import get_operateur_choices, get_default_operateur_id
+from app.models.production_hydro import CentraleHydro
+
+
+class GroupeProductionForm(FlaskForm):
+    """Formulaire pour un groupe de production (sous-formulaire)"""
+    
+    # Champs cachés pour la gestion dynamique
+    id = HiddenField()
+    delete = HiddenField()
+    
+    # Identification
+    numero_groupe = StringField('N° Groupe', validators=[Optional(), Length(max=10)])
+    nom_groupe = StringField('Nom du groupe', validators=[Optional(), Length(max=100)])
+    
+    # Caractéristiques techniques
+    puissance_nominale = FloatField('Puissance nominale (MW)', validators=[Optional(), NumberRange(min=0)])
+    tension_nominale = FloatField('Tension nominale (kV)', validators=[Optional(), NumberRange(min=0)])
+    vitesse_rotation = FloatField('Vitesse rotation (tr/min)', validators=[Optional(), NumberRange(min=0)])
+    type_turbine = SelectField('Type de turbine',
+                              choices=[
+                                  ('', 'Sélectionner...'),
+                                  ('Pelton', 'Pelton'),
+                                  ('Francis', 'Francis'),
+                                  ('Kaplan', 'Kaplan'),
+                                  ('Turgo', 'Turgo'),
+                                  ('Banki', 'Banki'),
+                                  ('Autre', 'Autre')
+                              ],
+                              validators=[Optional()])
+    
+    # Données de fonctionnement (pour rapports, pas pour création centrale)
+    heures_fonctionnement = FloatField('Heures fonctionnement', validators=[Optional(), NumberRange(min=0)])
+    energie_produite = FloatField('Énergie produite (MWh)', validators=[Optional(), NumberRange(min=0)])
+    puissance_moyenne = FloatField('Puissance moyenne (MW)', validators=[Optional(), NumberRange(min=0)])
+    puissance_max = FloatField('Puissance max (MW)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Arrêts
+    nombre_arrets_programme = IntegerField('Arrêts programmés', validators=[Optional(), NumberRange(min=0)], default=0)
+    nombre_arrets_force = IntegerField('Arrêts forcés', validators=[Optional(), NumberRange(min=0)], default=0)
+    duree_arrets_programme = FloatField('Durée arrêts prog. (h)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    duree_arrets_force = FloatField('Durée arrêts forcés (h)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    
+    # Performance
+    rendement_moyen = FloatField('Rendement moyen (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    
+    # Maintenance
+    date_derniere_revision = DateField('Dernière révision', validators=[Optional()])
+    type_derniere_revision = StringField('Type révision', validators=[Optional(), Length(max=100)])
+    prochaine_revision = DateField('Prochaine révision', validators=[Optional()])
+    
+    # Informations de base pour création centrale
+    date_mise_service = DateField('Date mise en service', validators=[Optional()])
+    constructeur = StringField('Constructeur', validators=[Optional(), Length(max=100)])
+    annee_fabrication = IntegerField('Année fabrication', validators=[Optional(), NumberRange(min=1900, max=2030)])
+    
+    # Observations
+    incidents = TextAreaField('Incidents', validators=[Optional()], widget=TextArea())
+    travaux_realises = TextAreaField('Travaux réalisés', validators=[Optional()], widget=TextArea())
+    observations = TextAreaField('Observations', validators=[Optional()], widget=TextArea())
+
+
+class TransformateurRapportForm(FlaskForm):
+    """Formulaire pour un transformateur (sous-formulaire)"""
+    
+    # Champs cachés
+    id = HiddenField()
+    delete = HiddenField()
+    
+    # Identification
+    numero_transformateur = StringField('N° Transformateur', validators=[Optional(), Length(max=10)])
+    nom_transformateur = StringField('Nom', validators=[Optional(), Length(max=100)])
+    
+    # Caractéristiques
+    puissance_nominale = FloatField('Puissance (MVA)', validators=[Optional(), NumberRange(min=0)])
+    tension_primaire = FloatField('Tension primaire (kV)', validators=[Optional(), NumberRange(min=0)])
+    tension_secondaire = FloatField('Tension secondaire (kV)', validators=[Optional(), NumberRange(min=0)])
+    type_refroidissement = SelectField('Refroidissement',
+                                      choices=[
+                                          ('', 'Sélectionner...'),
+                                          ('ONAN', 'ONAN - Huile naturelle'),
+                                          ('ONAF', 'ONAF - Huile forcée'),
+                                          ('OFAF', 'OFAF - Huile/Air forcé'),
+                                          ('ODAF', 'ODAF - Huile dirigée'),
+                                          ('Sec', 'Transformateur sec')
+                                      ],
+                                      validators=[Optional()])
+    
+    # Informations de base pour création centrale
+    constructeur = StringField('Constructeur', validators=[Optional(), Length(max=100)])
+    annee_fabrication = IntegerField('Année fabrication', validators=[Optional(), NumberRange(min=1900, max=2030)])
+    
+    # Fonctionnement (pour rapports, pas pour création centrale)
+    energie_transferee = FloatField('Énergie transférée (MWh)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    heures_service = FloatField('Heures service', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    charge_moyenne = FloatField('Charge moyenne (%)', validators=[Optional(), NumberRange(min=0, max=150)], default=0.0)
+    charge_max = FloatField('Charge max (%)', validators=[Optional(), NumberRange(min=0, max=150)], default=0.0)
+    
+    # Températures
+    temperature_huile_moyenne = FloatField('Temp. huile moy. (°C)', validators=[Optional()])
+    temperature_huile_max = FloatField('Temp. huile max (°C)', validators=[Optional()])
+    temperature_enroulements_max = FloatField('Temp. enroulements max (°C)', validators=[Optional()])
+    
+    # État et maintenance
+    etat_general = SelectField('État général',
+                              choices=[
+                                  ('bon', 'Bon'),
+                                  ('moyen', 'Moyen'),
+                                  ('mauvais', 'Mauvais'),
+                                  ('critique', 'Critique')
+                              ],
+                              validators=[Optional()],
+                              default='bon')
+    date_derniere_maintenance = DateField('Dernière maintenance', validators=[Optional()])
+    type_maintenance = StringField('Type maintenance', validators=[Optional(), Length(max=100)])
+    prochaine_maintenance = DateField('Prochaine maintenance', validators=[Optional()])
+    
+    # Observations
+    incidents = TextAreaField('Incidents', validators=[Optional()], widget=TextArea())
+    travaux_realises = TextAreaField('Travaux réalisés', validators=[Optional()], widget=TextArea())
+    observations = TextAreaField('Observations', validators=[Optional()], widget=TextArea())
 
 
 class CentraleHydroForm(FlaskForm):
     """Formulaire pour créer/modifier une centrale hydroélectrique"""
+    
+    # Champ caché pour l'ID lors de l'édition
+    centrale_id = HiddenField()
     
     # Opérateur (requis)
     operateur_id = SelectField('Opérateur', coerce=safe_int_coerce, validators=[DataRequired()])
@@ -23,7 +146,7 @@ class CentraleHydroForm(FlaskForm):
     # Informations de base
     nom = StringField('Nom de la centrale', validators=[DataRequired(), Length(min=2, max=200)])
     code = StringField('Code centrale', validators=[DataRequired(), Length(min=2, max=50)])
-    localisation = StringField('Localisation', validators=[Optional(), Length(max=200)])
+    localisation = StringField('Adresse détaillée', validators=[Optional(), Length(max=200)])
     province = SelectField('Province',
                           choices=[
                               ('', 'Sélectionner...'),
@@ -122,6 +245,8 @@ class CentraleHydroForm(FlaskForm):
     annee_construction = IntegerField('Année de construction', validators=[Optional(), NumberRange(min=1900, max=2030)])
     observations = TextAreaField('Observations', validators=[Optional()], widget=TextArea())
     
+    # Note: Les équipements (groupes et transformateurs) seront ajoutés séparément après la création
+    
     def __init__(self, *args, **kwargs):
         super(CentraleHydroForm, self).__init__(*args, **kwargs)
         # Configurer les choix d'opérateurs selon les permissions
@@ -130,15 +255,23 @@ class CentraleHydroForm(FlaskForm):
         if not kwargs.get('obj') and get_default_operateur_id():
             self.operateur_id.data = get_default_operateur_id()
     
+    def validate_code(self, field):
+        """Valider que le code est unique"""
+        if field.data:
+            # Vérifier si une centrale avec ce code existe déjà (en excluant l'objet actuel si c'est une édition)
+            query = CentraleHydro.query.filter_by(code=field.data, actif=True)
+            # Si on a un ID de centrale (édition), exclure cet ID
+            if self.centrale_id.data and self.centrale_id.data.isdigit():
+                query = query.filter(CentraleHydro.id != int(self.centrale_id.data))
+            existing = query.first()
+            if existing:
+                raise ValidationError('Une centrale avec ce code existe déjà.')
+    
     submit = SubmitField('Enregistrer')
 
 
-class GroupeProductionForm(FlaskForm):
-    """Formulaire pour un groupe de production (sous-formulaire)"""
-    
-    # Champs cachés pour la gestion dynamique
-    id = HiddenField()
-    delete = HiddenField()
+class GroupeProductionSimpleForm(FlaskForm):
+    """Formulaire simple pour ajouter/modifier un groupe de production"""
     
     # Identification
     numero_groupe = StringField('N° Groupe', validators=[DataRequired(), Length(max=10)])
@@ -160,38 +293,14 @@ class GroupeProductionForm(FlaskForm):
                               ],
                               validators=[Optional()])
     
-    # Données de fonctionnement
-    heures_fonctionnement = FloatField('Heures fonctionnement', validators=[Optional(), NumberRange(min=0)])
-    energie_produite = FloatField('Énergie produite (MWh)', validators=[Optional(), NumberRange(min=0)])
-    puissance_moyenne = FloatField('Puissance moyenne (MW)', validators=[Optional(), NumberRange(min=0)])
-    puissance_max = FloatField('Puissance max (MW)', validators=[Optional(), NumberRange(min=0)])
+    # Informations de base
+    date_mise_service = DateField('Date mise en service', validators=[Optional()])
     
-    # Arrêts
-    nombre_arrets_programme = IntegerField('Arrêts programmés', validators=[Optional(), NumberRange(min=0)], default=0)
-    nombre_arrets_force = IntegerField('Arrêts forcés', validators=[Optional(), NumberRange(min=0)], default=0)
-    duree_arrets_programme = FloatField('Durée arrêts prog. (h)', validators=[Optional(), NumberRange(min=0)], default=0.0)
-    duree_arrets_force = FloatField('Durée arrêts forcés (h)', validators=[Optional(), NumberRange(min=0)], default=0.0)
-    
-    # Performance
-    rendement_moyen = FloatField('Rendement moyen (%)', validators=[Optional(), NumberRange(min=0, max=100)])
-    
-    # Maintenance
-    date_derniere_revision = DateField('Dernière révision', validators=[Optional()])
-    type_derniere_revision = StringField('Type révision', validators=[Optional(), Length(max=100)])
-    prochaine_revision = DateField('Prochaine révision', validators=[Optional()])
-    
-    # Observations
-    incidents = TextAreaField('Incidents', validators=[Optional()], widget=TextArea())
-    travaux_realises = TextAreaField('Travaux réalisés', validators=[Optional()], widget=TextArea())
-    observations = TextAreaField('Observations', validators=[Optional()], widget=TextArea())
+    submit = SubmitField('Enregistrer')
 
 
-class TransformateurRapportForm(FlaskForm):
-    """Formulaire pour un transformateur (sous-formulaire)"""
-    
-    # Champs cachés
-    id = HiddenField()
-    delete = HiddenField()
+class TransformateurSimpleForm(FlaskForm):
+    """Formulaire simple pour ajouter/modifier un transformateur"""
     
     # Identification
     numero_transformateur = StringField('N° Transformateur', validators=[DataRequired(), Length(max=10)])
@@ -212,35 +321,9 @@ class TransformateurRapportForm(FlaskForm):
                                       ],
                                       validators=[Optional()])
     
-    # Fonctionnement
-    energie_transferee = FloatField('Énergie transférée (MWh)', validators=[Optional(), NumberRange(min=0)], default=0.0)
-    heures_service = FloatField('Heures service', validators=[Optional(), NumberRange(min=0)], default=0.0)
-    charge_moyenne = FloatField('Charge moyenne (%)', validators=[Optional(), NumberRange(min=0, max=150)], default=0.0)
-    charge_max = FloatField('Charge max (%)', validators=[Optional(), NumberRange(min=0, max=150)], default=0.0)
+    # Informations de base
     
-    # Températures
-    temperature_huile_moyenne = FloatField('Temp. huile moy. (°C)', validators=[Optional()])
-    temperature_huile_max = FloatField('Temp. huile max (°C)', validators=[Optional()])
-    temperature_enroulements_max = FloatField('Temp. enroulements max (°C)', validators=[Optional()])
-    
-    # État et maintenance
-    etat_general = SelectField('État général',
-                              choices=[
-                                  ('bon', 'Bon'),
-                                  ('moyen', 'Moyen'),
-                                  ('mauvais', 'Mauvais'),
-                                  ('critique', 'Critique')
-                              ],
-                              validators=[Optional()],
-                              default='bon')
-    date_derniere_maintenance = DateField('Dernière maintenance', validators=[Optional()])
-    type_maintenance = StringField('Type maintenance', validators=[Optional(), Length(max=100)])
-    prochaine_maintenance = DateField('Prochaine maintenance', validators=[Optional()])
-    
-    # Observations
-    incidents = TextAreaField('Incidents', validators=[Optional()], widget=TextArea())
-    travaux_realises = TextAreaField('Travaux réalisés', validators=[Optional()], widget=TextArea())
-    observations = TextAreaField('Observations', validators=[Optional()], widget=TextArea())
+    submit = SubmitField('Enregistrer')
 
 
 class RapportHydroForm(FlaskForm):

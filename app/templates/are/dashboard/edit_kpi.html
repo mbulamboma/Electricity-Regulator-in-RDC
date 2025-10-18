@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Modifier KPI Stratégique{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Modifier KPI Stratégique</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.nom.label(class="form-label") }}
+            {{ form.nom(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.valeur.label(class="form-label") }}
+            {{ form.valeur(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.objectif.label(class="form-label") }}
+            {{ form.objectif(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.unite.label(class="form-label") }}
+            {{ form.unite(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.statut.label(class="form-label") }}
+            {{ form.statut(class="form-select") }}
+        </div>
+        <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+        <a href="{{ url_for('are_dashboard.index') }}" class="btn btn-secondary ms-2">Annuler</a>
+    </form>
+</div>
+{% endblock %}

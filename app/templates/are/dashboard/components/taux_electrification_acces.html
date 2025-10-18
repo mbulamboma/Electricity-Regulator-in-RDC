@@ -1,0 +1,138 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Taux d'électrification et d'accès</h5>
+		
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.taux_electrification and stats_nationales.taux_electrification|length > 0 %}
+		<div class="chart-container">
+			<canvas id="chartTauxElectrification"></canvas>
+		</div>
+		<div class="table-responsive mt-3">
+			<table class="table table-sm table-striped">
+				<thead class="table-dark">
+					<tr>
+						<th>Année</th>
+						<th class="text-end">Taux de couverture (%)</th>
+						<th class="text-end">Taux d'électrification (%)</th>
+						<th class="text-end">Taux d'accès (%)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in stats_nationales.taux_electrification %}
+					<tr>
+						<td><strong>{{ item.annee }}</strong></td>
+						<td class="text-end">{{ "{:.2f}".format(item.taux_couverture_pct) }}</td>
+						<td class="text-end">{{ "{:.2f}".format(item.taux_electrification_pct) }}</td>
+						<td class="text-end">{{ "{:.2f}".format(item.taux_acces_pct) }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucune donnée de taux disponible</h6>
+			<p class="text-muted small">
+				Les graphiques et tableaux des taux apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>
+<style>
+.chart-container {
+	height: 350px;
+	position: relative;
+}
+</style>
+<script>
+var tauxLabels = [];
+var tauxCouverture = [];
+var tauxElectrification = [];
+var tauxAcces = [];
+{% for item in stats_nationales.taux_electrification %}
+	tauxLabels.push("{{ item.annee }}");
+	tauxCouverture.push({{ '%.2f'|format(item.taux_couverture_pct) }});
+	tauxElectrification.push({{ '%.2f'|format(item.taux_electrification_pct) }});
+	tauxAcces.push({{ '%.2f'|format(item.taux_acces_pct) }});
+{% endfor %}
+if (document.getElementById('chartTauxElectrification')) {
+	const ctxTaux = document.getElementById('chartTauxElectrification').getContext('2d');
+	new Chart(ctxTaux, {
+		type: 'line',
+		data: {
+			labels: tauxLabels,
+			datasets: [
+				{
+					label: 'Taux de couverture (%)',
+					data: tauxCouverture,
+					borderColor: '#17a2b8',
+					backgroundColor: 'rgba(23, 162, 184, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				},
+				{
+					label: 'Taux d\'électrification (%)',
+					data: tauxElectrification,
+					borderColor: '#fd7e14',
+					backgroundColor: 'rgba(253, 126, 20, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				},
+				{
+					label: 'Taux d\'accès (%)',
+					data: tauxAcces,
+					borderColor: '#198754',
+					backgroundColor: 'rgba(25, 135, 84, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				}
+			]
+		},
+		options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Evolution des taux d\'électrification, de couverture et d\'accès'
+				},
+				legend: {
+					position: 'top'
+				}
+			},
+			scales: {
+				y: {
+					beginAtZero: true,
+					max: 100,
+					title: {
+						display: true,
+						text: 'Pourcentage (%)'
+					},
+					ticks: {
+						callback: function(value) {
+							return value + '%';
+						}
+					}
+				},
+				x: {
+					title: {
+						display: true,
+						text: 'Année'
+					}
+				}
+			},
+			interaction: {
+				intersect: false,
+				mode: 'index'
+			}
+		}
+	});
+}
+</script>

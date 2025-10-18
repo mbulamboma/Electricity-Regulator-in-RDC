@@ -1,226 +1,88 @@
-# Régulation Électricité RDC - AI Development Guide
+---
+# DRC Electricity Regulator - AI Coding Agent Guide
 
 ## Architecture Overview
 
-This is a modular Flask application for managing electricity operators in the Democratic Republic of Congo. The app follows Flask best practices with blueprint organization, factory pattern, and domain-driven design.
+This is a modular Flask application for regulatory oversight of electricity operators in the DRC. It uses blueprints, a factory pattern (`app/__init__.py`), and domain-driven design. Major modules: production (hydro/thermal/solar), transport, distribution, workflow, notifications, contacts, admin, ARE dashboard, and **collecte** (real data collection). Data flows through service layers, with business logic separated from routes. All persistent data is managed via SQLAlchemy models, with soft delete (`actif`) and timestamp conventions.
 
-### Core Components
-- **Factory Pattern**: `app/__init__.py` creates the Flask app using `create_app()` function
-- **Extensions**: Centralized in `app/extensions.py` (SQLAlchemy, Flask-Login, Migrate, Bcrypt, CSRF)
-- **Domain Modules**: Production (hydro/thermal/solar), transport, distribution, workflow, notifications, contacts, admin, **collecte** (new)
-- **Base Model**: `app/models/base.py` provides common functionality (timestamps, soft delete, CRUD methods)
 
-## Key Patterns & Conventions
+## Essential Patterns & Conventions
 
-### Model Architecture
-- All models inherit from `BaseModel` which provides: `id`, `date_creation`, `date_modification`, `actif`
-- Use `save()`, `delete()`, `update()`, `soft_delete()` methods instead of raw SQLAlchemy calls
-- Models have `to_dict()` for JSON serialization
-- Enum classes for typed fields: `TypeRapport`, `StatutWorkflow`, `TypeNotification`
+- **Models**: All SQLAlchemy models inherit from `BaseModel` (`app/models/base.py`) with `id`, timestamps, `actif` (soft delete), and CRUD helpers (`save()`, `delete()`, etc.). Use `to_dict()` for serialization. Enums are used for typed fields (see `app/models/`).
+- **Authentication**: Dual system (`User` and `Contact` models). Role hierarchy: `super_admin`, `admin_operateur`, `operateur`, `contact`. Use decorators from `app/utils/decorators.py` and permission helpers in `app/utils/permissions.py`.
+- **Service Layer**: Business logic is in service classes (e.g., `app/notifications/services.py`, `app/are/services_reel.py`). Always import services at the top of routes.
+- **Templates**: Jinja2 macros/components in `templates/components/`. Use `{% from 'components/notifications.html' import dropdown_notifications %}`. Real-time UI via JS in `static/js/main.js`. French language throughout.
+- **Forms**: WTForms in each domain. For optional `SelectField`, use `coerce=lambda x: int(x) if x else None` to avoid ValueError. Filter choices by user permissions in form `__init__`.
+- **Distribution Models**: No direct `operateur_id`; access via parent (e.g., `PosteDistribution` → `ReseauDistribution.operateur_id`).
+- **Soft Delete**: Prefer `actif` flag over hard deletion.
+- **Custom Jinja2 Filters**: Registered in `app/__init__.py` (`|time_ago`, `|month_name`, `|nl2br`).
+- **Testing**: Scripts in `tests/` simulate real user flows, including route, form, and DB integrity checks. See `tests/README.md` for advanced usage and troubleshooting.
 
-### Authentication & Authorization
-- Dual authentication: `User` model + `Contact` model (company representatives)
-- User loader checks for `contact_` prefix to distinguish contact vs user authentication
-- Role hierarchy: `super_admin`, `admin_operateur`, `operateur`, `contact`
-- Custom decorators in `app/utils/decorators.py`: `@role_required('super_admin')`, `@admin_required`
-- **Permissions System**: `app/utils/permissions.py` provides operator-scoped access control
-- French language interface throughout ("Nom d'utilisateur", "Se connecter")
-
-### Service Layer Pattern
-- Service classes in modules like `app/notifications/services.py` for business logic
-- `NotificationService.creer_notification()` - centralized notification creation
-- Services handle complex operations and cross-domain logic
-- Import services at the top of routes that need them
-
-### Template Component System
-- Reusable Jinja2 macros in `templates/components/` (notifications, graphs, tables)
-- Usage: `{% from 'components/notifications.html' import dropdown_notifications %}`
-- Real-time UI updates via JavaScript for notifications and dynamic content
-- Bootstrap 5 with custom CSS in `static/css/style.css`
-
-### Domain Modules (Blueprints)
-Each domain has consistent structure:
-- `__init__.py` - Blueprint registration  
-- `forms.py` - WTForms with French validators
-- `routes.py` - View functions
-- `models/` - Domain-specific SQLAlchemy models
-- `templates/` - Domain templates
-
-Current domains: `auth`, `operateurs`, `production_hydro`, `production_thermique`, `production_solaire`, `transport`, `distribution`, `workflow`, `notifications`, `contacts`, `admin`, `are`, **`collecte`** (new real data collection system)
-
-### COLLECTE Module - Real Data Collection System (NEW)
-- **Purpose**: Replaces fake data generation with real operator submissions
-- **Key Models**: `CollecteDonneesMensuelles`, `CollecteProjetNouveau` in `app/models/collecte_donnees.py`
-- **Data Types**: Financial (revenues, costs), clientele (new connections, disconnections), technical projects
-- **Validation Workflow**: `BROUILLON → SOUMIS → VALIDE/REJETE` pattern consistent with other modules
-- **Service Integration**: `CalculStatistiquesReellesService` in `app/are/services_reel.py` computes ARE statistics from real data
-- **Access Control**: Role-based access for operators, with super_admin oversight
-
-### ARE Dashboard Module (NEW)
-- **Strategic Dashboard**: `app/are/dashboard/` provides executive-level KPIs and analytics
-- **Key Models**: `KPIStrategic`, `IndicateurSectoriel`, `AlerteRegulateur`, `DonneesProvince`, `RapportAnnuel`
-- **Auto-calculation**: Services in `app/are/services.py` compute national indicators from operational data
-- **Interactive Features**: Real-time charts, province map, automated alerts, multi-format exports
-- **Access Control**: Admin-only access with `@admin_required` decorator
-
-### Form Patterns & Common Issues
-- **SelectField Coercion**: Use `coerce=lambda x: int(x) if x else None` for optional SelectFields to avoid ValueError
-- **Permissions in Forms**: Add `__init__` methods to filter choices based on user permissions
-- **Hierarchical Relations**: Distribution models don't have direct `operateur_id` - access via parent relationships
-- Example: `PosteDistribution` → `ReseauDistribution.operateur_id` for permission filtering
 
 ## Critical Workflows
 
-### Database Management
-```powershell
-# Initialize database and migrations
-flask --app run init-db
+- **Database**: Use CLI commands in `run.py`:
+    - `flask --app run init-db` (init)
+    - `flask --app run create-admin` (admin user)
+    - `flask --app run seed-data` (sample data)
+    - `flask --app run init-are-data` (ARE dashboard)
+    - `flask --app run reset-db` (full reset)
+- **Testing**: Run `python tests/run_all_tests.py --full-report` for full coverage, or use `run_tests.ps1` for PowerShell-based tests. Manual and quick scripts in `tests/` allow targeted route and form validation. Reports are saved in `tests/rapport_complet_YYYYMMDD_HHMMSS.txt`.
+- **Development**: Activate venv (`.\venv\Scripts\Activate.ps1`), run with debug (`flask --app run run --debug`), or open shell (`flask --app run shell`).
+- **Migrations**: Use Flask-Migrate (`migrations/`). Never edit schema directly.
+- **Environment**: Use `.env` for secrets and DB config. Example:
+    ```env
+    FLASK_ENV=development
+    SECRET_KEY=...
+    DATABASE_URL=sqlite:///instance/database.db
+    ```
 
-# Create admin user (interactive prompts)  
-flask --app run create-admin
-
-# Add sample data
-flask --app run seed-data
-
-# Initialize ARE dashboard data (after basic setup)
-flask --app run init-are-data
-
-# Initialize real data collection system (replaces fake data)
-python init_collecte_reelle.py
-
-# Complete reset (with confirmation)
-flask --app run reset-db
-```
-
-### Testing & Validation
-```powershell
-# Comprehensive automated testing suite
-python tests/run_all_tests.py --full-report
-
-# Quick tests for major routes
-python tests/run_all_tests.py --quick
-
-# PowerShell test runner with color output
-.\run_tests.ps1
-
-# Setup test environment dependencies
-python tests/setup_test_env.py
-```
-
-### Development Setup
-```powershell
-# Windows PowerShell environment activation
-.\venv\Scripts\Activate.ps1
-
-# Run with debug mode
-flask --app run run --debug
-
-# Interactive shell (auto-imports db, User, Operateur)
-flask --app run shell
-
-# Initialize ARE dashboard data (after basic setup)
-python init_are_dashboard.py
-
-# Initialize real data collection system (replaces fake data)
-python init_collecte_reelle.py
-```
-
-### Permission System Usage
-```python
-# In routes: check operator access
-from app.utils.permissions import can_access_operateur, get_accessible_operateurs
-
-# Filter queries by user permissions
-accessible_operateurs = get_accessible_operateurs()
-query = filter_query_by_operateur(base_query, 'operateur_id')
-
-# Check specific operator access
-if not can_access_operateur(operateur_id):
-    abort(403)
-```
-
-## Electricity Domain Context
-
-### Production Types & Models
-- **Hydro**: `CentraleHydro` with technical specs (`puissance_installee`, `hauteur_chute`, `debit_equipement`)
-- **Thermal**: Coal, gas, diesel plants with fuel consumption tracking
-- **Solar**: Photovoltaic installations with irradiance and efficiency data
-- Geographic data: coordinates, provinces, coverage areas
-
-### Workflow System
-- Report validation pipeline: `BROUILLON → SOUMIS → EN_VALIDATION → VALIDE/REJETE`
-- `TypeRapport` enum: production, transport, distribution, maintenance, incident
-- Automatic deadline tracking and notification triggers
-- Historical audit trail in `HistoriqueWorkflow`
-
-### Notification System  
-- Real-time notifications with priority levels (1=normal, 2=urgent, 3=critical)
-- Template-based notifications with variable substitution
-- User preferences for notification types
-- Internal messaging between users and contacts
-
-## Configuration System
-- Environment-based configs in `app/config.py`: `DevelopmentConfig`, `ProductionConfig`, `TestingConfig`  
-- Database: SQLite in `instance/` directory (development and production)
-- Session settings: 24-hour lifetime, secure cookies in production
-- Upload limits: 16MB max, files in `static/uploads/`
-- Pagination: 20 items per page default
-
-## Business Rules & Constraints
-- License status tracking: `active`, `suspendue`, `expirée`
-- Soft deletion preferred over hard deletion (`actif` flag)
-- French language throughout (forms, flash messages, UI text)
-- Default admin credentials: admin/admin123 (change in production)
-- All dates use datetime objects, display with custom Jinja2 filters (`|time_ago`, `|month_name`)
-
-## File Organization Patterns
-
-### Template Structure
-- Base template: `templates/base.html` with Bootstrap 5
-- Domain templates in respective folders: `templates/production_hydro/`, etc.
-- Reusable components: `templates/components/` for macros
-- Three base template variants: `base.html`, `base_clean.html`, `base_backup.html`
-
-### Static Assets
-- CSS: `static/css/style.css` with custom Bootstrap overrides
-- JavaScript: `static/js/main.js` for notifications and dynamic features  
-- Uploads: `static/uploads/` with 16MB limit
-- Images: `static/images/` for logos and assets
-
-### Custom Jinja2 Filters
-- `|time_ago`: Convert datetime to French relative time ("Il y a 2 heures")  
-- `|month_name`: Convert month number to French name ("Janvier", "Février")
-- `|nl2br`: Convert newlines to HTML line breaks
-- Available in all templates via `app/__init__.py` registration
 
 ## Integration Points
 
-- **Flask-Migrate**: Database versioning in `migrations/` directory
-- **Flask-WTF**: CSRF protection on all forms with `{{ csrf_token() }}`
-- **Instance Folder**: Runtime data storage (`instance/database.db`, config overrides)
-- **CLI Commands**: Custom Flask commands in `run.py` for database operations
-- **SQLAlchemy**: Relationship patterns with backref, foreign keys across domains
+- **Flask Extensions**: Centralized in `app/extensions.py` (SQLAlchemy, Flask-Login, Migrate, Bcrypt, CSRF).
+- **Instance Folder**: Runtime data (`instance/database.db`, config overrides).
+- **ARE Dashboard**: KPIs, analytics, and real data in `app/are/dashboard/` and `app/are/services_reel.py`.
+- **Collecte Module**: Real data collection in `app/models/collecte_donnees.py` and `app/collecte/`.
+- **Testing**: Uses `requests`, `beautifulsoup4`, `lxml` for HTTP and HTML validation. Install with `python tests/setup_test_env.py`.
 
-## Development Notes
 
-- Use `flask --app run shell` for interactive development (auto-imports `db`, `User`, `Operateur`)
-- Database changes require migrations, not direct schema edits  
-- French UI/UX throughout - maintain language consistency
-- Bootstrap 5 for responsive design
-- Role checks: use `@login_required` + custom decorators (`@role_required`, `@admin_required`)
-- Service layer for complex business logic - import services in routes as needed
-- Main entry point: `run.py` with CLI commands and shell context
-- Configuration via environment variables (`.env` file support)
+## File Organization
 
-## Recent Fixes & Known Issues
+- **Blueprints**: Each domain has `__init__.py`, `forms.py`, `routes.py`, models, and templates.
+- **Templates**: Base (`base.html`), domain folders, and reusable components.
+- **Static**: Custom CSS (`static/css/style.css`), JS (`static/js/main.js`), uploads, images.
+- **Tests**: Automated scripts in `tests/` for routes, forms, and DB checks. See `tests/README.md` for details.
 
-### SelectField Coercion Pattern
-- **Problem**: `ValueError: invalid literal for int() with base 10: ''` in forms with empty SelectField choices
-- **Solution**: Use `coerce=lambda x: int(x) if x else None` instead of `coerce=int`
-- **Files affected**: All forms with optional SelectField (production_hydro, distribution, etc.)
 
-### Permission Architecture for Hierarchical Models
-- **Distribution models**: No direct `operateur_id` - access via parent relationships
-- **Pattern**: `PosteDistribution` → `ReseauDistribution.operateur_id` for filtering
-- **Utility functions**: Use `app/utils/permissions.py` for consistent permission checking
-- **Form initialization**: Add `__init__` methods to filter choices based on user permissions
+## Project-Specific Examples
+
+- **Permission Check**:
+    ```python
+    from app.utils.permissions import can_access_operateur
+    if not can_access_operateur(operateur_id):
+        abort(403)
+    ```
+- **SelectField Coercion**:
+    ```python
+    field = SelectField(coerce=lambda x: int(x) if x else None)
+    ```
+- **Service Usage**:
+    ```python
+    from app.notifications.services import NotificationService
+    NotificationService.creer_notification(...)
+    ```
+- **Test Execution**:
+    ```powershell
+    python tests/run_all_tests.py --full-report
+    python tests/manual_test_routes.py --auth-user admin --auth-pass admin123
+    ```
+
+## Known Issues & Fixes
+
+- Use `coerce=lambda x: int(x) if x else None` for SelectFields to avoid ValueError.
+- Distribution models: always filter by parent relationship for permissions.
+
+---
+
+For unclear or missing sections, please provide feedback to improve these instructions for future AI agents.

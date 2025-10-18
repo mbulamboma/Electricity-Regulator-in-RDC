@@ -1,0 +1,9 @@
+# Dépendances pour les tests
+requests>=2.25.1
+beautifulsoup4>=4.9.3
+lxml>=4.6.3
+
+# Dépendances optionnelles pour tests avancés
+selenium>=4.0.0  # Pour tests UI automatisés
+pytest>=6.2.4   # Framework de test alternatif
+pytest-flask>=1.2.0  # Extensions Flask pour pytest

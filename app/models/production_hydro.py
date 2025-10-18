@@ -57,6 +57,8 @@ class CentraleHydro(BaseModel):
     # Relations
     operateur = relationship("Operateur", back_populates="centrales_hydro")
     rapports = relationship("RapportHydro", back_populates="centrale", cascade="all, delete-orphan")
+    groupes_production = relationship("GroupeProduction", back_populates="centrale", cascade="all, delete-orphan")
+    transformateurs = relationship("TransformateurRapport", back_populates="centrale", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<CentraleHydro {self.nom}>'
@@ -144,9 +146,17 @@ class RapportHydro(BaseModel):
     
     # Relations
     centrale = relationship("CentraleHydro", back_populates="rapports")
-    groupes_production = relationship("GroupeProduction", back_populates="rapport", cascade="all, delete-orphan")
-    transformateurs = relationship("TransformateurRapport", back_populates="rapport", cascade="all, delete-orphan")
     donnees_mensuelles = relationship("DonneesMensuelles", back_populates="rapport", cascade="all, delete-orphan")
+    
+    @property
+    def groupes_production(self):
+        """Accès aux groupes de production via la centrale"""
+        return self.centrale.groupes_production if self.centrale else []
+    
+    @property
+    def transformateurs(self):
+        """Accès aux transformateurs via la centrale"""
+        return self.centrale.transformateurs if self.centrale else []
     
     def __repr__(self):
         return f'<RapportHydro {self.centrale.nom if self.centrale else "N/A"} {self.mois}/{self.annee}>'
@@ -215,7 +225,7 @@ class GroupeProduction(BaseModel):
     __tablename__ = 'groupes_production'
     
     # Relations
-    rapport_id = Column(Integer, ForeignKey('rapports_hydro.id'), nullable=False)
+    centrale_id = Column(Integer, ForeignKey('centrales_hydro.id'), nullable=False)
     
     # Identification
     numero_groupe = Column(String(10), nullable=False)
@@ -255,7 +265,7 @@ class GroupeProduction(BaseModel):
     observations = Column(Text)
     
     # Relations
-    rapport = relationship("RapportHydro", back_populates="groupes_production")
+    centrale = relationship("CentraleHydro", back_populates="groupes_production")
     
     def __repr__(self):
         return f'<GroupeProduction {self.numero_groupe}>'
@@ -280,7 +290,7 @@ class GroupeProduction(BaseModel):
         """Convertir en dictionnaire"""
         data = super().to_dict()
         data.update({
-            'rapport_id': self.rapport_id,
+            'centrale_id': self.centrale_id,
             'numero_groupe': self.numero_groupe,
             'nom_groupe': self.nom_groupe,
             'puissance_nominale': self.puissance_nominale,
@@ -309,11 +319,11 @@ class GroupeProduction(BaseModel):
 
 
 class TransformateurRapport(BaseModel):
-    """Modèle pour les transformateurs dans un rapport"""
+    """Modèle pour les transformateurs d'une centrale"""
     __tablename__ = 'transformateurs_rapport'
     
     # Relations
-    rapport_id = Column(Integer, ForeignKey('rapports_hydro.id'), nullable=False)
+    centrale_id = Column(Integer, ForeignKey('centrales_hydro.id'), nullable=False)
     
     # Identification
     numero_transformateur = Column(String(10), nullable=False)
@@ -348,7 +358,7 @@ class TransformateurRapport(BaseModel):
     observations = Column(Text)
     
     # Relations
-    rapport = relationship("RapportHydro", back_populates="transformateurs")
+    centrale = relationship("CentraleHydro", back_populates="transformateurs")
     
     def __repr__(self):
         return f'<TransformateurRapport {self.numero_transformateur}>'
@@ -357,7 +367,7 @@ class TransformateurRapport(BaseModel):
         """Convertir en dictionnaire"""
         data = super().to_dict()
         data.update({
-            'rapport_id': self.rapport_id,
+            'centrale_id': self.centrale_id,
             'numero_transformateur': self.numero_transformateur,
             'nom_transformateur': self.nom_transformateur,
             'puissance_nominale': self.puissance_nominale,

@@ -1,0 +1,32 @@
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                {{ filtre_form.centrale_id.label(class="form-label") }}
+                {{ filtre_form.centrale_id(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.annee.label(class="form-label") }}
+                {{ filtre_form.annee(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.mois.label(class="form-label") }}
+                {{ filtre_form.mois(class="form-select") }}
+            </div>
+            <div class="col-md-2">
+                {{ filtre_form.statut.label(class="form-label") }}
+                {{ filtre_form.statut(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Recherche</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Nom de centrale..." value="{{ search }}">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

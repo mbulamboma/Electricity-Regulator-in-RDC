@@ -1,0 +1,136 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Production annuelle d'énergie électrique (GWh)</h5>
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.evolution_production and stats_nationales.evolution_production|length > 0 %}
+		<div class="chart-container">
+			<canvas id="chartProductionAnnuelle"></canvas>
+		</div>
+		<div class="table-responsive mt-3">
+			<table class="table table-sm table-striped">
+				<thead class="table-dark">
+					<tr>
+						<th>Année</th>
+						<th class="text-end">Hydro (GWh)</th>
+						<th class="text-end">Thermique (GWh)</th>
+						<th class="text-end">Solaire (GWh)</th>
+						<th class="text-end">Total (GWh)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in stats_nationales.evolution_production %}
+					<tr>
+						<td><strong>{{ item.annee }}</strong></td>
+						<td class="text-end">{{ "{:,.1f}".format(item.production_hydro_gwh) }}</td>
+						<td class="text-end">{{ "{:,.1f}".format(item.production_thermique_gwh) }}</td>
+						<td class="text-end">{{ "{:,.1f}".format(item.production_solaire_gwh) }}</td>
+						<td class="text-end"><strong>{{ "{:,.1f}".format(item.production_totale_gwh) }}</strong></td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-bolt fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucune donnée de production disponible</h6>
+			<p class="text-muted small">
+				Les graphiques et tableaux de production apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>
+<style>
+.chart-container {
+	height: 350px;
+	position: relative;
+}
+</style>
+<script>
+var prodLabels = [];
+var prodHydro = [];
+var prodThermique = [];
+var prodSolaire = [];
+var prodTotale = [];
+{% for item in stats_nationales.evolution_production %}
+	prodLabels.push("{{ item.annee }}");
+	prodHydro.push({{ item.production_hydro_gwh|float }});
+	prodThermique.push({{ item.production_thermique_gwh|float }});
+	prodSolaire.push({{ item.production_solaire_gwh|float }});
+	prodTotale.push({{ item.production_totale_gwh|float }});
+{% endfor %}
+if (document.getElementById('chartProductionAnnuelle')) {
+	const ctxProd = document.getElementById('chartProductionAnnuelle').getContext('2d');
+	new Chart(ctxProd, {
+		type: 'bar',
+		data: {
+			labels: prodLabels,
+			datasets: [
+				{
+					label: 'Hydro (GWh)',
+					data: prodHydro,
+					backgroundColor: 'rgba(13, 110, 253, 0.8)',
+					borderColor: '#0d6efd',
+					borderWidth: 1
+				},
+				{
+					label: 'Thermique (GWh)',
+					data: prodThermique,
+					backgroundColor: 'rgba(220, 53, 69, 0.8)',
+					borderColor: '#dc3545',
+					borderWidth: 1
+				},
+				{
+					label: 'Solaire (GWh)',
+					data: prodSolaire,
+					backgroundColor: 'rgba(25, 135, 84, 0.8)',
+					borderColor: '#198754',
+					borderWidth: 1
+				}
+			]
+		},
+		options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Production annuelle d\'énergie électrique par source'
+				},
+				legend: {
+					position: 'top'
+				}
+			},
+			scales: {
+				x: {
+					stacked: true,
+					title: {
+						display: true,
+						text: 'Année'
+					}
+				},
+				y: {
+					stacked: true,
+					beginAtZero: true,
+					title: {
+						display: true,
+						text: 'Production (GWh)'
+					},
+					ticks: {
+						callback: function(value) {
+							return value.toLocaleString() + ' GWh';
+						}
+					}
+				}
+			},
+			interaction: {
+				intersect: false,
+				mode: 'index'
+			}
+		}
+	});
+}
+</script>

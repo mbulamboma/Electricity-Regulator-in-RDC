@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary">{{ title }}</h2>
+                <a href="{{ url_for('production_hydro.detail_centrale', centrale_id=centrale.id) }}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour à la centrale
+                </a>
+            </div>
+
+            <!-- Informations de la centrale -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Centrale</h6>
+                    <h5 class="card-title">{{ centrale.nom }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            {{ centrale.operateur.nom if centrale.operateur else 'Opérateur non défini' }}
+                        </small>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Formulaire -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Numéro du transformateur -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.numero_transformateur.label(class="form-label") }}
+                                {{ form.numero_transformateur(class="form-control" + (" is-invalid" if form.numero_transformateur.errors else "")) }}
+                                {% if form.numero_transformateur.errors %}
+                                    {% for error in form.numero_transformateur.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Nom du transformateur -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.nom_transformateur.label(class="form-label") }}
+                                {{ form.nom_transformateur(class="form-control" + (" is-invalid" if form.nom_transformateur.errors else "")) }}
+                                {% if form.nom_transformateur.errors %}
+                                    {% for error in form.nom_transformateur.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Puissance nominale -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.puissance_nominale.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.puissance_nominale(class="form-control" + (" is-invalid" if form.puissance_nominale.errors else "")) }}
+                                    <span class="input-group-text">MVA</span>
+                                </div>
+                                {% if form.puissance_nominale.errors %}
+                                    {% for error in form.puissance_nominale.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Type de refroidissement -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.type_refroidissement.label(class="form-label") }}
+                                {{ form.type_refroidissement(class="form-select" + (" is-invalid" if form.type_refroidissement.errors else "")) }}
+                                {% if form.type_refroidissement.errors %}
+                                    {% for error in form.type_refroidissement.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Tension primaire -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.tension_primaire.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.tension_primaire(class="form-control" + (" is-invalid" if form.tension_primaire.errors else "")) }}
+                                    <span class="input-group-text">kV</span>
+                                </div>
+                                {% if form.tension_primaire.errors %}
+                                    {% for error in form.tension_primaire.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Tension secondaire -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.tension_secondaire.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.tension_secondaire(class="form-control" + (" is-invalid" if form.tension_secondaire.errors else "")) }}
+                                    <span class="input-group-text">kV</span>
+                                </div>
+                                {% if form.tension_secondaire.errors %}
+                                    {% for error in form.tension_secondaire.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('production_hydro.detail_centrale', centrale_id=centrale.id) }}" 
+                               class="btn btn-outline-secondary me-md-2">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if transformateur is defined %}Modifier{% else %}Ajouter{% endif %} le transformateur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

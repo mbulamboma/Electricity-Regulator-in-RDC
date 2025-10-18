@@ -105,6 +105,11 @@
 </style>
 
 <script>
+// Define URLs for JavaScript
+const notificationsApiUrl = '/notifications/api/recentes';
+const notificationsMarquerLuUrl = '/notifications/api/marquer_lu/0';
+const notificationsIndexUrl = '/notifications/';
+const notificationsMarquerToutesLuesUrl = '/notifications/api/marquer_toutes_lues';        
 {% raw %}
 let notificationsInterval;
 
@@ -127,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function chargerNotifications() {
-    fetch('{ url_for("notifications.api_recentes") }?limit=8')
+    fetch(notificationsApiUrl + '?limit=8')
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('notifications-list');
@@ -155,18 +160,18 @@ function chargerNotifications() {
                     </div>
                 `).join('');
                 
-                // Compter les non lues
-                const nonLues = data.notifications.filter(n => !n.lue).length;
-                if (nonLues > 0) {
-                    badge.textContent = nonLues;
-                    badge.style.display = 'block';
+                // Mettre à jour le badge
+                const unreadCount = data.notifications.filter(n => !n.lue).length;
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    badge.style.display = 'inline-block';
                 } else {
                     badge.style.display = 'none';
                 }
             } else {
                 container.innerHTML = `
-                    <div class="dropdown-item-text text-center text-muted py-4">
-                        <i class="fas fa-bell-slash fa-2x mb-2"></i><br>
+                    <div class="dropdown-item-text text-center text-muted py-3">
+                        <i class="fas fa-bell-slash"></i><br>
                         Aucune notification
                     </div>
                 `;
@@ -175,37 +180,21 @@ function chargerNotifications() {
         })
         .catch(error => {
             console.error('Erreur lors du chargement des notifications:', error);
-            document.getElementById('notifications-list').innerHTML = `
-                <div class="dropdown-item-text text-center text-danger py-3">
-                    <i class="fas fa-exclamation-triangle"></i> Erreur de chargement
-                </div>
-            `;
+            const container = document.getElementById('notifications-list');
+            if (container) {
+                container.innerHTML = `
+                    <div class="dropdown-item-text text-center text-danger py-3">
+                        <i class="fas fa-exclamation-triangle"></i><br>
+                        Erreur de chargement
+                    </div>
+                `;
+            }
         });
 }
 
 function ouvrirNotification(notificationId, urlAction) {
     // Marquer comme lue
-    fetch(`{ url_for('notifications.marquer_lu', id=0) }`.replace('0', notificationId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken()
-        }
-    }).then(() => {
-        // Recharger les notifications
-        chargerNotifications();
-        
-        // Rediriger vers l'action si définie
-        if (urlAction && urlAction !== 'None' && urlAction !== '') {
-            window.location.href = urlAction;
-        } else {
-            window.location.href = '{ url_for("notifications.index") }';
-        }
-    });
-}
-
-function marquerToutesLues() {
-    fetch('{ url_for("notifications.marquer_toutes_lues") }', {
+    fetch(notificationsMarquerLuUrl.replace('0', notificationId), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -213,25 +202,44 @@ function marquerToutesLues() {
         }
     }).then(response => response.json())
     .then(data => {
-        if (data.success) {
-            chargerNotifications();
-            // Optionnel: afficher un toast de succès
+        // Recharger les notifications
+        chargerNotifications();
+        
+        // Rediriger vers l'action si définie
+        if (urlAction && urlAction !== 'None' && urlAction !== '') {
+            window.location.href = urlAction;
+        } else {
+            window.location.href = notificationsIndexUrl;
         }
     });
 }
 
+function marquerToutesLues() {
+    fetch(notificationsMarquerToutesLuesUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    }).then(response => response.json())
+    .then(data => {
+        chargerNotifications();
+    });
+}
+
 function getIconClass(type) {
-    const mapping = {
-        'rappel_rapport': 'rappel',
-        'validation_rapport': 'validation',
-        'rejet_rapport': 'rejet',
-        'alerte_donnees': 'alerte',
-        'message_systeme': 'systeme',
-        'maintenance_planifiee': 'maintenance',
-        'incident_technique': 'incident',
-        'nouvelle_reglementation': 'reglementation'
+    const iconMap = {
+        'info': 'info',
+        'success': 'success', 
+        'warning': 'warning',
+        'error': 'danger',
+        'system': 'systeme',
+        'maintenance': 'maintenance',
+        'incident': 'incident',
+        'reglementation': 'reglementation',
+        'alerte': 'alerte'
     };
-    return mapping[type] || 'systeme';
+    return 'notification-icon-' + (iconMap[type] || 'info');
 }
 
 function truncateText(text, maxLength) {
@@ -242,15 +250,16 @@ function truncateText(text, maxLength) {
 function formatTime(dateString) {
     const date = new Date(dateString);
     const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const diff = now - date;
     
-    if (diffMins < 1) return 'À l\'instant';
-    if (diffMins < 60) return `${diffMins} min`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays}j`;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'À l\'instant';
+    if (minutes < 60) return `Il y a ${minutes} min`;
+    if (hours < 24) return `Il y a ${hours} h`;
+    if (days < 7) return `Il y a ${days} j`;
     
     return date.toLocaleDateString('fr-FR', { 
         day: 'numeric', 

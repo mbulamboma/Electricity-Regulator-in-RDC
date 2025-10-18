@@ -1,0 +1,245 @@
+{% if rapports.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Centrale</th>
+                            <th>Période</th>
+                            <th>Énergie Produite</th>
+                            <th>Facteur Charge</th>
+                            <th>Statut</th>
+                            <th>Dernière Modif.</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rapport in rapports.items %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ rapport.centrale.nom }}</div>
+                                <div class="centrale-info">
+                                    {{ rapport.centrale.code }} • {{ rapport.centrale.localisation or 'N/A' }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="periode-badge">{{ rapport.get_periode_str() }}</span>
+                                <div class="small text-muted mt-1">
+                                    {{ rapport.periode_debut.strftime('%d/%m') }} - {{ rapport.periode_fin.strftime('%d/%m/%Y') }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">
+                                    {% if rapport.energie_produite %}
+                                        {{ "{:,.0f}".format(rapport.energie_produite) }} MWh
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </div>
+                                {% if rapport.energie_disponible %}
+                                <div class="small text-muted">
+                                    / {{ "{:,.0f}".format(rapport.energie_disponible) }} MWh dispo.
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if rapport.facteur_charge %}
+                                    <div class="fw-bold">{{ "{:.1f}".format(rapport.facteur_charge) }}%</div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                            style="width: {{ rapport.facteur_charge }}%"
+                                            aria-valuenow="{{ rapport.facteur_charge }}" 
+                                            aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ rapport.statut }}">
+                                    {{ rapport.statut }}
+                                </span>
+                            </td>
+                            <td class="small text-muted">
+                                {{ rapport.date_modification.strftime('%d/%m/%Y %H:%M') if rapport.date_modification else rapport.date_creation.strftime('%d/%m/%Y %H:%M') }}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{{ url_for('production_hydro.details', id=rapport.id) }}" 
+                                    class="btn btn-sm btn-outline-primary" title="Détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if rapport.statut != 'transmis' or current_user.is_super_admin() %}
+                                    <a href="{{ url_for('production_hydro.edit', id=rapport.id) }}" 
+                                    class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.is_super_admin() %}
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal"
+                                            data-rapport-id="{{ rapport.id }}"
+                                            data-centrale-nom="{{ rapport.centrale.nom }}"
+                                            data-periode="{{ rapport.get_periode_str() }}"
+                                            title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> 
+
+    <!-- Pagination -->
+    {% if rapports.pages > 1 %}
+        <nav aria-label="Navigation des rapports" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if rapports.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('production_hydro.index', page=rapports.prev_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
+                        Précédent
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in rapports.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != rapports.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('production_hydro.index', page=page_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if rapports.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('production_hydro.index', page=rapports.next_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
+                        Suivant
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+    
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-water fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Aucun rapport trouvé</h5>
+            <p class="text-muted">Commencez par créer votre premier rapport de production hydroélectrique.</p>
+            <a href="{{ url_for('production_hydro.nouveau') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Créer un rapport
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+
+
+<!-- Modal de confirmation de suppression -->
+<style>
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+.modal {
+    z-index: 1055 !important;
+}
+</style>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le rapport :</p>
+                <p class="fw-bold" id="deleteInfo"></p>
+                <p class="text-danger">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Delete modal JavaScript loaded');
+    console.log('Bootstrap available:', typeof bootstrap !== 'undefined');
+    
+    // Listen for modal show event
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        console.log('Modal element found, adding event listener');
+        
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            console.log('Modal show event triggered');
+            
+            // Get the button that triggered the modal
+            const button = event.relatedTarget;
+            if (button) {
+                console.log('Button found:', button);
+                const rapportId = button.getAttribute('data-rapport-id');
+                const centraleNom = button.getAttribute('data-centrale-nom');
+                const periode = button.getAttribute('data-periode');
+                
+                console.log('Modal data:', {rapportId, centraleNom, periode});
+                
+                // Update modal content
+                const deleteInfo = document.getElementById('deleteInfo');
+                if (deleteInfo) {
+                    deleteInfo.textContent = centraleNom + ' - ' + periode;
+                    console.log('Updated deleteInfo text to:', deleteInfo.textContent);
+                } else {
+                    console.error('deleteInfo element not found');
+                }
+                
+                // Update form action
+                const deleteForm = document.getElementById('deleteForm');
+                if (deleteForm) {
+                    deleteForm.action = '/production-hydro/' + rapportId + '/delete';
+                    console.log('Updated form action to:', deleteForm.action);
+                } else {
+                    console.error('deleteForm element not found');
+                }
+            } else {
+                console.error('No button found in modal event');
+            }
+        });
+        
+        // Also listen for when modal is shown
+        deleteModal.addEventListener('shown.bs.modal', function() {
+            console.log('Modal fully shown');
+        });
+        
+    } else {
+        console.error('deleteModal element not found');
+    }
+});
+</script>

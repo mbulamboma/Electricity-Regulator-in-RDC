@@ -79,13 +79,18 @@
             <div class="card-footer">
                 <div class="d-flex gap-2">
                     <a href="{{ url_for('production_thermique.detail_centrale', id=centrale.id) }}" 
-                       class="btn btn-sm btn-outline-primary flex-fill">
+                       class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-eye me-1"></i>Détails
                     </a>
                     {% if current_user.is_super_admin() %}
-                    <a href="#" 
-                       class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-edit"></i>
+                    <a href="{{ url_for('production_thermique.modifier_centrale', id=centrale.id) }}" 
+                       class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-edit me-1"></i>Modifier
+                    </a>
+                    <a href="#"
+                       class="btn btn-sm btn-outline-danger"
+                       onclick="confirmDelete({{ centrale.id }}, '{{ centrale.nom }}')">
+                        <i class="fas fa-trash me-1"></i>Supprimer
                     </a>
                     {% endif %}
                 </div>
@@ -108,4 +113,28 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+function confirmDelete(centraleId, centraleNom) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la centrale "${centraleNom}" ? Cette action est irréversible.`)) {
+        // Créer et soumettre un formulaire POST pour la suppression
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/production-thermique/centrale/${centraleId}/supprimer`;
+        
+        // Ajouter le token CSRF si nécessaire
+        const csrfToken = document.querySelector('input[name="csrf_token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

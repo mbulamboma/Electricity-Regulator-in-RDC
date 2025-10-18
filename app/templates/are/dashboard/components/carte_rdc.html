@@ -1,0 +1,37 @@
+
+<!-- Composant : Carte interactive RDC avec Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-map text-primary"></i> Carte interactive de la RDC</h5>
+    </div>
+    <div class="card-body">
+        <div id="rdcMap" style="height: 500px; width: 100%;"></div>
+        <p class="text-muted mt-3">Les centrales sont affichées sur la carte. Cliquez sur un marqueur pour voir les détails.</p>
+    </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialisation de la carte centrée sur la RDC
+    var map = L.map('rdcMap').setView([-2.8797, 23.6560], 5); // Centre RDC
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Ajout des centrales (variable "centrales" transmise au template)
+    // Use a default empty list if 'centrales' is undefined to avoid Jinja2/JSON errors
+    var centrales = {{ centrales|default([])|tojson }};
+    if (Array.isArray(centrales) && centrales.length) {
+        centrales.forEach(function(centrale) {
+            if (centrale && centrale.latitude && centrale.longitude) {
+                var marker = L.marker([centrale.latitude, centrale.longitude]).addTo(map);
+                marker.bindPopup(
+                    '<strong>' + (centrale.nom || '') + '</strong><br>' +
+                    'Type : ' + (centrale.type || 'N/A') + '<br>' +
+                    'Capacité : ' + (centrale.capacite_mw || 'N/A') + ' MW'
+                );
+            }
+        });
+    }
+</script>

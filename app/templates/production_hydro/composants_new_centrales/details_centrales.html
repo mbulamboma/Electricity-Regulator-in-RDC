@@ -1,0 +1,146 @@
+<div class="centrale-card">
+    <div class="centrale-header">
+        <div>
+            <h4 class="mb-1">{{ centrale.nom }}</h4>
+            <div class="text-muted">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                {{ centrale.localisation }}
+                {% if centrale.operateur %}
+                <span class="ms-3">
+                    <i class="fas fa-building me-1"></i>
+                    {{ centrale.operateur.nom }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-{{ 'success' if centrale.statut == 'operationnelle' else 'warning' if centrale.statut == 'maintenance' else 'danger' }} mb-2">
+                {{ centrale.statut|title }}
+            </span>
+            <div class="small text-muted">
+                Mise en service: {{ centrale.date_mise_service.strftime('%d/%m/%Y') if centrale.date_mise_service else 'N/A' }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="centrale-stats">
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.puissance_installee or 0 }}</div>
+            <div class="stat-label">MW Installés</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.nombre_groupes or 0 }}</div>
+            <div class="stat-label">Groupes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.nombre_transformateurs or 0 }}</div>
+            <div class="stat-label">Transformateurs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.hauteur_chute or 0 }}</div>
+            <div class="stat-label">m de Chute</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.debit_equipement or 0 }}</div>
+            <div class="stat-label">m³/s Équipement</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ centrale.volume_retenue or 0 }}</div>
+            <div class="stat-label">Mm³ Retenue</div>
+        </div>
+    </div>
+    
+    {% if centrale.description %}
+    <div class="alert alert-info">
+        <h6><i class="fas fa-info-circle me-2"></i>Description</h6>
+        <p class="mb-0">{{ centrale.description }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="tech-specs">
+        <h6 class="mb-3">Spécifications Techniques</h6>
+        <div class="spec-row">
+            <span>Type de turbine:</span>
+            <strong>{{ centrale.type_turbine or 'Non spécifié' }}</strong>
+        </div>
+        <div class="spec-row">
+            <span>Type de barrage:</span>
+            <strong>{{ centrale.type_barrage or 'Non spécifié' }}</strong>
+        </div>
+        <div class="spec-row">
+            <span>Niveau de tension:</span>
+            <strong>{{ centrale.niveau_tension or 'Non spécifié' }} kV</strong>
+        </div>
+        <div class="spec-row">
+            <span>Coordonnées:</span>
+            <strong>
+                {% if centrale.latitude and centrale.longitude %}
+                {{ "%.6f"|format(centrale.latitude) }}, {{ "%.6f"|format(centrale.longitude) }}
+                {% else %}
+                Non spécifiées
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+    
+    <div class="equipment-section">
+        <h6 class="mb-3">Équipements</h6>
+        <div class="spec-row">
+            <span>Nombre de groupes de production:</span>
+            <strong>{{ centrale.nombre_groupes or 0 }}</strong>
+        </div>
+        <div class="spec-row">
+            <span>Nombre de transformateurs:</span>
+            <strong>{{ centrale.nombre_transformateurs or 0 }}</strong>
+        </div>
+        {% if centrale.nombre_groupes and centrale.nombre_groupes > 0 %}
+        <div class="spec-row">
+            <span>Puissance par groupe:</span>
+            <strong>{{ "%.2f"|format(centrale.puissance_installee / centrale.nombre_groupes) if centrale.puissance_installee else 'N/A' }} MW</strong>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if centrale.latitude and centrale.longitude %}
+    <div class="map-container" id="map"></div>
+    {% endif %}
+    
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ url_for('production_hydro.centrale_edit', id=centrale.id) }}" class="btn btn-primary">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        <a href="{{ url_for('production_hydro.create', centrale_id=centrale.id) }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>Nouveau rapport
+        </a>
+    </div>
+</div>
+
+{% if centrale.latitude and centrale.longitude %}
+{% if centrale.latitude and centrale.longitude %}
+<!-- Carte pour la localisation de la centrale -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Coordonnées de la centrale
+    const lat = {{ centrale.latitude }};
+    const lng = {{ centrale.longitude }};
+    const nom = "{{ centrale.nom }}";
+    const localisation = "{{ centrale.localisation or 'Localisation non spécifiée' }}";
+    
+    // Initialiser la carte centrée sur la centrale
+    const map = L.map('map').setView([lat, lng], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Ajouter un marqueur pour la centrale
+    L.marker([lat, lng])
+        .addTo(map)
+        .bindPopup('<strong>' + nom + '</strong><br>' + localisation + '<br>Coordonnées: ' + lat.toFixed(6) + ', ' + lng.toFixed(6))
+        .openPopup();
+});
+</script>
+{% endif %}
+{% endif %}

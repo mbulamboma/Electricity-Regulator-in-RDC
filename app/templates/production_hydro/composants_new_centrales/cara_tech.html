@@ -1,0 +1,96 @@
+<div class="form-section">
+        <h5><i class="fas fa-cogs me-2"></i>Caractéristiques Techniques</h5>
+        <div class="row">
+            <div class="col-md-4 required-field">
+                {{ form.puissance_installee.label(class="form-label") }}
+                {{ form.puissance_installee(class="form-control" + (" is-invalid" if form.puissance_installee.errors else ""), 
+                    placeholder="0.00", required=true, 
+                    pattern="[0-9]*\.?[0-9]+", 
+                    title="Entrez un nombre positif valide") }}
+                {% if form.puissance_installee.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.puissance_installee.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <div class="help-text">Puissance totale installée en MW</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.puissance_disponible.label(class="form-label") }}
+                {{ form.puissance_disponible(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Puissance actuellement disponible en MW</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.type_centrale.label(class="form-label") }}
+                {{ form.type_centrale(class="form-select") }}
+                <div class="help-text">Type d'aménagement hydroélectrique</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-3">
+                {{ form.type_turbine.label(class="form-label") }}
+                {{ form.type_turbine(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                {{ form.type_barrage.label(class="form-label") }}
+                {{ form.type_barrage(class="form-select") }}
+            </div>
+            <div class="col-md-3">
+                {{ form.hauteur_chute.label(class="form-label") }}
+                {{ form.hauteur_chute(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Hauteur de chute en mètres</div>
+            </div>
+            <div class="col-md-3">
+                {{ form.niveau_tension.label(class="form-label") }}
+                {{ form.niveau_tension(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Tension de raccordement en kV</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4 required-field">
+                {{ form.nombre_groupes.label(class="form-label") }}
+                {{ form.nombre_groupes(class="form-control" + (" is-invalid" if form.nombre_groupes.errors else ""), 
+                    placeholder="0", required=true,
+                    pattern="[0-9]+",
+                    title="Entrez un nombre entier positif") }}
+                {% if form.nombre_groupes.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.nombre_groupes.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <div class="help-text">Nombre total de groupes de production</div>
+            </div>
+            <div class="col-md-4 required-field">
+                {{ form.nombre_transformateurs.label(class="form-label") }}
+                {{ form.nombre_transformateurs(class="form-control" + (" is-invalid" if form.nombre_transformateurs.errors else ""), 
+                    placeholder="0", required=true,
+                    pattern="[0-9]+",
+                    title="Entrez un nombre entier positif") }}
+                {% if form.nombre_transformateurs.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.nombre_transformateurs.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <div class="help-text">Nombre total de transformateurs</div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                {{ form.debit_equipement.label(class="form-label") }}
+                {{ form.debit_equipement(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Débit d'équipement en m³/s</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.volume_retenue.label(class="form-label") }}
+                {{ form.volume_retenue(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Volume de la retenue en millions de m³</div>
+            </div>
+            <div class="col-md-4">
+                {{ form.superficie_bassin.label(class="form-label") }}
+                {{ form.superficie_bassin(class="form-control", placeholder="0.00") }}
+                <div class="help-text">Superficie du bassin versant en km²</div>
+            </div>
+        </div>
+    </div>

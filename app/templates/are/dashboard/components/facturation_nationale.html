@@ -1,0 +1,109 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Facturation nationale</h5>
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.facturation and stats_nationales.facturation|length > 0 %}
+		<div class="chart-container">
+			<canvas id="chartFacturationNationale"></canvas>
+		</div>
+		<div class="table-responsive mt-3">
+			<table class="table table-sm table-striped">
+				<thead class="table-dark">
+					<tr>
+						<th>Année</th>
+						<th class="text-end">Montant total (CDF)</th>
+						<th class="text-end">Clients facturés</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in stats_nationales.facturation %}
+					<tr>
+						<td><strong>{{ item.annee }}</strong></td>
+						<td class="text-end">{{ "{:,.0f}".format(item.montant_total_cdf) }}</td>
+						<td class="text-end">{{ item.clients_factures }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucune donnée de facturation disponible</h6>
+			<p class="text-muted small">
+				Les graphiques et tableaux de facturation apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>
+<style>
+.chart-container {
+	height: 350px;
+	position: relative;
+}
+</style>
+<script>
+var factLabels = [];
+var factMontant = [];
+var factClients = [];
+{% for item in stats_nationales.facturation %}
+	factLabels.push("{{ item.annee }}");
+	factMontant.push({{ item.montant_total_cdf|float }});
+	factClients.push({{ item.clients_factures|int }});
+{% endfor %}
+if (document.getElementById('chartFacturationNationale')) {
+	const ctxFact = document.getElementById('chartFacturationNationale').getContext('2d');
+	new Chart(ctxFact, {
+		type: 'bar',
+		data: {
+			labels: factLabels,
+			datasets: [
+				{
+					label: 'Montant total (CDF)',
+					data: factMontant,
+					backgroundColor: 'rgba(25, 135, 84, 0.8)',
+					borderColor: '#198754',
+					borderWidth: 1
+				},
+				{
+					label: 'Clients facturés',
+					data: factClients,
+					backgroundColor: 'rgba(13, 110, 253, 0.8)',
+					borderColor: '#0d6efd',
+					borderWidth: 1
+				}
+			]
+		},
+		options: {
+			responsive: true,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Facturation nationale par année'
+				},
+				legend: {
+					position: 'top'
+				}
+			},
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Année'
+					}
+				},
+				y: {
+					beginAtZero: true,
+					title: {
+						display: true,
+						text: 'Montant (CDF) / Clients'
+					}
+				}
+			}
+		}
+	});
+}
+</script>

@@ -1,0 +1,140 @@
+<div class="form-section">
+        <h5><i class="fas fa-cogs me-2"></i>Groupes de Production</h5>
+        
+        <div class="equipment-formset" id="groupes-formset">
+            <div class="equipment-header">
+                <h6 class="mb-0">Configuration des groupes de production</h6>
+                <button type="button" class="add-btn" onclick="ajouterGroupe()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un groupe
+                </button>
+            </div>
+            
+            <div id="groupes-container">
+                {% for groupe in form.groupes_production %}
+                <div class="equipment-item" id="groupe-{{ loop.index0 }}">
+                    {{ groupe.id }}
+                    {{ groupe.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                            onclick="supprimerGroupe({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ groupe.numero_groupe.label(class="form-label") }}
+                            {{ groupe.numero_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.nom_groupe.label(class="form-label") }}
+                            {{ groupe.nom_groupe(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.puissance_nominale.label(class="form-label") }}
+                            {{ groupe.puissance_nominale(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ groupe.type_turbine.label(class="form-label") }}
+                            {{ groupe.type_turbine(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            {{ groupe.date_mise_service.label(class="form-label") }}
+                            {{ groupe.date_mise_service(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ groupe.constructeur.label(class="form-label") }}
+                            {{ groupe.constructeur(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ groupe.annee_fabrication.label(class="form-label") }}
+                            {{ groupe.annee_fabrication(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+<script>
+// Fonctions pour les groupes
+let groupeIndex = {{ form.groupes_production|length if form.groupes_production else 0 }};
+
+function ajouterGroupe() {
+    const container = document.getElementById('groupes-container');
+    const template = `
+        <div class="equipment-item" id="groupe-${groupeIndex}">
+            <input type="hidden" name="groupes_production-${groupeIndex}-id" value="">
+            <input type="hidden" name="groupes_production-${groupeIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                    onclick="supprimerGroupe(${groupeIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-numero_groupe" class="form-control" placeholder="G01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom du groupe</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-nom_groupe" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance nominale (MW)</label>
+                    <input type="number" step="0.01" name="groupes_production-${groupeIndex}-puissance_nominale" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type de turbine</label>
+                    <select name="groupes_production-${groupeIndex}-type_turbine" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="Pelton">Pelton</option>
+                        <option value="Francis">Francis</option>
+                        <option value="Kaplan">Kaplan</option>
+                        <option value="Turgo">Turgo</option>
+                        <option value="Banki">Banki</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Date mise en service</label>
+                    <input type="date" name="groupes_production-${groupeIndex}-date_mise_service" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Constructeur</label>
+                    <input type="text" name="groupes_production-${groupeIndex}-constructeur" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Année fabrication</label>
+                    <input type="number" name="groupes_production-${groupeIndex}-annee_fabrication" class="form-control" min="1900" max="2100">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    groupeIndex++;
+}
+
+function supprimerGroupe(index) {
+    const element = document.getElementById(`groupe-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        element.remove();
+    } else {
+        deleteInput.value = 'true';
+        element.classList.add('to-delete');
+    }
+}
+</script>

@@ -356,4 +356,10 @@ class IndicateursAREService:
         kpi_operateurs.save()
         kpis_mis_a_jour.append(kpi_operateurs)
         
+        # Calcul automatique du statut "atteint" pour tous les KPIs avec objectif
+        for kpi in kpis_mis_a_jour:
+            if kpi.objectif is not None:
+                kpi.atteint = kpi.valeur >= kpi.objectif
+                kpi.save()
+        
         return kpis_mis_a_jour

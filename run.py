@@ -49,6 +49,19 @@ def seed_data():
 
 
 @app.cli.command()
+def init_kpis_reglementaires():
+    """Initialiser les KPIs réglementaires RDC"""
+    with app.app_context():
+        from init_kpis_reglementaires import init_kpis_reglementaires
+        
+        print("🚀 Initialisation des KPIs réglementaires RDC...")
+        if init_kpis_reglementaires():
+            print("✅ KPIs réglementaires initialisés avec succès!")
+        else:
+            print("❌ Échec de l'initialisation des KPIs réglementaires")
+
+
+@app.cli.command()
 def reset_db():
     """Réinitialiser complètement la base de données"""
     with app.app_context():

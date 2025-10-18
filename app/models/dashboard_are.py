@@ -56,6 +56,7 @@ class KPIStrategic(BaseModel):
     tendance = db.Column(db.Enum(TendanceKPI), nullable=False, default=TendanceKPI.STABLE)
     evolution_pourcentage = db.Column(db.Float)  # % d'évolution par rapport à la période précédente
     objectif = db.Column(db.Float)  # Valeur objectif
+    atteint = db.Column(db.Boolean, default=False)  # Indicateur si l'objectif est atteint
     seuil_alerte = db.Column(db.Float)  # Seuil déclenchant une alerte
     source_donnees = db.Column(db.String(200))
     
@@ -84,6 +85,7 @@ class KPIStrategic(BaseModel):
             'tendance': self.tendance.value if self.tendance else None,
             'evolution_pourcentage': self.evolution_pourcentage,
             'objectif': self.objectif,
+            'atteint': self.atteint,
             'seuil_alerte': self.seuil_alerte,
             'operateur': self.operateur.nom if self.operateur else 'National',
             'date_modification': self.date_modification.isoformat() if self.date_modification else None

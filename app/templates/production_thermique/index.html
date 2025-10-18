@@ -69,70 +69,39 @@
     </div>
 </div>
 
-<!-- Statistiques rapides -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-value">{{ stats.total_rapports }}</div>
-            <div class="stat-label">Total Rapports</div>
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_rapports }}</div>
+                <div class="stat-label">Total Rapports</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333;">
+                <div class="stat-value">{{ stats.rapports_brouillon }}</div>
+                <div class="stat-label">Brouillons</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                <div class="stat-value">{{ stats.rapports_valides }}</div>
+                <div class="stat-label">Validés</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
+                <div class="stat-value">{{ stats.nombre_centrales }}</div>
+                <div class="stat-label">Centrales</div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333;">
-            <div class="stat-value">{{ stats.rapports_brouillon }}</div>
-            <div class="stat-label">Brouillons</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
-            <div class="stat-value">{{ stats.rapports_valides }}</div>
-            <div class="stat-label">Validés</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
-            <div class="stat-value">{{ stats.nombre_centrales }}</div>
-            <div class="stat-label">Centrales</div>
-        </div>
-    </div>
-</div>
 
-<!-- Filtres et recherche -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-3">
-                {{ filtre_form.centrale_id.label(class="form-label") }}
-                {{ filtre_form.centrale_id(class="form-select") }}
-            </div>
-            <div class="col-md-2">
-                {{ filtre_form.annee.label(class="form-label") }}
-                {{ filtre_form.annee(class="form-select") }}
-            </div>
-            <div class="col-md-2">
-                {{ filtre_form.mois.label(class="form-label") }}
-                {{ filtre_form.mois(class="form-select") }}
-            </div>
-            <div class="col-md-2">
-                {{ filtre_form.statut.label(class="form-label") }}
-                {{ filtre_form.statut(class="form-select") }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Recherche</label>
-                <div class="input-group">
-                    <input type="text" name="search" class="form-control" 
-                           placeholder="Nom de centrale..." value="{{ search }}">
-                    <button type="submit" class="btn btn-outline-secondary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
+    <!-- Filtres et recherche -->
+    {% include 'production_thermique/components/filtres.html' %}<!-- Liste des rapports -->
 
-<!-- Liste des rapports -->
-{% if rapports.items %}
+
+    {% if rapports.items %}
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">
@@ -246,7 +215,7 @@
     <ul class="pagination justify-content-center">
         {% if rapports.has_prev %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('production_thermique.index', page=rapports.prev_num, **request.args) }}">
+            <a class="page-link" href="{{ url_for('production_thermique.index', page=rapports.prev_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
                 Précédent
             </a>
         </li>
@@ -256,7 +225,7 @@
             {% if page_num %}
                 {% if page_num != rapports.page %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('production_thermique.index', page=page_num, **request.args) }}">
+                    <a class="page-link" href="{{ url_for('production_thermique.index', page=page_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
                         {{ page_num }}
                     </a>
                 </li>
@@ -274,7 +243,7 @@
         
         {% if rapports.has_next %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('production_thermique.index', page=rapports.next_num, **request.args) }}">
+            <a class="page-link" href="{{ url_for('production_thermique.index', page=rapports.next_num, centrale_id=filtre_form.centrale_id.data, annee=filtre_form.annee.data, mois=filtre_form.mois.data, statut=filtre_form.statut.data, search=search) }}">
                 Suivant
             </a>
         </li>
@@ -322,25 +291,366 @@
 
 {% block extra_js %}
 <script>
-{% raw %}
+let currentPage = {{ rapports.page }};
+let isLoading = false;
+
+// Fonction pour appliquer les filtres
+function applyFilters(page = 1) {
+    if (isLoading) return;
+    
+    isLoading = true;
+    currentPage = page;
+    
+    // Récupérer les valeurs des filtres
+    const filters = {
+        centrale_id: document.getElementById('centrale-filter').value || '',
+        annee: document.getElementById('annee-filter').value || '',
+        mois: document.getElementById('mois-filter').value || '',
+        statut: document.getElementById('statut-filter').value || '',
+        search: document.getElementById('search-input').value.trim(),
+        page: page
+    };
+    
+    // Construire l'URL avec les paramètres
+    const url = new URL('/production-thermique/api/filters', window.location.origin);
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '') {
+            url.searchParams.set(key, value);
+        }
+    });
+    
+    // Afficher le loader
+    showLoadingState();
+    
+    // Faire la requête AJAX
+    fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        updatePageContent(data);
+        updateURL(filters);
+    })
+    .catch(error => {
+        console.error('Erreur lors du filtrage:', error);
+        hideLoadingState();
+        showError('Erreur lors du chargement des données');
+    })
+    .finally(() => {
+        isLoading = false;
+    });
+}
+
+// Fonction pour mettre à jour le contenu de la page
+function updatePageContent(data) {
+    // Mettre à jour les statistiques
+    updateStats(data.stats);
+    
+    // Mettre à jour la liste des rapports
+    updateReportsTable(data.rapports);
+    
+    // Mettre à jour la pagination
+    updatePagination(data.pagination, data.filters);
+    
+    hideLoadingState();
+}
+
+// Fonction pour mettre à jour les statistiques
+function updateStats(stats) {
+    // Mettre à jour les cartes de statistiques
+    const statCards = document.querySelectorAll('.stat-card');
+    if (statCards.length >= 4) {
+        statCards[0].querySelector('.stat-value').textContent = stats.total_rapports;
+        statCards[1].querySelector('.stat-value').textContent = stats.rapports_brouillon;
+        statCards[2].querySelector('.stat-value').textContent = stats.rapports_valides;
+        statCards[3].querySelector('.stat-value').textContent = stats.nombre_centrales;
+    }
+}
+
+// Fonction pour mettre à jour le tableau des rapports
+function updateReportsTable(rapports) {
+    const tbody = document.querySelector('.table tbody');
+    if (!tbody) return;
+    
+    if (rapports.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <i class="fas fa-fire fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun rapport trouvé</h5>
+                    <p class="text-muted">Aucun rapport ne correspond aux critères de recherche.</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = rapports.map(rapport => `
+        <tr>
+            <td>
+                <div class="fw-bold">${rapport.centrale.nom}</div>
+                <div class="centrale-info">
+                    ${rapport.centrale.code} • ${rapport.centrale.type_combustible || 'N/A'}
+                </div>
+            </td>
+            <td>
+                <span class="periode-badge">${rapport.periode.str}</span>
+                <div class="small text-muted mt-1">
+                    ${rapport.periode.debut} - ${rapport.periode.fin}
+                </div>
+            </td>
+            <td>
+                <div class="fw-bold">
+                    ${rapport.energie_produite ? formatNumber(rapport.energie_produite) + ' MWh' : '<span class="text-muted">N/A</span>'}
+                </div>
+                ${rapport.energie_disponible ? `<div class="small text-muted">/ ${formatNumber(rapport.energie_disponible)} MWh dispo.</div>` : ''}
+            </td>
+            <td>
+                ${rapport.facteur_charge ? `
+                    <div class="fw-bold">${rapport.facteur_charge.toFixed(1)}%</div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-danger" role="progressbar" 
+                             style="width: ${rapport.facteur_charge}%"
+                             aria-valuenow="${rapport.facteur_charge}" 
+                             aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                ` : '<span class="text-muted">N/A</span>'}
+            </td>
+            <td>
+                ${rapport.consommation_combustible ? `
+                    <div class="fw-bold">${formatNumber(rapport.consommation_combustible)}L</div>
+                    ${rapport.consommation_specifique_reelle ? `<div class="small text-muted">${rapport.consommation_specifique_reelle.toFixed(2)} L/MWh</div>` : ''}
+                ` : '<span class="text-muted">N/A</span>'}
+            </td>
+            <td>
+                <span class="status-badge status-${rapport.statut}">
+                    ${rapport.statut}
+                </span>
+            </td>
+            <td class="small text-muted">
+                ${rapport.date_modification}
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <a href="/production-thermique/rapport/${rapport.id}" 
+                       class="btn btn-sm btn-outline-primary" title="Détails">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    ${rapport.can_edit ? `
+                        <a href="/production-thermique/rapport/${rapport.id}/modifier" 
+                           class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    ` : ''}
+                    ${rapport.can_delete ? `
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="confirmerSuppression(${rapport.id}, '${rapport.centrale.nom}', '${rapport.periode.str}')"
+                                title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Fonction pour mettre à jour la pagination
+function updatePagination(pagination, filters) {
+    const paginationContainer = document.querySelector('.pagination');
+    if (!paginationContainer || pagination.pages <= 1) {
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    paginationContainer.style.display = 'flex';
+    
+    let paginationHtml = '';
+    
+    // Bouton précédent
+    if (pagination.has_prev) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="applyFilters(${pagination.prev_num}); return false;">
+                    Précédent
+                </a>
+            </li>
+        `;
+    }
+    
+    // Pages
+    for (let pageNum of generatePageNumbers(pagination.page, pagination.pages)) {
+        if (pageNum === '...') {
+            paginationHtml += `
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+            `;
+        } else if (pageNum === pagination.page) {
+            paginationHtml += `
+                <li class="page-item active">
+                    <span class="page-link">${pageNum}</span>
+                </li>
+            `;
+        } else {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="applyFilters(${pageNum}); return false;">
+                        ${pageNum}
+                    </a>
+                </li>
+            `;
+        }
+    }
+    
+    // Bouton suivant
+    if (pagination.has_next) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="applyFilters(${pagination.next_num}); return false;">
+                    Suivant
+                </a>
+            </li>
+        `;
+    }
+    
+    paginationContainer.innerHTML = paginationHtml;
+}
+
+// Fonction pour générer les numéros de page
+function generatePageNumbers(currentPage, totalPages) {
+    const pages = [];
+    const delta = 2;
+    
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        pages.push(i);
+    }
+    
+    if (currentPage - delta > 2) {
+        pages.unshift('...');
+    }
+    if (currentPage + delta < totalPages - 1) {
+        pages.push('...');
+    }
+    
+    if (totalPages > 1) {
+        pages.unshift(1);
+        if (totalPages > 1) pages.push(totalPages);
+    }
+    
+    return [...new Set(pages)]; // Supprimer les doublons
+}
+
+// Fonction pour formater les nombres
+function formatNumber(num) {
+    return new Intl.NumberFormat('fr-FR').format(num);
+}
+
+// Fonction pour afficher l'état de chargement
+function showLoadingState() {
+    const tableBody = document.querySelector('.table tbody');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <div class="mt-2">Chargement des rapports...</div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Fonction pour masquer l'état de chargement
+function hideLoadingState() {
+    // Rien à faire, le contenu est mis à jour
+}
+
+// Fonction pour afficher les erreurs
+function showError(message) {
+    const tableBody = document.querySelector('.table tbody');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h5 class="text-danger">Erreur</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="applyFilters(currentPage)">
+                        <i class="fas fa-redo me-1"></i>Réessayer
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Fonction pour mettre à jour l'URL
+function updateURL(filters) {
+    const url = new URL(window.location);
+    
+    // Nettoyer les paramètres existants
+    ['centrale_id', 'annee', 'mois', 'statut', 'search', 'page'].forEach(param => {
+        url.searchParams.delete(param);
+    });
+    
+    // Ajouter les nouveaux paramètres
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '') {
+            url.searchParams.set(key, value);
+        }
+    });
+    
+    // Mettre à jour l'URL sans recharger la page
+    window.history.pushState({}, '', url);
+}
+
+// Fonction pour effacer les filtres
+function clearFilters() {
+    document.getElementById('centrale-filter').value = '';
+    document.getElementById('annee-filter').value = '';
+    document.getElementById('mois-filter').value = '';
+    document.getElementById('statut-filter').value = '';
+    document.getElementById('search-input').value = '';
+    
+    applyFilters(1);
+}
+
+// Initialisation des événements
+document.addEventListener('DOMContentLoaded', function() {
+    // Événements pour les selects de filtrage
+    document.querySelectorAll('.filter-select').forEach(select => {
+        select.addEventListener('change', () => applyFilters(1));
+    });
+    
+    // Événement pour la recherche avec debounce
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => applyFilters(1), 500);
+    });
+    
+    // Événement pour effacer les filtres
+    document.getElementById('clear-filters').addEventListener('click', clearFilters);
+    
+    // Gestion du bouton retour du navigateur
+    window.addEventListener('popstate', function() {
+        // Recharger la page pour revenir à l'état précédent
+        window.location.reload();
+    });
+});
+
 function confirmerSuppression(rapportId, centraleName, periode) {
     document.getElementById('deleteInfo').textContent = centraleName + ' - ' + periode;
-    document.getElementById('deleteForm').action = '{ url_for("production_thermique.supprimer_rapport", id=0) }'.replace('0', rapportId);
+    document.getElementById('deleteForm').action = '/production-thermique/rapport/' + rapportId + '/supprimer';
     
     var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
 }
-
-// Auto-submit du formulaire de filtrage
-document.addEventListener('DOMContentLoaded', function() {
-    const filterSelects = document.querySelectorAll('select[name="centrale_id"], select[name="annee"], select[name="mois"], select[name="statut"]');
-    
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.form.submit();
-        });
-    });
-});
-{% endraw %}
 </script>
 {% endblock %}

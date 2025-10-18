@@ -15,7 +15,7 @@ from app.utils.permissions import get_operateur_choices, get_default_operateur_i
 
 def coerce_int_or_none(value):
     """Convertit en int ou None si vide"""
-    if value == '' or value is None:
+    if value == '' or value is None or value == 'None':
         return None
     return int(value)
 
@@ -356,3 +356,102 @@ class FiltreRapportThermiqueForm(FlaskForm):
                         validators=[Optional()])
     
     submit = SubmitField('Filtrer')
+
+
+class RapportThermiqueForm(FlaskForm):
+    """Formulaire pour créer/modifier un rapport thermique"""
+    
+    # Informations de base
+    centrale_id = SelectField('Centrale', coerce=safe_int_coerce, validators=[DataRequired()])
+    annee = IntegerField('Année', validators=[DataRequired(), NumberRange(min=2000, max=2100)])
+    mois = SelectField('Mois',
+                      choices=[
+                          ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'), ('4', 'Avril'),
+                          ('5', 'Mai'), ('6', 'Juin'), ('7', 'Juillet'), ('8', 'Août'),
+                          ('9', 'Septembre'), ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
+                      ],
+                      validators=[DataRequired()])
+    
+    # Périodes
+    periode_debut = DateField('Période début', validators=[DataRequired()])
+    periode_fin = DateField('Période fin', validators=[DataRequired()])
+    
+    # Production
+    energie_produite = FloatField('Énergie produite (MWh)', validators=[Optional(), NumberRange(min=0)])
+    energie_disponible = FloatField('Énergie disponible (MWh)', validators=[Optional(), NumberRange(min=0)])
+    facteur_charge = FloatField('Facteur de charge (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    temps_fonctionnement = FloatField('Temps de fonctionnement (heures)', validators=[Optional(), NumberRange(min=0)])
+    nombre_demarrages = IntegerField('Nombre de démarrages', validators=[Optional(), NumberRange(min=0)])
+    nombre_arrets = IntegerField('Nombre d\'arrêts', validators=[Optional(), NumberRange(min=0)])
+    duree_arrets = FloatField('Durée des arrêts (heures)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Consommation combustible
+    consommation_combustible = FloatField('Consommation combustible (L/T)', validators=[Optional(), NumberRange(min=0)])
+    type_combustible_utilise = SelectField('Type de combustible utilisé',
+                                          choices=[
+                                              ('', 'Sélectionner...'),
+                                              ('diesel', 'Diesel/Gasoil'),
+                                              ('fuel_lourd', 'Fuel lourd'),
+                                              ('gaz_naturel', 'Gaz naturel'),
+                                              ('charbon', 'Charbon'),
+                                              ('biomasse', 'Biomasse')
+                                          ],
+                                          validators=[Optional()])
+    
+    cout_combustible = FloatField('Coût combustible (USD)', validators=[Optional(), NumberRange(min=0)])
+    prix_unitaire_combustible = FloatField('Prix unitaire (USD/L ou USD/T)', validators=[Optional(), NumberRange(min=0)])
+    consommation_specifique_reelle = FloatField('Consommation spécifique réelle (g/kWh)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Performance thermique
+    rendement_global = FloatField('Rendement global (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    rendement_thermique = FloatField('Rendement thermique (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    rendement_electrique = FloatField('Rendement électrique (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    temperature_fumees = FloatField('Température des fumées (°C)', validators=[Optional(), NumberRange(min=0)])
+    pression_admission = FloatField('Pression d\'admission (bar)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Données d'exploitation
+    charge_moyenne = FloatField('Charge moyenne (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    charge_maximale = FloatField('Charge maximale (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    charge_minimale = FloatField('Charge minimale (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    temperature_ambiante_moyenne = FloatField('Température ambiante moyenne (°C)', validators=[Optional()])
+    humidite_relative_moyenne = FloatField('Humidité relative moyenne (%)', validators=[Optional(), NumberRange(min=0, max=100)])
+    
+    # Maintenance et incidents
+    maintenances_preventives = IntegerField('Maintenances préventives', validators=[Optional(), NumberRange(min=0)])
+    maintenances_correctives = IntegerField('Maintenances correctives', validators=[Optional(), NumberRange(min=0)])
+    incidents_majeurs = IntegerField('Incidents majeurs', validators=[Optional(), NumberRange(min=0)])
+    description_incidents = TextAreaField('Description des incidents', validators=[Optional()])
+    duree_maintenance = FloatField('Durée de maintenance (heures)', validators=[Optional(), NumberRange(min=0)])
+    
+    # Consommables et lubrifiants
+    consommation_huile_moteur = FloatField('Consommation huile moteur (L)', validators=[Optional(), NumberRange(min=0)])
+    consommation_liquide_refroidissement = FloatField('Consommation liquide refroidissement (L)', validators=[Optional(), NumberRange(min=0)])
+    remplacement_filtres = IntegerField('Remplacement de filtres', validators=[Optional(), NumberRange(min=0)])
+    autres_consommables = TextAreaField('Autres consommables', validators=[Optional()])
+    
+    # Données environnementales
+    emissions_co2 = FloatField('Émissions CO₂ (tonnes)', validators=[Optional(), NumberRange(min=0)])
+    emissions_nox = FloatField('Émissions NOx (kg)', validators=[Optional(), NumberRange(min=0)])
+    emissions_co = FloatField('Émissions CO (kg)', validators=[Optional(), NumberRange(min=0)])
+    gestion_dechets = TextAreaField('Gestion des déchets', validators=[Optional()])
+    impact_environnemental = TextAreaField('Impact environnemental', validators=[Optional()])
+    
+    # Données économiques
+    cout_exploitation = FloatField('Coût d\'exploitation (USD)', validators=[Optional(), NumberRange(min=0)])
+    cout_maintenance = FloatField('Coût de maintenance (USD)', validators=[Optional(), NumberRange(min=0)])
+    recettes_vente = FloatField('Recettes de vente (USD)', validators=[Optional(), NumberRange(min=0)])
+    rentabilite = FloatField('Rentabilité (%)', validators=[Optional(), NumberRange(min=-100, max=100)])
+    
+    # Statut et validation
+    statut = SelectField('Statut',
+                        choices=[
+                            ('brouillon', 'Brouillon'),
+                            ('valide', 'Validé'),
+                            ('transmis', 'Transmis')
+                        ],
+                        default='brouillon',
+                        validators=[DataRequired()])
+    
+    observations = TextAreaField('Observations', validators=[Optional()])
+    
+    submit = SubmitField('Enregistrer')

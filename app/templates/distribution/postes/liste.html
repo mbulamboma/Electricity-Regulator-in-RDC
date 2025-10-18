@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% include 'components/tableau_dynamique.html' %}
 {% block title %}Postes de distribution{% endblock %}
 
 {% block content %}
@@ -192,7 +193,8 @@
                 {% if postes.pages > 1 %}
                 <div class="card-footer">
                     <nav aria-label="Navigation des pages">
-                        {{ macros.render_pagination(postes, 'distribution.liste_postes', **request.args) }}
+                        {# Ajoutez ici le code de pagination ou un composant dédié, mais n'incluez pas tableau_dynamique.html ici #}
+                        <!-- Pagination à ajouter ici -->
                     </nav>
                 </div>
                 {% endif %}

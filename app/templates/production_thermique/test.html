@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Centrale</title>
+</head>
+<body>
+    <h1>{{ centrale.nom if centrale else 'No centrale' }}</h1>
+    <p>Latitude: {{ centrale.latitude if centrale else 'N/A' }}</p>
+    <p>Longitude: {{ centrale.longitude if centrale else 'N/A' }}</p>
+    {% if centrale and centrale.latitude and centrale.longitude %}
+    <div id="map" style="height: 300px; background: lightblue;">Map would be here</div>
+    {% endif %}
+</body>
+</html>

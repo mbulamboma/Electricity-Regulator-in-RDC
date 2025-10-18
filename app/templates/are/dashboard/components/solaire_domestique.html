@@ -1,0 +1,38 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Capacité solaire domestique installée</h5>
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.solaire_domestique and stats_nationales.solaire_domestique|length > 0 %}
+		<div class="table-responsive">
+			<table class="table table-sm table-striped">
+				<thead class="table-dark">
+					<tr>
+						<th>Année</th>
+						<th class="text-end">Nombre d'installations</th>
+						<th class="text-end">Capacité totale (kW)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in stats_nationales.solaire_domestique %}
+					<tr>
+						<td><strong>{{ item.annee }}</strong></td>
+						<td class="text-end">{{ item.nb_installations }}</td>
+						<td class="text-end">{{ "{:,.1f}".format(item.capacite_kw) }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-solar-panel fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucune donnée solaire domestique disponible</h6>
+			<p class="text-muted small">
+				Les tableaux apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>

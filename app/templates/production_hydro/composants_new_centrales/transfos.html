@@ -1,0 +1,148 @@
+<div class="form-section">
+        <h5><i class="fas fa-plug me-2"></i>Transformateurs</h5>
+        
+        <div class="equipment-formset" id="transformateurs-formset">
+            <div class="equipment-header">
+                <h6 class="mb-0">Configuration des transformateurs</h6>
+                <button type="button" class="add-btn" onclick="ajouterTransformateur()">
+                    <i class="fas fa-plus me-1"></i>Ajouter un transformateur
+                </button>
+            </div>
+            
+            <div id="transformateurs-container">
+                {% for transfo in form.transformateurs %}
+                <div class="equipment-item" id="transformateur-{{ loop.index0 }}">
+                    {{ transfo.id }}
+                    {{ transfo.delete }}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                            onclick="supprimerTransformateur({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ transfo.numero_transformateur.label(class="form-label") }}
+                            {{ transfo.numero_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.nom_transformateur.label(class="form-label") }}
+                            {{ transfo.nom_transformateur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.puissance_nominale.label(class="form-label") }}
+                            {{ transfo.puissance_nominale(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.type_refroidissement.label(class="form-label") }}
+                            {{ transfo.type_refroidissement(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            {{ transfo.tension_primaire.label(class="form-label") }}
+                            {{ transfo.tension_primaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.tension_secondaire.label(class="form-label") }}
+                            {{ transfo.tension_secondaire(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.constructeur.label(class="form-label") }}
+                            {{ transfo.constructeur(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ transfo.annee_fabrication.label(class="form-label") }}
+                            {{ transfo.annee_fabrication(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+<script>
+// Fonctions pour les transformateurs
+let transformateurIndex = {{ form.transformateurs|length if form.transformateurs else 0 }};
+
+function ajouterTransformateur() {
+    const container = document.getElementById('transformateurs-container');
+    const template = `
+        <div class="equipment-item" id="transformateur-${transformateurIndex}">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-id" value="">
+            <input type="hidden" name="transformateurs-${transformateurIndex}-delete" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                    onclick="supprimerTransformateur(${transformateurIndex})">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">N° Transformateur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-numero_transformateur" class="form-control" placeholder="T01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nom</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-nom_transformateur" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puissance (MVA)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-puissance_nominale" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Refroidissement</label>
+                    <select name="transformateurs-${transformateurIndex}-type_refroidissement" class="form-select">
+                        <option value="">Sélectionner...</option>
+                        <option value="ONAN">ONAN - Huile naturelle</option>
+                        <option value="ONAF">ONAF - Huile forcée</option>
+                        <option value="OFAF">OFAF - Huile/Air forcé</option>
+                        <option value="ODAF">ODAF - Huile dirigée</option>
+                        <option value="Sec">Transformateur sec</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tension primaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_primaire" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tension secondaire (kV)</label>
+                    <input type="number" step="0.01" name="transformateurs-${transformateurIndex}-tension_secondaire" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Constructeur</label>
+                    <input type="text" name="transformateurs-${transformateurIndex}-constructeur" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Année fabrication</label>
+                    <input type="number" name="transformateurs-${transformateurIndex}-annee_fabrication" class="form-control" min="1900" max="2100">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    transformateurIndex++;
+}
+
+function supprimerTransformateur(index) {
+    const element = document.getElementById(`transformateur-${index}`);
+    const deleteInput = element.querySelector('[name$="-delete"]');
+    
+    if (deleteInput.value) {
+        element.remove();
+    } else {
+        deleteInput.value = 'true';
+        element.classList.add('to-delete');
+    }
+}
+</script>
+ 

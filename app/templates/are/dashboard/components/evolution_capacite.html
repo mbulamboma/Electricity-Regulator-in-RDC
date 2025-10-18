@@ -1,0 +1,151 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">Evolution de la capacité installée</h5>
+	</div>
+	<div class="card-body">
+		{% if stats_nationales and stats_nationales.evolution_capacite and stats_nationales.evolution_capacite|length > 0 %}
+		<div class="row">
+			<div class="col-md-5">
+				
+				<div class="chart-container">
+					<canvas id="chartCapaciteInstallee"></canvas>
+				</div>
+			</div>
+			<div class="col-md-7">
+				<div class="table-responsive mt-3">
+					<table class="table table-sm table-striped">
+						<thead class="table-dark">
+							<tr>
+								<th>Année</th>
+								<th class="text-end">Hydro (MW)</th>
+								<th class="text-end">Thermique (MW)</th>
+								<th class="text-end">Solaire (MW)</th>
+								<th class="text-end">Total (MW)</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for item in stats_nationales.evolution_capacite %}
+							<tr>
+								<td><strong>{{ item.annee }}</strong></td>
+								<td class="text-end">{{ "{:,.1f}".format(item.capacite_hydro_mw) }}</td>
+								<td class="text-end">{{ "{:,.1f}".format(item.capacite_thermique_mw) }}</td>
+								<td class="text-end">{{ "{:,.1f}".format(item.capacite_solaire_mw) }}</td>
+								<td class="text-end"><strong>{{ "{:,.1f}".format(item.capacite_totale_mw) }}</strong></td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				{% else %}
+				<div class="text-center py-5">
+					<i class="fas fa-battery-empty fa-3x text-muted mb-3"></i>
+					<h6 class="text-muted">Aucune donnée de capacité installée disponible</h6>
+					<p class="text-muted small">
+						Les graphiques d'évolution de la capacité apparaîtront dès que des centrales seront enregistrées dans le système.
+					</p>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+		
+	</div>
+</div>
+<style>
+.chart-container {
+	height: 350px;
+	position: relative;
+}
+</style>
+<script>
+var capLabels = [];
+var capHydro = [];
+var capThermique = [];
+var capSolaire = [];
+var capTotale = [];
+{% for item in stats_nationales.evolution_capacite %}
+	capLabels.push("{{ item.annee }}");
+	capHydro.push({{ item.capacite_hydro_mw|float }});
+	capThermique.push({{ item.capacite_thermique_mw|float }});
+	capSolaire.push({{ item.capacite_solaire_mw|float }});
+	capTotale.push({{ item.capacite_totale_mw|float }});
+{% endfor %}
+if (document.getElementById('chartCapaciteInstallee')) {
+	const ctxCap = document.getElementById('chartCapaciteInstallee').getContext('2d');
+	new Chart(ctxCap, {
+		type: 'line',
+		data: {
+			labels: capLabels,
+			datasets: [
+				{
+					label: 'Hydro (MW)',
+					data: capHydro,
+					borderColor: '#0d6efd',
+					backgroundColor: 'rgba(13, 110, 253, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				},
+				{
+					label: 'Thermique (MW)',
+					data: capThermique,
+					borderColor: '#dc3545',
+					backgroundColor: 'rgba(220, 53, 69, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				},
+				{
+					label: 'Solaire (MW)',
+					data: capSolaire,
+					borderColor: '#198754',
+					backgroundColor: 'rgba(25, 135, 84, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				},
+				{
+					label: 'Total (MW)',
+					data: capTotale,
+					borderColor: '#fd7e14',
+					backgroundColor: 'rgba(253, 126, 20, 0.1)',
+					borderWidth: 3,
+					fill: false,
+					tension: 0.4
+				}
+			]
+		},
+		options: {
+			responsive: true,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Evolution de la capacité installée (MW)'
+				},
+				legend: {
+					position: 'top'
+				}
+			},
+			scales: {
+				y: {
+					beginAtZero: true,
+					title: {
+						display: true,
+						text: 'Capacité (MW)'
+					}
+				},
+				x: {
+					title: {
+						display: true,
+						text: 'Année'
+					}
+				}
+			},
+			interaction: {
+				intersect: false,
+				mode: 'index'
+			}
+		}
+	});
+}
+</script>

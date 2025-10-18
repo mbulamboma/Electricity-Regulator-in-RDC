@@ -1,0 +1,36 @@
+<!-- Composant : Performance des opérateurs -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-trophy text-warning"></i> Performance des opérateurs</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Opérateur</th>
+                        <th>Production (GWh)</th>
+                        <th>Clients</th>
+                        <th>Rendement (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if stats_nationales and stats_nationales['stats_operateurs'] %}
+                        {% for op in stats_nationales['stats_operateurs'] %}
+                        <tr>
+                            <td>{{ op.nom }}</td>
+                            <td class="text-end">{{ op.production_gwh }}</td>
+                            <td class="text-end">{{ op.clients }}</td>
+                            <td class="text-end">{{ op.rendement_pct }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Aucune donnée disponible</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

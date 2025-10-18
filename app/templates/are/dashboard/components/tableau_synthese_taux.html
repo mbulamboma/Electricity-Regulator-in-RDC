@@ -1,0 +1,38 @@
+<!-- Composant : Tableau synthèse des taux -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-table text-info"></i> Synthèse des taux d'accès et d'électrification</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Année</th>
+                        <th>Taux d'accès (%)</th>
+                        <th>Taux d'électrification (%)</th>
+                        <th>Taux rural (%)</th>
+                        <th>Taux urbain (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if stats_synthese_taux %}
+                        {% for taux in stats_synthese_taux %}
+                        <tr>
+                            <td>{{ taux.annee }}</td>
+                            <td class="text-end">{{ taux.acces_pct }}</td>
+                            <td class="text-end">{{ taux.electrification_pct }}</td>
+                            <td class="text-end">{{ taux.rural_pct }}</td>
+                            <td class="text-end">{{ taux.urbain_pct }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Aucune donnée disponible</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

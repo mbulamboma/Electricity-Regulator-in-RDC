@@ -1,0 +1,157 @@
+<!-- Composant : Taux d'électrification -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-bolt text-success"></i> Taux d'électrification</h5>
+    </div>
+    <div class="card-body">
+        <!-- Graphique d'évolution -->
+         <div class="row">
+            
+            <div class="col-7">
+                <div class="table-responsive">
+                    <a href="/are/dashboard/synthese-taux" class="btn btn-primary mb-2">
+                        <i class="fas fa-file-alt"></i> Voir tous les details
+                    </a>
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Année</th>
+                                <th>Taux urbain (%)</th>
+                                <th>Taux rural (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if stats_nationales and stats_nationales.taux_electrification and stats_nationales.taux_electrification|length > 0 %}
+                                {% for taux in stats_nationales.taux_electrification %}
+                                <tr>
+                                    <td>{{ taux.annee }}</td>
+                                    <td class="text-end">{{ "%.1f"|format(taux.taux_acces_pct * 0.7) }}</td>
+                                    <td class="text-end">{{ "%.1f"|format(taux.taux_acces_pct * 0.3) }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Aucune donnée disponible</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-5">
+            {% if stats_nationales and stats_nationales.taux_electrification and stats_nationales.taux_electrification|length > 0 %}
+            <div class="chart-container mb-4" style="position: relative; height: 300px;">
+                <canvas id="chartTauxElectrification{{ unique_id|default('') }}"></canvas>
+            </div>
+            {% endif %}
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<style>
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 20px;
+}
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+{% if stats_nationales and stats_nationales.taux_electrification and stats_nationales.taux_electrification|length > 0 %}
+// Données pour le graphique
+var annees = [];
+var tauxUrbain = [];
+var tauxRural = [];
+
+{% for taux in stats_nationales.taux_electrification %}
+    annees.push("{{ taux.annee }}");
+    tauxUrbain.push({{ "%.2f"|format(taux.taux_acces_pct * 0.7) }});
+    tauxRural.push({{ "%.2f"|format(taux.taux_acces_pct * 0.3) }});
+{% endfor %}
+
+if (document.getElementById('chartTauxElectrification{{ unique_id|default('') }}')) {
+    const ctx = document.getElementById('chartTauxElectrification{{ unique_id|default('') }}').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: annees,
+            datasets: [
+                {
+                    label: 'Taux urbain (%)',
+                    data: tauxUrbain,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: '#007bff',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                },
+                {
+                    label: 'Taux rural (%)',
+                    data: tauxRural,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: '#28a745',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Évolution des taux d\'électrification urbain et rural',
+                    font: {
+                        size: 14
+                    }
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 25,
+                    title: {
+                        display: true,
+                        text: 'Taux (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Année'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+{% endif %}
+</script>

@@ -1,0 +1,50 @@
+
+<div class="card mb-4">
+	<div class="card-header">
+		<h5 class="mb-0">KPIs Stratégiques</h5>
+	</div>
+	<div class="card-body">
+		{% if kpis_strategiques and kpis_strategiques|length > 0 %}
+		<div class="table-responsive">
+			<table class="table table-sm table-striped">
+				<thead class="table-dark">
+					<tr>
+						<th>Indicateur</th>
+						<th class="text-end">Valeur</th>
+						<th class="text-end">Objectif</th>
+						<th class="text-end">Statut</th>
+						<th class="text-end">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for kpi in kpis_strategiques %}
+					<tr>
+						<td>{{ kpi.nom }}</td>
+						<td class="text-end">{{ kpi.valeur }}</td>
+						<td class="text-end">{{ kpi.objectif }}</td>
+						<td class="text-end">
+							{% if kpi.atteint %}
+								<span class="badge bg-success">Atteint</span>
+							{% else %}
+								<span class="badge bg-warning text-dark">En cours</span>
+							{% endif %}
+						</td>
+						<td class="text-end">
+							<a href="{{ url_for('are_dashboard.edit_kpi_strategique', kpi_id=kpi.id) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="text-center py-5">
+			<i class="fas fa-bullseye fa-3x text-muted mb-3"></i>
+			<h6 class="text-muted">Aucun KPI stratégique disponible</h6>
+			<p class="text-muted small">
+				Les indicateurs apparaîtront dès que des données seront enregistrées dans le système.
+			</p>
+		</div>
+		{% endif %}
+	</div>
+</div>

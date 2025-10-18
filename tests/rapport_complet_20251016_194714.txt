@@ -1,0 +1,111 @@
+
+================================================================================
+🧪 RAPPORT CONSOLIDÉ DE TESTS - 2025-10-16 19:47:14
+================================================================================
+
+🎯 APPLICATION TESTÉE: http://localhost:5000
+
+🔗 TESTS DE ROUTES:
+   Total: 78 routes testées
+   ✅ Succès: 19 (24.4%)
+   ❌ Échecs: 59
+   ⏱️ Temps d'exécution: 200.9s
+
+📝 TESTS DE FORMULAIRES:
+   ✅ Statut: completed
+   ⏱️ Temps d'exécution: 39.7s
+
+🗄️ TESTS DE BASE DE DONNÉES:
+   ✅ Statut: success
+   👥 Utilisateurs: 2
+   🏢 Opérateurs: 5
+   ⏱️ Temps d'exécution: 1.5s
+
+💡 RECOMMANDATIONS:
+   • Corriger 59 route(s) en échec
+   • Exécuter les tests régulièrement après chaque modification
+   • Considérer l'ajout de tests unitaires avec pytest
+
+==================================================
+📋 DÉTAILS DES TESTS DE ROUTES:
+==================================================
+✅ GET    /auth/login                              200 (2.075s) - Page de login
+❌ POST   /auth/login                              200 (2.060s) - Tentative d'authentification | Status attendu: 302, reçu: 200
+✅ GET    /                                        200 (2.076s) - Page d'accueil
+❌ GET    /about                                   404 (2.026s) - Page À propos | Status attendu: 200, reçu: 404
+❌ GET    /contact                                 404 (2.048s) - Page Contact | Status attendu: 200, reçu: 404
+✅ GET    /static/css/style.css                    200 (2.062s) - CSS principal
+✅ GET    /static/js/main.js                       200 (2.043s) - JavaScript principal
+❌ GET    /favicon.ico                             404 (2.051s) - Favicon
+✅ GET    /auth/login                              200 (3.640s) - Page de connexion
+✅ GET    /auth/register                           200 (4.112s) - Page d'inscription
+❌ GET    /auth/logout                             200 (4.071s) - Déconnexion | Status attendu: 302, reçu: 200
+❌ POST   /auth/login                              400 (2.024s) - Connexion POST (test sans données)
+❌ POST   /auth/register                           400 (2.034s) - Inscription POST (test sans données)
+✅ GET    /operateurs/                             200 (4.080s) - Liste des opérateurs
+✅ GET    /operateurs/nouveau                      200 (4.095s) - Nouveau opérateur
+✅ GET    /operateurs/1                            200 (4.133s) - Détail opérateur ID 1
+❌ GET    /operateurs/1/modifier                   404 (2.057s) - Modifier opérateur ID 1 | Status attendu: 200, reçu: 404
+❌ POST   /operateurs/                             405 (2.047s) - Créer opérateur (sans données)
+❌ POST   /operateurs/1/modifier                   404 (2.071s) - Modifier opérateur (sans données)
+❌ GET    /production_hydro/                       404 (2.027s) - Liste centrales hydro | Status attendu: 200, reçu: 404
+❌ GET    /production_hydro/nouvelle               404 (2.064s) - Nouvelle centrale hydro | Status attendu: 200, reçu: 404
+❌ GET    /production_hydro/1                      404 (2.052s) - Détail centrale hydro ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /production_hydro/1/modifier             404 (2.064s) - Modifier centrale hydro | Status attendu: 200, reçu: 404
+❌ POST   /production_hydro/                       404 (2.030s) - Créer centrale hydro
+❌ GET    /production_thermique/                   404 (2.036s) - Liste centrales thermiques | Status attendu: 200, reçu: 404
+❌ GET    /production_thermique/nouvelle           404 (2.044s) - Nouvelle centrale thermique | Status attendu: 200, reçu: 404
+❌ GET    /production_thermique/1                  404 (2.050s) - Détail centrale thermique ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /production_thermique/1/modifier         404 (2.052s) - Modifier centrale thermique | Status attendu: 200, reçu: 404
+❌ GET    /production_solaire/                     404 (2.063s) - Liste centrales solaires | Status attendu: 200, reçu: 404
+❌ GET    /production_solaire/nouvelle             404 (2.048s) - Nouvelle centrale solaire | Status attendu: 200, reçu: 404
+❌ GET    /production_solaire/1                    404 (2.077s) - Détail centrale solaire ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /production_solaire/1/modifier           404 (2.071s) - Modifier centrale solaire | Status attendu: 200, reçu: 404
+✅ GET    /transport/                              200 (4.099s) - Liste lignes de transport
+❌ GET    /transport/nouvelle                      404 (2.047s) - Nouvelle ligne de transport | Status attendu: 200, reçu: 404
+❌ GET    /transport/1                             404 (2.033s) - Détail ligne ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /transport/1/modifier                    404 (2.075s) - Modifier ligne de transport | Status attendu: 200, reçu: 404
+❌ POST   /transport/                              405 (2.037s) - Créer ligne de transport
+✅ GET    /distribution/                           200 (4.127s) - Liste réseaux de distribution
+❌ GET    /distribution/nouveau                    404 (2.045s) - Nouveau réseau de distribution | Status attendu: 200, reçu: 404
+❌ GET    /distribution/1                          404 (2.067s) - Détail réseau ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /distribution/1/modifier                 404 (2.064s) - Modifier réseau | Status attendu: 200, reçu: 404
+❌ GET    /distribution/postes/                    404 (2.049s) - Liste postes de distribution | Status attendu: 200, reçu: 404
+✅ GET    /distribution/postes/nouveau             200 (4.131s) - Nouveau poste
+✅ GET    /distribution/postes/1                   200 (4.128s) - Détail poste ID 1
+❌ POST   /distribution/                           405 (2.051s) - Créer réseau de distribution
+❌ GET    /workflow/                               404 (2.026s) - Liste des workflows | Status attendu: 200, reçu: 404
+❌ GET    /workflow/nouveau                        404 (2.033s) - Nouveau workflow | Status attendu: 200, reçu: 404
+❌ GET    /workflow/1                              404 (2.035s) - Détail workflow ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /workflow/1/valider                      404 (2.064s) - Valider workflow | Status attendu: 200, reçu: 404
+❌ GET    /workflow/1/rejeter                      404 (2.048s) - Rejeter workflow | Status attendu: 200, reçu: 404
+❌ POST   /workflow/                               404 (2.034s) - Créer workflow
+✅ GET    /notifications/                          200 (4.095s) - Liste notifications
+❌ GET    /notifications/non_lues                  404 (2.047s) - Notifications non lues | Status attendu: 200, reçu: 404
+❌ GET    /notifications/1/marquer_lue             404 (2.047s) - Marquer notification lue | Status attendu: 200, reçu: 404
+❌ POST   /notifications/marquer_toutes_lues       404 (2.046s) - Marquer toutes lues
+❌ GET    /contacts/                               404 (2.030s) - Liste contacts | Status attendu: 200, reçu: 404
+❌ GET    /contacts/nouveau                        404 (2.048s) - Nouveau contact | Status attendu: 200, reçu: 404
+❌ GET    /contacts/1                              404 (2.033s) - Détail contact ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /contacts/1/modifier                     404 (2.036s) - Modifier contact | Status attendu: 200, reçu: 404
+❌ POST   /contacts/                               404 (2.047s) - Créer contact
+❌ GET    /admin/                                  404 (2.065s) - Dashboard admin | Status attendu: 200, reçu: 404
+❌ GET    /admin/utilisateurs                      404 (2.048s) - Gestion utilisateurs | Status attendu: 200, reçu: 404
+❌ GET    /admin/utilisateurs/nouveau              404 (2.048s) - Nouvel utilisateur | Status attendu: 200, reçu: 404
+❌ GET    /admin/logs                              404 (2.048s) - Logs système | Status attendu: 200, reçu: 404
+✅ GET    /admin/config                            200 (4.113s) - Configuration
+❌ POST   /admin/utilisateurs/                     404 (2.060s) - Créer utilisateur
+✅ GET    /are/                                    200 (4.071s) - Dashboard ARE
+✅ GET    /are/dashboard/                          200 (4.129s) - Dashboard ARE détaillé
+✅ GET    /are/dashboard/kpis                      200 (4.115s) - Liste KPIs
+✅ GET    /are/dashboard/kpis/nouveau              200 (4.111s) - Nouveau KPI
+❌ GET    /are/dashboard/kpis/1                    404 (2.078s) - Détail KPI ID 1 | Status attendu: 200, reçu: 404
+❌ GET    /are/rapports/                           404 (2.063s) - Rapports ARE | Status attendu: 200, reçu: 404
+❌ GET    /are/analyses/                           404 (2.082s) - Analyses ARE | Status attendu: 200, reçu: 404
+❌ POST   /are/dashboard/kpis/                     404 (2.070s) - Créer KPI
+❌ GET    /route_inexistante                       404 (2.047s) - Route inexistante
+❌ GET    /operateurs/999999                       200 (4.147s) - Opérateur inexistant | Status attendu: 404, reçu: 200
+❌ GET    /production_hydro/999999                 404 (2.030s) - Centrale inexistante
+❌ POST   /route_post_inexistante                  404 (2.035s) - POST sur route inexistante
+
+================================================================================

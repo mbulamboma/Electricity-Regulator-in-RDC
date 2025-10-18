@@ -28,7 +28,9 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
-        return dict(csrf_token=generate_csrf)
+        def csrf_token():
+            return generate_csrf()
+        return dict(csrf_token=csrf_token)
     
     # User loader pour Flask-Login
     @login_manager.user_loader
@@ -54,7 +56,7 @@ def create_app(config_name=None):
     
     # Blueprint production hydroélectrique
     from app.production_hydro import production_hydro
-    app.register_blueprint(production_hydro, url_prefix='/production-hydro')
+    app.register_blueprint(production_hydro)
     
     # Blueprint production thermique
     from app.production_thermique import production_thermique

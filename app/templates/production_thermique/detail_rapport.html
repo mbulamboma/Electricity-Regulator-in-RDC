@@ -58,30 +58,46 @@
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="text-center p-3 border rounded">
                     <h4 class="text-danger">{{ "{:,.0f}".format(rapport.energie_produite) if rapport.energie_produite else 'N/A' }}</h4>
                     <small class="text-muted">MWh Produits</small>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <h4 class="text-success">{{ "{:,.0f}".format(rapport.energie_disponible) if rapport.energie_disponible else 'N/A' }}</h4>
+                    <small class="text-muted">MWh Disponibles</small>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="text-center p-3 border rounded">
                     <h4 class="text-warning">{{ "{:.1f}".format(rapport.facteur_charge) if rapport.facteur_charge else 'N/A' }}%</h4>
                     <small class="text-muted">Facteur de Charge</small>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="text-center p-3 border rounded">
                     <h4 class="text-info">{{ "{:.0f}".format(rapport.temps_fonctionnement) if rapport.temps_fonctionnement else 'N/A' }}</h4>
                     <small class="text-muted">Heures de Fonctionnement</small>
                 </div>
             </div>
         </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <strong>Nombre de démarrages :</strong> {{ rapport.nombre_demarrages or 'N/A' }}<br>
+                <strong>Nombre d'arrêts :</strong> {{ rapport.nombre_arrets or 'N/A' }}
+            </div>
+            <div class="col-md-4">
+                {% if rapport.duree_arrets %}
+                <strong>Durée des arrêts :</strong> {{ "{:.1f}".format(rapport.duree_arrets) }} heures
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- Combustible -->
-{% if rapport.consommation_combustible %}
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">
@@ -90,18 +106,272 @@
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-4">
-                <strong>Consommation totale :</strong> {{ "{:,.1f}".format(rapport.consommation_combustible) }} L<br>
-                <strong>Type utilisé :</strong> {{ rapport.type_combustible_utilise or 'N/A' }}
+            <div class="col-md-3">
+                <strong>Consommation totale :</strong><br>
+                {{ "{:,.1f}".format(rapport.consommation_combustible) if rapport.consommation_combustible else 'N/A' }} L/T
             </div>
-            <div class="col-md-4">
-                {% if rapport.consommation_specifique_reelle %}
-                <strong>Consommation spécifique :</strong> {{ "{:.2f}".format(rapport.consommation_specifique_reelle) }} L/MWh<br>
-                {% endif %}
-                {% if rapport.cout_combustible %}
-                <strong>Coût total :</strong> {{ "{:,.0f}".format(rapport.cout_combustible) }} USD
-                {% endif %}
+            <div class="col-md-3">
+                <strong>Type utilisé :</strong><br>
+                {{ rapport.type_combustible_utilise or 'N/A' }}
             </div>
+            <div class="col-md-3">
+                <strong>Coût total :</strong><br>
+                {{ "{:,.0f}".format(rapport.cout_combustible) if rapport.cout_combustible else 'N/A' }} USD
+            </div>
+            <div class="col-md-3">
+                <strong>Prix unitaire :</strong><br>
+                {{ "{:.2f}".format(rapport.prix_unitaire_combustible) if rapport.prix_unitaire_combustible else 'N/A' }} USD/L
+            </div>
+        </div>
+        {% if rapport.consommation_specifique_reelle %}
+        <div class="row mt-2">
+            <div class="col-12">
+                <strong>Consommation spécifique réelle :</strong> {{ "{:.2f}".format(rapport.consommation_specifique_reelle) }} g/kWh
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Performance thermique -->
+{% if rapport.rendement_global or rapport.rendement_thermique or rapport.rendement_electrique or rapport.temperature_fumees or rapport.pression_admission %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-cogs me-2"></i>Performance thermique
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.rendement_global %}
+            <div class="col-md-3">
+                <strong>Rendement global :</strong> {{ "{:.1f}".format(rapport.rendement_global) }}%
+            </div>
+            {% endif %}
+            {% if rapport.rendement_thermique %}
+            <div class="col-md-3">
+                <strong>Rendement thermique :</strong> {{ "{:.1f}".format(rapport.rendement_thermique) }}%
+            </div>
+            {% endif %}
+            {% if rapport.rendement_electrique %}
+            <div class="col-md-3">
+                <strong>Rendement électrique :</strong> {{ "{:.1f}".format(rapport.rendement_electrique) }}%
+            </div>
+            {% endif %}
+            {% if rapport.temperature_fumees %}
+            <div class="col-md-3">
+                <strong>Température fumées :</strong> {{ "{:.1f}".format(rapport.temperature_fumees) }}°C
+            </div>
+            {% endif %}
+        </div>
+        {% if rapport.pression_admission %}
+        <div class="row mt-2">
+            <div class="col-12">
+                <strong>Pression d'admission :</strong> {{ "{:.1f}".format(rapport.pression_admission) }} bar
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Données d'exploitation -->
+{% if rapport.charge_moyenne or rapport.charge_maximale or rapport.charge_minimale or rapport.temperature_ambiante_moyenne or rapport.humidite_relative_moyenne %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-industry me-2"></i>Données d'exploitation
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.charge_moyenne %}
+            <div class="col-md-4">
+                <strong>Charge moyenne :</strong> {{ "{:.1f}".format(rapport.charge_moyenne) }}%
+            </div>
+            {% endif %}
+            {% if rapport.charge_maximale %}
+            <div class="col-md-4">
+                <strong>Charge maximale :</strong> {{ "{:.1f}".format(rapport.charge_maximale) }}%
+            </div>
+            {% endif %}
+            {% if rapport.charge_minimale %}
+            <div class="col-md-4">
+                <strong>Charge minimale :</strong> {{ "{:.1f}".format(rapport.charge_minimale) }}%
+            </div>
+            {% endif %}
+        </div>
+        <div class="row mt-2">
+            {% if rapport.temperature_ambiante_moyenne %}
+            <div class="col-md-6">
+                <strong>Température ambiante moyenne :</strong> {{ "{:.1f}".format(rapport.temperature_ambiante_moyenne) }}°C
+            </div>
+            {% endif %}
+            {% if rapport.humidite_relative_moyenne %}
+            <div class="col-md-6">
+                <strong>Humidité relative moyenne :</strong> {{ "{:.1f}".format(rapport.humidite_relative_moyenne) }}%
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Maintenance et incidents -->
+{% if rapport.maintenances_preventives or rapport.maintenances_correctives or rapport.incidents_majeurs or rapport.description_incidents or rapport.duree_maintenance %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-tools me-2"></i>Maintenance et incidents
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.maintenances_preventives %}
+            <div class="col-md-3">
+                <strong>Maintenances préventives :</strong> {{ rapport.maintenances_preventives }}
+            </div>
+            {% endif %}
+            {% if rapport.maintenances_correctives %}
+            <div class="col-md-3">
+                <strong>Maintenances correctives :</strong> {{ rapport.maintenances_correctives }}
+            </div>
+            {% endif %}
+            {% if rapport.incidents_majeurs %}
+            <div class="col-md-3">
+                <strong>Incidents majeurs :</strong> {{ rapport.incidents_majeurs }}
+            </div>
+            {% endif %}
+            {% if rapport.duree_maintenance %}
+            <div class="col-md-3">
+                <strong>Durée maintenance :</strong> {{ "{:.1f}".format(rapport.duree_maintenance) }} h
+            </div>
+            {% endif %}
+        </div>
+        {% if rapport.description_incidents %}
+        <div class="row mt-2">
+            <div class="col-12">
+                <strong>Description des incidents :</strong><br>
+                {{ rapport.description_incidents }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Consommables et lubrifiants -->
+{% if rapport.consommation_huile_moteur or rapport.consommation_liquide_refroidissement or rapport.remplacement_filtres or rapport.autres_consommables %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-oil-can me-2"></i>Consommables et lubrifiants
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.consommation_huile_moteur %}
+            <div class="col-md-4">
+                <strong>Huile moteur :</strong> {{ "{:.1f}".format(rapport.consommation_huile_moteur) }} L
+            </div>
+            {% endif %}
+            {% if rapport.consommation_liquide_refroidissement %}
+            <div class="col-md-4">
+                <strong>Liquide refroidissement :</strong> {{ "{:.1f}".format(rapport.consommation_liquide_refroidissement) }} L
+            </div>
+            {% endif %}
+            {% if rapport.remplacement_filtres %}
+            <div class="col-md-4">
+                <strong>Remplacement filtres :</strong> {{ rapport.remplacement_filtres }}
+            </div>
+            {% endif %}
+        </div>
+        {% if rapport.autres_consommables %}
+        <div class="row mt-2">
+            <div class="col-12">
+                <strong>Autres consommables :</strong><br>
+                {{ rapport.autres_consommables }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Données environnementales -->
+{% if rapport.emissions_co2 or rapport.emissions_nox or rapport.emissions_co or rapport.gestion_dechets or rapport.impact_environnemental %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-leaf me-2"></i>Données environnementales
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.emissions_co2 %}
+            <div class="col-md-4">
+                <strong>Émissions CO₂ :</strong> {{ "{:,.0f}".format(rapport.emissions_co2) }} tonnes
+            </div>
+            {% endif %}
+            {% if rapport.emissions_nox %}
+            <div class="col-md-4">
+                <strong>Émissions NOx :</strong> {{ "{:.1f}".format(rapport.emissions_nox) }} kg
+            </div>
+            {% endif %}
+            {% if rapport.emissions_co %}
+            <div class="col-md-4">
+                <strong>Émissions CO :</strong> {{ "{:.1f}".format(rapport.emissions_co) }} kg
+            </div>
+            {% endif %}
+        </div>
+        {% if rapport.gestion_dechets %}
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <strong>Gestion des déchets :</strong><br>
+                {{ rapport.gestion_dechets }}
+            </div>
+            {% if rapport.impact_environnemental %}
+            <div class="col-md-6">
+                <strong>Impact environnemental :</strong><br>
+                {{ rapport.impact_environnemental }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Données économiques -->
+{% if rapport.cout_exploitation or rapport.cout_maintenance or rapport.recettes_vente or rapport.rentabilite %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-dollar-sign me-2"></i>Données économiques
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if rapport.cout_exploitation %}
+            <div class="col-md-3">
+                <strong>Coût d'exploitation :</strong> {{ "{:,.0f}".format(rapport.cout_exploitation) }} USD
+            </div>
+            {% endif %}
+            {% if rapport.cout_maintenance %}
+            <div class="col-md-3">
+                <strong>Coût de maintenance :</strong> {{ "{:,.0f}".format(rapport.cout_maintenance) }} USD
+            </div>
+            {% endif %}
+            {% if rapport.recettes_vente %}
+            <div class="col-md-3">
+                <strong>Recettes de vente :</strong> {{ "{:,.0f}".format(rapport.recettes_vente) }} USD
+            </div>
+            {% endif %}
+            {% if rapport.rentabilite %}
+            <div class="col-md-3">
+                <strong>Rentabilité :</strong> {{ "{:.1f}".format(rapport.rentabilite) }}%
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

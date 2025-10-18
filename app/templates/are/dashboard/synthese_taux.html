@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Synthèse des Taux d'Accès et d'Électrification{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Styles personnalisés pour la synthèse des taux */
+.table-responsive {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.55rem;
+    letter-spacing: 0.5px;
+    padding: 15px 10px;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.table tbody td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-card p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 10px;
+}
+
+.annee-badge {
+    background: #e9ecef;
+    color: #495057;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 30px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-chart-line text-primary"></i>
+                        Synthèse des Taux d'Accès et d'Électrification
+                    </h1>
+                    <p class="text-muted mt-2">Évolution historique des indicateurs clés du secteur électrique en RDC</p>
+                </div>
+                <div class="text-right">
+                    <span class="badge badge-primary px-3 py-2">
+                        <i class="fas fa-calendar-alt"></i> {{ total_annees }} années analysées
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3>{{ moyenne_taux_acces }}%</h3>
+                        <p>Moyenne Taux d'Accès</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3>{{ moyenne_taux_electrification }}%</h3>
+                        <p>Moyenne Taux d'Électrification</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-bolt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12 mb-4">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3>{{ moyenne_taux_couverture }}%</h3>
+                        <p>Moyenne Taux de Couverture</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-map-marked-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area text-info"></i>
+                        Évolution des Taux (2010-2025)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="tauxChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau détaillé -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table text-success"></i>
+                        Données Détaillées par Année
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-calendar"></i> Année</th>
+                                    <th><i class="fas fa-users"></i> Clients HT</th>
+                                    <th><i class="fas fa-users-cog"></i> Clients MT</th>
+                                    <th><i class="fas fa-home"></i> Clients BT</th>
+                                    <th><i class="fas fa-users"></i> Total Clients</th>
+                                    <th><i class="fas fa-percentage"></i> Taux Accès</th>
+                                    <th><i class="fas fa-bolt"></i> Taux Électrification</th>
+                                    <th><i class="fas fa-map"></i> Taux Couverture</th>
+                                    <th><i class="fas fa-industry"></i> Capacité Installée (MW)</th>
+                                    <th><i class="fas fa-battery-half"></i> Capacité Disponible (MW)</th>
+                                    <th><i class="fas fa-plug"></i> Production (GWh)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for taux in synthese_taux %}
+                                <tr>
+                                    <td>
+                                        <span class="annee-badge" >{{ taux.annee }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-secondary" style="color: blue;">{{ "{:,}".format(taux.clients_ht) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info" style="color: green;">{{ "{:,}".format(taux.clients_mt) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-warning" style="color: purple;">{{ "{:,}".format(taux.clients_bt) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-primary">{{ "{:,}".format(taux.total_clients) }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 mr-2" style="height: 8px;">
+                                                <div class="progress-bar" role="progressbar" style="width: {{ taux.taux_acces_pct }}%"></div>
+                                            </div>
+                                            <strong>{{ taux.taux_acces_pct }}%</strong>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 mr-2" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ taux.taux_electrification_pct }}%"></div>
+                                            </div>
+                                            <strong class="text-success">{{ taux.taux_electrification_pct }}%</strong>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 mr-2" style="height: 8px;">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ taux.taux_couverture_pct }}%"></div>
+                                            </div>
+                                            <strong class="text-info">{{ taux.taux_couverture_pct }}%</strong>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-warning font-weight-bold">{{ "{:,.0f}".format(taux.capacite_installee_mw) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-danger font-weight-bold">{{ "{:,.0f}".format(taux.capacite_disponible_mw) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-primary font-weight-bold">{{ "{:,.0f}".format(taux.production_totale_gwh) }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données pour le graphique
+    const annees = {{ synthese_taux|map(attribute='annee')|list|tojson }};
+    const tauxAcces = {{ synthese_taux|map(attribute='taux_acces_pct')|list|tojson }};
+    const tauxElectrification = {{ synthese_taux|map(attribute='taux_electrification_pct')|list|tojson }};
+    const tauxCouverture = {{ synthese_taux|map(attribute='taux_couverture_pct')|list|tojson }};
+
+    // Configuration du graphique
+    const ctx = document.getElementById('tauxChart').getContext('2d');
+    const tauxChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: annees,
+            datasets: [{
+                label: 'Taux d\'Accès (%)',
+                data: tauxAcces,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Taux d\'Électrification (%)',
+                data: tauxElectrification,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Taux de Couverture (%)',
+                data: tauxCouverture,
+                borderColor: '#17a2b8',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Évolution des Taux d\'Accès et d\'Électrification en RDC'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Pourcentage (%)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Année'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

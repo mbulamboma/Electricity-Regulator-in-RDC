@@ -49,6 +49,12 @@ from app.models.collecte_donnees import (
     TypeSource, TypeTension, StatutCollecte
 )
 
+# Import des modèles de KPIs réglementaires
+from app.models.kpis_reglementaires import (
+    KPIReglementaire, PerformanceOperateurKPI, SanctionReglementaire,
+    TypeKPIReglementaire, SeveriteViolation
+)
+
 __all__ = [
     'BaseModel', 'User', 'Operateur', 'Contact',
     'CentraleHydro', 'RapportHydro', 'GroupeProduction', 'TransformateurRapport', 'DonneesMensuelles',
